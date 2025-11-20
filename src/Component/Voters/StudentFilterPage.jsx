@@ -1,6 +1,7 @@
 import localforage from "localforage";
 import React, { useState, useEffect, useMemo } from "react";
 import { db } from "../../../firebase";
+import { pupilLoginFetch } from "../Database/PupilLogin";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useAuth } from "../Security/AuthContext";
 import { toast } from "react-toastify";
@@ -73,7 +74,7 @@ const StudentFilterPage = () => {
 
       // 🚀 Step 2: Set up Firestore Listener (Always running for real-time updates)
       const q = query(
-        collection(db, "PupilsReg"),
+        collection(pupilLoginFetch, "PupilsReg"),
         where("schoolId", "==", currentSchoolId)
       );
 
