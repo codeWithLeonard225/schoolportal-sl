@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../../firebase";
+import { pupilLoginFetch } from "../Database/PupilLogin";
 import {
   collection,
   addDoc,
@@ -7,6 +8,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  setDoc,
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
@@ -108,43 +110,89 @@ const SchoolRegistration = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Assuming 'location' was meant to be 'schoolAddress' or another field is required.
-    // I'll keep the original check but replace 'location' with 'schoolAddress' as it exists in state.
+  
     if (!formData.schoolName || !formData.schoolAddress) {
       toast.error("Please fill in all required fields.");
       return;
     }
+  
     setIsSubmitting(true);
+  
     try {
+      let docId;
+      let finalPayload;
+  
       if (editingId) {
-        await updateDoc(doc(db, "Schools", editingId), formData);
-        toast.success("School updated successfully!");
+        // --- EDITING Existing Record ---
+        docId = editingId; // Use the existing Firestore Document ID
+        
+        // Prepare data for update
+        finalPayload = {
+          ...formData,
+      
+        };
+
+        // Update in both databases using the Document ID
+        await setDoc(doc(db, "Schools", docId), finalPayload);
+        await setDoc(doc(pupilLoginFetch, "Schools", docId), finalPayload);
+  
+        toast.success("School updated successfully in both databases!");
       } else {
-        await addDoc(collection(db, "Schools"), {
+        // --- REGISTERING NEW Record (captures the Document ID) ---
+
+        // 1. Create a temporary ID field payload for the first addDoc
+        const tempPayload = {
           ...formData,
           createdAt: new Date(),
-        });
-        toast.success("School registered successfully!");
+          // Note: formData.schoolID (8-char uuid) is already here
+        };
+  
+        // 2. Add to the primary database, which generates a unique Document ID
+        const docRef = await addDoc(collection(db, "Schools"), tempPayload);
+        docId = docRef.id; // Capture the unique Firestore Document ID
+        
+        // 3. Create the final payload including the Document ID as a field (docID)
+        finalPayload = {
+          ...tempPayload,
+          docID: docId, // ⭐ NEW FIELD: The unique Firestore Document ID
+        };
+
+        // 4. Update the newly created document in the primary DB to add the docID field
+        await updateDoc(docRef, { docID: docId });
+
+        // 5. Use the generated Document ID to set the exact same document in the secondary database
+        await setDoc(doc(pupilLoginFetch, "Schools", docId), finalPayload);
+  
+        toast.success("School registered successfully in both databases!");
       }
+      
       resetForm();
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Failed to save school data.");
+      console.error("Error saving school:", error);
+      toast.error("Failed to save school in both databases.");
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
   const handleEdit = (school) => {
-    setFormData({ ...school });
-    setEditingId(school.id);
+    // Ensure the unique Firestore ID is saved as both 'id' (for editing) and 'docID' (in data)
+    const schoolData = {
+        ...school,
+        docID: school.docID || school.id, // Fallback for records created before the change
+    }
+    setFormData(schoolData);
+    setEditingId(school.id); // 'id' holds the unique Firestore Document ID
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  
+  
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this school?")) {
       try {
         await deleteDoc(doc(db, "Schools", id));
+        await deleteDoc(doc(pupilLoginFetch, "Schools", id));
         toast.success("School deleted successfully!");
       } catch (err) {
         console.error(err);

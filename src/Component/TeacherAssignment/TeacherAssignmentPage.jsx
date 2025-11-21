@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { db } from "../../../firebase";
+import { schoollpq } from "../Database/schoollibAndPastquestion";
 import {
     collection,
     addDoc,

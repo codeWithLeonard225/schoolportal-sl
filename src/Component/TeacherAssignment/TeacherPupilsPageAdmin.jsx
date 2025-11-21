@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../../../firebase";
 import { schooldb } from "../Database/SchoolsResults"; 
+import { pupilLoginFetch } from "../Database/PupilLogin";
 import {
     collection,
     onSnapshot,
@@ -83,7 +84,7 @@ const GradesAuditPage = () => {
 
     // --- 2️⃣ Fetch latest academic year ---
     useEffect(() => {
-        const q = query(collection(db, "PupilsReg"), orderBy("academicYear", "desc"), limit(1));
+        const q = query(collection(pupilLoginFetch, "PupilsReg"), orderBy("academicYear", "desc"), limit(1));
         const unsub = onSnapshot(q, (snapshot) => {
             if (!snapshot.empty) {
                 setAcademicYear(snapshot.docs[0].data().academicYear);
@@ -100,7 +101,7 @@ const GradesAuditPage = () => {
         }
 
         const pupilsQuery = query(
-            collection(db, "PupilsReg"),
+            collection(pupilLoginFetch, "PupilsReg"),
             where("class", "==", selectedClass),
             where("academicYear", "==", academicYear),
             where("schoolId", "==", schoolId)

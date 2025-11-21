@@ -7,9 +7,12 @@ import {
     where,
     doc,
     updateDoc,
-    deleteDoc
+    deleteDoc,
+    // 1. ADD setDoc IMPORT
+    setDoc,
 } from "firebase/firestore";
 import { db } from "../../../firebase";
+import { pupilLoginFetch } from "../Database/PupilLogin";
 
 // Define a simple password for demonstration. Replace with proper authentication in production.
 const ADMIN_PASSWORD = "superadmin";
@@ -66,7 +69,7 @@ const AdminForm = () => {
     };
 
     // =================================================================
-    //               ADMINS MANAGEMENT LOGIC (EXISTING)
+    //               ADMINS MANAGEMENT LOGIC (UPDATED)
     // =================================================================
 
     // 1. Fetch existing admins
@@ -86,57 +89,89 @@ const AdminForm = () => {
         }
     };
 
-    // 2. Handle Form Submission (Add or Update Admin)
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    // 2. Handle Form Submission (Add or Update Admin) - UPDATED
+ // 2. Handle Form Submission (Add or Update Admin) - CORRECTION APPLIED HERE
+// 2. Handle Form Submission (Add or Update Admin) - FIX APPLIED HERE
+const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        if (!adminID || !adminName || !schoolId || !adminType) {
-            alert("Please fill in all fields, including Admin Type.");
-            return;
-        }
+    if (!adminID || !adminName || !schoolId || !adminType) {
+        alert("Please fill in all fields, including Admin Type.");
+        return;
+    }
 
-        setIsSubmitting(true);
+    setIsSubmitting(true);
 
-        const adminData = {
-            adminID,
-            adminName,
-            schoolId,
-            adminType,
-             role, // Role value comes from the text input state
-        };
-
-        try {
-            if (editingId) {
-                // UPDATE Logic
-                const adminRef = doc(db, "Admins", editingId);
-                await updateDoc(adminRef, adminData);
-                alert(`Admin ${adminName} updated successfully!`);
-            } else {
-                // Check for existing ID only on NEW registration
-                const q = query(collection(db, "Admins"), where("adminID", "==", adminID));
-                const snapshot = await getDocs(q);
-
-                if (!snapshot.empty) {
-                    alert("Admin ID already exists!");
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                // ADD Logic
-                await addDoc(collection(db, "Admins"), adminData);
-                alert(`Admin ${adminName} added successfully!`);
-            }
-
-            await fetchAdmins();
-            resetForm();
-
-        } catch (error) {
-            console.error(`Error ${editingId ? "updating" : "adding"} admin:`, error);
-            alert(`Failed to ${editingId ? "update" : "add"} admin. Check console.`);
-        } finally {
-            setIsSubmitting(false);
-        }
+    const adminData = {
+        adminID,
+        adminName,
+        schoolId,
+        adminType,
+        role,
     };
+
+    const loginData = {
+        adminID: adminData.adminID,
+        adminName: adminData.adminName,
+        schoolId: adminData.schoolId,
+        adminType: adminData.adminType,
+        role: adminData.role,
+    };
+
+    try {
+        if (editingId) {
+            // --- 1. UPDATE LOGIC (Use existing editingId for main DB) ---
+            
+            // 1. Update in main "Admins" collection (using Firestore Document ID: editingId)
+            const adminRef = doc(db, "Admins", editingId);
+            await updateDoc(adminRef, adminData);
+
+            
+            // If the secondary DB MUST use the random Firestore ID, use editingId:
+            const loginRef = doc(pupilLoginFetch, "Admins", editingId); // Use the random Firestore ID
+            await setDoc(loginRef, loginData, { merge: true });
+            
+            alert(`Admin ${adminName} updated successfully!`);
+
+        } else {
+            // --- 2. NEW ADMIN LOGIC (Generate ID once and use in both) ---
+            
+            // 1. Check for existing ID (This check uses the 'adminID' field, which is good)
+            const q = query(collection(db, "Admins"), where("adminID", "==", adminID));
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                alert("Admin ID already exists!");
+                setIsSubmitting(false);
+                return;
+            }
+            
+            // **🔥 FIX: Generate a unique ID (the Document ID) upfront**
+            const newAdminRef = doc(collection(db, "Admins")); // Generates a new unique DocumentReference
+            const newDocId = newAdminRef.id; // This is the ID you want to use in both databases
+
+            // 1. ADD to main "Admins" collection using the generated Document ID
+            await setDoc(newAdminRef, adminData); // Use setDoc to manually set the document and its ID
+
+            // 2. Set (Create) in secondary "Admins" collection using the SAME new Document ID
+            const loginRef = doc(pupilLoginFetch, "Admins", newDocId); // Use newDocId as the Document ID
+            await setDoc(loginRef, loginData); 
+
+            alert(`Admin ${adminName} added successfully! (Doc ID: ${newDocId})`);
+        }
+
+        await fetchAdmins();
+        resetForm();
+
+    } catch (error) {
+        console.error(`Error ${editingId ? "updating" : "adding"} admin:`, error);
+        alert(`Failed to ${editingId ? "update" : "add"} admin. Check console.`);
+    } finally {
+        setIsSubmitting(false);
+    }
+};
+
+// ... (rest of the component code, including handleAccessSubmit which is separate)
 
     // 3. Function to load data into the form for editing
     const handleEdit = (admin) => {
@@ -148,16 +183,22 @@ const AdminForm = () => {
            setRole(admin.role || ""); // Load existing role string
     };
 
-    // 4. Function to delete an admin record
-    const handleDelete = async (id, name) => {
+    // 4. Function to delete an admin record - UPDATED
+    const handleDelete = async (id, name, adminID) => {
         const password = window.prompt(`Enter the password to delete admin: ${name}`);
 
         if (password === ADMIN_PASSWORD) {
             if (window.confirm(`Are you sure you want to delete admin: ${name}? This cannot be undone.`)) {
                 try {
+                    // 1. Delete from main "Admins" collection (using Firestore ID)
                     const adminRef = doc(db, "Admins", id);
                     await deleteDoc(adminRef);
-                    alert(`Admin ${name} deleted successfully!`);
+
+                    // 2. Delete from secondary "AdminLogins" collection (using adminID)
+                    const loginRef = doc(pupilLoginFetch, "Admins", adminID);
+                    await deleteDoc(loginRef);
+
+                    alert(`Admin ${name} deleted successfully from both collections!`);
 
                     setAdmins(admins.filter(admin => admin.id !== id));
 
@@ -175,7 +216,7 @@ const AdminForm = () => {
     };
 
     // =================================================================
-    //           SCHOOL ACCESS MANAGEMENT LOGIC (UPDATED)
+    //           SCHOOL ACCESS MANAGEMENT LOGIC (UNMODIFIED)
     // =================================================================
 
     // 5. Fetch existing school access settings (The `accessType` will be an array when fetched)
@@ -310,7 +351,7 @@ const AdminForm = () => {
         <div className="max-w-4xl mx-auto p-6 space-y-12">
 
             {/* ----------------------------------------------------------- */}
-            {/* ADMIN FORM SECTION (UNMODIFIED)         */}
+            {/* ADMIN FORM SECTION */}
             {/* ----------------------------------------------------------- */}
             <div className="max-w-xl mx-auto p-6 bg-gray-50 shadow-2xl rounded-xl">
                 <h2 className="text-3xl font-extrabold mb-6 text-center text-indigo-700">
@@ -411,7 +452,7 @@ const AdminForm = () => {
 
             <hr className="my-8 border-gray-300 max-w-xl mx-auto" />
 
-            {/* Admins Table (UNMODIFIED) */}
+            {/* Admins Table (UPDATED to pass adminID to delete) */}
             <div className="max-w-4xl mx-auto">
                 <h3 className="text-2xl font-bold mb-4 text-center">Registered Admins ({admins.length})</h3>
 
@@ -450,7 +491,8 @@ const AdminForm = () => {
                                             </button>
 
                                             <button
-                                                onClick={() => handleDelete(admin.id, admin.adminName)}
+                                                // Pass the unique adminID for the secondary database deletion
+                                                onClick={() => handleDelete(admin.id, admin.adminName, admin.adminID)}
                                                 className="text-red-600 hover:text-red-800"
                                             >
                                                 Delete
@@ -470,7 +512,7 @@ const AdminForm = () => {
 
 
             {/* ----------------------------------------------------------- */}
-            {/* SCHOOL ACCESS FORM SECTION (MODIFIED)          */}
+            {/* SCHOOL ACCESS FORM SECTION (UNMODIFIED)          */}
             {/* ----------------------------------------------------------- */}
             <div className="max-w-xl mx-auto p-6 bg-green-50 shadow-2xl rounded-xl border-t-4 border-green-600">
                 <h2 className="text-3xl font-extrabold mb-6 text-center text-green-700">
@@ -542,7 +584,7 @@ const AdminForm = () => {
 
             <hr className="my-8 border-gray-300 max-w-xl mx-auto" />
 
-            {/* School Access Table (MODIFIED) */}
+            {/* School Access Table (UNMODIFIED) */}
             <div className="max-w-4xl mx-auto">
                 <h3 className="text-2xl font-bold mb-4 text-center">Configured School Accesses ({accesses.length})</h3>
 

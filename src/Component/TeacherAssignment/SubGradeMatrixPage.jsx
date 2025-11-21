@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { db } from "../../../firebase";
+// import { db } from "../../../firebase";
 import { schooldb } from "../Database/SchoolsResults";
+import { pupilLoginFetch } from "../Database/PupilLogin";
 import {
     collection,
     onSnapshot,
@@ -98,7 +99,7 @@ const SubGradeMatrixPage = () => {
         
         // 1. Fetch Pupils (Still using onSnapshot for real-time list accuracy)
         const pupilsQuery = query(
-            collection(db, "PupilsReg"),
+            collection(pupilLoginFetch, "PupilsReg"),
             where("schoolId", "==", schoolId),
             where("academicYear", "==", academicYear),
             where("class", "==", selectedClass)

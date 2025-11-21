@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../firebase";
+import { pupilLoginFetch } from "../Database/PupilLogin";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Security/AuthContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -116,7 +117,7 @@ const LoginPage = () => {
             if (foundUser) {
                 // Fetch school info (Only required if schoolId is present)
                 if (schoolId) {
-                    const schoolQuery = query(collection(db, "Schools"), where("schoolID", "==", schoolId));
+                    const schoolQuery = query(collection(pupilLoginFetch, "Schools"), where("schoolID", "==", schoolId));
                     const schoolSnap = await getDocs(schoolQuery);
                     
                     if (!schoolSnap.empty) {

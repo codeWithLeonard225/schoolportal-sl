@@ -15,7 +15,7 @@ import {
     query,
     onSnapshot,
     where,
-    setDoc ,
+    setDoc,
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -337,169 +337,169 @@ const Registration = () => {
     };
 
     const handleCameraCapture = async (base64Data) => {
-    setIsUploading(true);
-    setUploadProgress(0);
+        setIsUploading(true);
+        setUploadProgress(0);
 
-    try {
-        const res = await fetch(base64Data);
-        const blob = await res.blob();
+        try {
+            const res = await fetch(base64Data);
+            const blob = await res.blob();
 
-        if (blob.size > MAX_FILE_SIZE) {
-            toast.error("Image is too large. Max size is 5MB.");
-            setIsUploading(false);
-            return;
-        }
-
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.addEventListener("progress", (e) => {
-            if (e.lengthComputable) {
-                setUploadProgress(Math.round((e.loaded * 100) / e.total));
-            }
-        });
-
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState === 4) {
+            if (blob.size > MAX_FILE_SIZE) {
+                toast.error("Image is too large. Max size is 5MB.");
                 setIsUploading(false);
-                setShowCamera(false);
-                if (xhr.status === 200) {
-                    const data = JSON.parse(xhr.responseText);
-                    handleUploadSuccess(data.secure_url, data.public_id);
-                } else {
-                    toast.error("Camera upload failed. Please try again.");
-                }
+                return;
             }
-        };
 
-        const folderName = `SchoolAppPupils/${formData.schoolId || "UnknownSchool"}`;
+            const xhr = new XMLHttpRequest();
 
-        const formDataObj = new FormData();
-        formDataObj.append("file", blob);
-        formDataObj.append("upload_preset", UPLOAD_PRESET);
-        formDataObj.append("folder", folderName);
+            xhr.upload.addEventListener("progress", (e) => {
+                if (e.lengthComputable) {
+                    setUploadProgress(Math.round((e.loaded * 100) / e.total));
+                }
+            });
 
-        xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`);
-        xhr.send(formDataObj);
-
-    } catch (err) {
-        console.error("Camera upload failed:", err);
-        toast.error("Failed to upload image from camera.");
-        setIsUploading(false);
-        setShowCamera(false);
-    }
-};
-
-
-
-
-const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // -------------------------
-    // VALIDATION
-    // -------------------------
-    if (!formData.studentName.trim()) return toast.error("Student name is required.");
-    if (!formData.class.trim()) return toast.error("Class is required.");
-    if (!formData.academicYear.trim()) return toast.error("Academic year is required.");
-    if (!formData.pupilType.trim()) return toast.error("Pupil type is required.");
-
-    setIsSubmitting(true);
-
-    try {
-        // -------------------------
-        // PREPARE STUDENT DATA
-        // -------------------------
-        const studentData = {
-            studentID: formData.studentID,
-            studentName: formData.studentName.toUpperCase().trim(),
-            dob: formData.dob,
-            age: formData.age,
-            gender: formData.gender,
-            addressLine1: formData.addressLine1,
-            addressLine2: formData.addressLine2,
-            parentName: formData.parentName,
-            parentPhone: formData.parentPhone,
-            class: formData.class,
-            academicYear: formData.academicYear,
-            registrationDate: formData.registrationDate,
-            registeredBy: formData.registeredBy,
-            userPhotoUrl: formData.userPhoto,
-            userPublicId: formData.userPublicId,
-            pupilType: formData.pupilType,
-            schoolId: formData.schoolId,
-        };
-
-        // -------------------------
-        // IF UPDATING EXISTING STUDENT
-        // -------------------------
-        if (formData.id) {
-            const mainRef = doc(db, "PupilsReg", formData.id);
-            const loginRef = doc(pupilLoginFetch, "PupilsReg", formData.id);
-
-            await updateDoc(mainRef, studentData);
-            await updateDoc(loginRef, studentData);
-
-            toast.success("Student updated successfully!");
-        }
-
-        // -------------------------
-        // IF CREATING NEW STUDENT
-        // -------------------------
-        else {
-            const newId = generateUniqueId();
-
-            const finalData = {
-                ...studentData,
-                studentID: newId,
-                timestamp: new Date(),
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4) {
+                    setIsUploading(false);
+                    setShowCamera(false);
+                    if (xhr.status === 200) {
+                        const data = JSON.parse(xhr.responseText);
+                        handleUploadSuccess(data.secure_url, data.public_id);
+                    } else {
+                        toast.error("Camera upload failed. Please try again.");
+                    }
+                }
             };
 
-            // 1️⃣ Create in MAIN database
-            const docRef = await addDoc(collection(db, "PupilsReg"), finalData);
+            const folderName = `SchoolAppPupils/${formData.schoolId || "UnknownSchool"}`;
 
-            // 2️⃣ Mirror in LOGIN database (same ID)
-            await setDoc(doc(pupilLoginFetch, "PupilsReg", docRef.id), finalData);
-            
+            const formDataObj = new FormData();
+            formDataObj.append("file", blob);
+            formDataObj.append("upload_preset", UPLOAD_PRESET);
+            formDataObj.append("folder", folderName);
 
-            toast.success("Student registered successfully!");
+            xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`);
+            xhr.send(formDataObj);
+
+        } catch (err) {
+            console.error("Camera upload failed:", err);
+            toast.error("Failed to upload image from camera.");
+            setIsUploading(false);
+            setShowCamera(false);
         }
+    };
+
+
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
         // -------------------------
-        // RESET FORM
+        // VALIDATION
         // -------------------------
-        setFormData({
-            id: null,
-            studentID: generateUniqueId(),
-            studentName: "",
-            dob: "",
-            age: "",
-            gender: "",
-            addressLine1: "",
-            addressLine2: "",
-            parentName: "",
-            parentPhone: "",
-            class: "",
-            academicYear: "",
-            pupilType: accessTypeOptions.length > 0 ? accessTypeOptions[0] : "",
-            registrationDate: new Date().toISOString().slice(0, 10),
-            registeredBy: user?.data?.adminID || user?.data?.teacherID || "",
-            userPhoto: null,
-            userPublicId: null,
-            schoolId: currentSchoolId,
-        });
+        if (!formData.studentName.trim()) return toast.error("Student name is required.");
+        if (!formData.class.trim()) return toast.error("Class is required.");
+        if (!formData.academicYear.trim()) return toast.error("Academic year is required.");
+        if (!formData.pupilType.trim()) return toast.error("Pupil type is required.");
 
-        setHasSetDefaultType(false);
-        setOriginalAcademicInfo(null);
+        setIsSubmitting(true);
 
-    } catch (err) {
-        console.error(err);
-        toast.error(`Failed to ${formData.id ? "update" : "register"} student.`);
-    } finally {
-        setIsSubmitting(false);
-    }
-};
+        try {
+            // -------------------------
+            // PREPARE STUDENT DATA
+            // -------------------------
+            const studentData = {
+                studentID: formData.studentID,
+                studentName: formData.studentName.toUpperCase().trim(),
+                dob: formData.dob,
+                age: formData.age,
+                gender: formData.gender,
+                addressLine1: formData.addressLine1,
+                addressLine2: formData.addressLine2,
+                parentName: formData.parentName,
+                parentPhone: formData.parentPhone,
+                class: formData.class,
+                academicYear: formData.academicYear,
+                registrationDate: formData.registrationDate,
+                registeredBy: formData.registeredBy,
+                userPhotoUrl: formData.userPhoto,
+                userPublicId: formData.userPublicId,
+                pupilType: formData.pupilType,
+                schoolId: formData.schoolId,
+            };
 
-     const handleDelete = async (id, studentName) => {
+            // -------------------------
+            // IF UPDATING EXISTING STUDENT
+            // -------------------------
+            if (formData.id) {
+                const mainRef = doc(db, "PupilsReg", formData.id);
+                const loginRef = doc(pupilLoginFetch, "PupilsReg", formData.id);
+
+                await updateDoc(mainRef, studentData);
+                await updateDoc(loginRef, studentData);
+
+                toast.success("Student updated successfully!");
+            }
+
+            // -------------------------
+            // IF CREATING NEW STUDENT
+            // -------------------------
+            else {
+                const newId = generateUniqueId();
+
+                const finalData = {
+                    ...studentData,
+                    studentID: newId,
+                    timestamp: new Date(),
+                };
+
+                // 1️⃣ Create in MAIN database
+                const docRef = await addDoc(collection(db, "PupilsReg"), finalData);
+
+                // 2️⃣ Mirror in LOGIN database (same ID)
+                await setDoc(doc(pupilLoginFetch, "PupilsReg", docRef.id), finalData);
+
+
+                toast.success("Student registered successfully!");
+            }
+
+            // -------------------------
+            // RESET FORM
+            // -------------------------
+            setFormData({
+                id: null,
+                studentID: generateUniqueId(),
+                studentName: "",
+                dob: "",
+                age: "",
+                gender: "",
+                addressLine1: "",
+                addressLine2: "",
+                parentName: "",
+                parentPhone: "",
+                class: "",
+                academicYear: "",
+                pupilType: accessTypeOptions.length > 0 ? accessTypeOptions[0] : "",
+                registrationDate: new Date().toISOString().slice(0, 10),
+                registeredBy: user?.data?.adminID || user?.data?.teacherID || "",
+                userPhoto: null,
+                userPublicId: null,
+                schoolId: currentSchoolId,
+            });
+
+            setHasSetDefaultType(false);
+            setOriginalAcademicInfo(null);
+
+        } catch (err) {
+            console.error(err);
+            toast.error(`Failed to ${formData.id ? "update" : "register"} student.`);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDelete = async (id, studentName) => {
         const password = window.prompt("Enter the password to delete this user:");
         if (password === ADMIN_PASSWORD) {
             if (window.confirm(`Are you sure you want to delete student: ${studentName}?`)) {
@@ -550,7 +550,7 @@ const handleSubmit = async (e) => {
         toast.info(`Editing student: ${user.studentName}`);
     };
 
-   
+
 
     // ⭐ NEW FUNCTION: Handle Navigation for Print Form ⭐
     const handlePrint = (user) => {
