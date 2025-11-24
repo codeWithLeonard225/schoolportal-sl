@@ -115,6 +115,12 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/developer"
+            element={
+                <CeoPanel />
+            }
+          />
         </Routes>
       </Router>
     </AuthProvider>
