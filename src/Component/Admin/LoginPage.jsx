@@ -54,6 +54,7 @@ const LoginPage = () => {
             case "Private": return "/PrivatePupilsDashboard";
             case "GovSpecial": return "/GovPupilSpecial";
             case "PrivateSpecial": return "/PrivatePupilSpecial";
+            case "StaffAttendanceSimple": return "/StaffAttendanceSimple";
             default: return "/contact-admin";
         }
     };

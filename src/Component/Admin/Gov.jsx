@@ -42,6 +42,8 @@ import PupilIDCard from "../Voters/PupilIDCard";
 import IDCardPage from "../Voters/IDCardPage";
 import LogoutPage from "../Admin/LogoutPage"
 import AttendancePage from "../Voters/AttendancePage";
+import AttendancePageClass from "../TeacherAssignment/AttendancePageClass";
+import StaffAttendanceSimple from "../TeacherAssignment/StaffAttendance";
 
 
 
@@ -99,12 +101,17 @@ const NAV_ITEMS = [
 
     ],
   },
-     {
-      key: "pupilAttendance",
-      label: "Pupil Attendance",
-      icon: <MdWarning />, // 📖
-    },
-    
+  {
+    key: "pupilAttendance",
+    label: "Pupil Attendance",
+    icon: <MdWarning />, // 📖
+  },
+  {
+    key: "staffAttendance",
+    label: "Staff Attendance",
+    icon: <MdWarning />, // 📖
+  },
+
   {
     key: "LogoutPage",
     label: "Logout",
@@ -201,7 +208,8 @@ function Gov() {
       case "PupilIDCard": return <PupilIDCard />;
       case "IDCardPage": return <IDCardPage />;
       case "LogoutPage": return <LogoutPage />;
-           case "pupilAttendance": return <AttendancePage />;
+      case "staffAttendance": return <StaffAttendanceSimple />;
+      case "pupilAttendance": return <AttendancePage />;
 
 
 

@@ -47,6 +47,7 @@ import PupilIDCard from "../Voters/PupilIDCard";
 import IDCardPage from "../Voters/IDCardPage";
 import LogoutPage from "../Admin/LogoutPage"
 import AttendancePage from "../Voters/AttendancePage"
+import StaffAttendance from "../TeacherAssignment/StaffAttendance";
 
 
 // --- Navigation Items ---
@@ -128,6 +129,11 @@ const NAV_ITEMS = [
     {
     key: "pupilAttendance",
     label: "Pupil Attendance",
+    icon: <MdWarning />, // 📖
+  },
+    {
+    key: "staffAttendance",
+    label: "Staff Attendance",
     icon: <MdWarning />, // 📖
   },
   {
@@ -230,6 +236,7 @@ function AdminPanel() {
       case "PupilIDCard": return <PupilIDCard />;
       case "IDCardPage": return <IDCardPage />;
       case "schoolreg": return <SchoolRegistration />;
+        case "staffAttendance": return <StaffAttendance />;
         case "pupilAttendance": return <AttendancePage />;
       case "LogoutPage": return <LogoutPage />;
 

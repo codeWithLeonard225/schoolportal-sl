@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "react-toastify";
-import { db } from "../../../firebase";
-import { schoollpq } from "../Database/schoollibAndPastquestion";
+import { pupilLoginFetch } from "../Database/PupilLogin";
 import {
     collection,
     addDoc,
@@ -89,7 +88,7 @@ const AttendancePage = () => {
 
         // B) Fetch fresh data from Firestore
         const pupilsQuery = query(
-            collection(db, "PupilsReg"),
+            collection(pupilLoginFetch, "PupilsReg"),
             where("schoolId", "==", currentSchoolId)
         );
 
@@ -148,7 +147,7 @@ const AttendancePage = () => {
         }
 
         const attendanceQuery = query(
-            collection(schoollpq, "PupilAttendance"),
+            collection(pupilLoginFetch, "PupilAttendance"),
             where("schoolId", "==", currentSchoolId),
             where("academicYear", "==", academicYear),
             where("className", "==", selectedClass),
@@ -264,11 +263,11 @@ const AttendancePage = () => {
 
                 if (existingRecord) {
                     // UPDATE existing record
-                    const docRef = doc(schoollpq, "PupilAttendance", existingRecord.docId);
+                    const docRef = doc(pupilLoginFetch, "PupilAttendance", existingRecord.docId);
                     batchUpdates.push(updateDoc(docRef, { status, timestamp: currentTimestamp })); // Update status and timestamp
                 } else {
                     // ADD new record
-                    batchUpdates.push(addDoc(collection(schoollpq, "PupilAttendance"), newRecord));
+                    batchUpdates.push(addDoc(collection(pupilLoginFetch, "PupilAttendance"), newRecord));
                 }
             }
 

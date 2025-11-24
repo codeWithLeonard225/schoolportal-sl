@@ -15,6 +15,8 @@ import PupilUpdate from "./Component/TeacherAssignment/PupilUpdate";
 import PrintableStudentForm from "./Component/Voters/PrintableStudentForm";
 import TeachersDashboard from "./Component/TeacherAssignment/TeachersDashboard";
 import AttendancePage from "./Component/Voters/AttendancePage";
+import ClassMasterDashboard from "./Component/TeacherAssignment/ClassMasterDashboard";
+import StaffAttendanceSimple from "./Component/TeacherAssignment/StaffAttendance";
 
 
 
@@ -74,10 +76,18 @@ function App() {
             }
           />
           <Route
+            path="/StaffAttendanceSimple"
+            element={
+              <ProtectedRoute role="admin">
+                <StaffAttendanceSimple/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/class"
             element={
               <ProtectedRoute role="teacher">
-                <PupilUpdate/>
+                <ClassMasterDashboard/>
               </ProtectedRoute>
             }
           />
@@ -104,10 +114,6 @@ function App() {
                 <PrintableStudentForm />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/developer"
-            element={<CeoPanel />}
           />
         </Routes>
       </Router>
