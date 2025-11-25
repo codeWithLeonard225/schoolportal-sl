@@ -36,6 +36,7 @@ import RegDashboard from "../Dashboard/RegDashboard"
 import NationalResultPage from "./NationalResultPage";
 import BECEStatementOfResult from "./BECEStatementOfResult";
 import SubjectData from "./SubjectData";
+import AdminDsahboard from "./AdminDashboard";
 
 
 // --- Navigation Items ---
@@ -153,7 +154,7 @@ function CeoPanel() {
 
    const renderContent = () => {
     switch (activeTab) {
-      case "dashboard": return <RegDashboard />;
+      case "dashboard": return <AdminDsahboard />;
       case "Form": return <Registration />;
       case "class": return <ClassRegistration />;
       case "fees": return <FeeReceipt />;
