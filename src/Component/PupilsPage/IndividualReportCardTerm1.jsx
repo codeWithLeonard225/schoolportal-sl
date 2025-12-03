@@ -347,9 +347,9 @@ const IndividualReportCardTerm1 = () => {
                     <p className="text-gray-600">
                         <span className="font-medium">Class:</span>{" "}
                         {selectedClass || "N/A"}{" "}
-                        <span className="ml-2 text-sm text-gray-500">
+                        {/* <span className="ml-2 text-sm text-gray-500">
                             ({totalPupilsInClass} pupils)
-                        </span>
+                        </span> */}
                     </p>
 
                     <p className="text-gray-600">
@@ -400,17 +400,17 @@ const IndividualReportCardTerm1 = () => {
                                 <td className="px-4 py-2 text-base">{totalMarks}</td>
                                 <td>—</td>
                             </tr>
-                            <tr className="bg-indigo-100/70 font-bold text-indigo-800">
+                            {/* <tr className="bg-indigo-100/70 font-bold text-indigo-800">
                                 <td className="text-left px-4 py-2 text-base">Percentage</td>
                                 <td colSpan="2"></td>
                                 <td className="px-4 py-2 text-base">{overallPercentage}%</td>
                                 <td>—</td>
-                            </tr>
-                            <tr className="bg-indigo-200 font-bold text-indigo-900 border-b-2 border-indigo-600">
+                            </tr> */}
+                            {/* <tr className="bg-indigo-200 font-bold text-indigo-900 border-b-2 border-indigo-600">
                                 <td className="text-left px-4 py-2 text-base">Position</td>
                                 <td colSpan="3"></td>
                                 <td className="text-lg">{overallRank} / {totalPupilsInClass}</td>
-                            </tr>
+                            </tr> */}
                         </tbody>
                     </table>
                 </div>

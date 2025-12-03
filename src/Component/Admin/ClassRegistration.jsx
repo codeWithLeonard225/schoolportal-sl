@@ -85,7 +85,10 @@ const ClassRegistration = () => {
     // 🧩 Handle submit (add or update)
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!classData.className) return toast.error("Please enter class name");
+        // You can trim here once for both cases if you prefer:
+        const trimmedClassName = classData.className.trim();
+
+        if (!trimmedClassName) return toast.error("Please enter class name");
         if (!classData.numberOfSubjects) return toast.error("Please enter number of subjects");
 
         setIsSubmitting(true);
@@ -95,7 +98,7 @@ const ClassRegistration = () => {
                 const classRef = doc(db, "Classes", classData.id);
                 const currentClassDoc = await getDoc(classRef);
                 const oldClassName = currentClassDoc.data().className;
-                const newClassName = classData.className;
+                const newClassName = trimmedClassName; // Use the already trimmed value
 
                 await updateDoc(classRef, {
                     classId: classData.classId,
@@ -129,7 +132,7 @@ const ClassRegistration = () => {
                 const newId = generateUniqueId();
                 await addDoc(collection(db, "Classes"), {
                     classId: newId,
-                    className: classData.className,
+                    className: trimmedClassName, // Use the already trimmed value
                     schoolId: schoolId,
                     numberOfSubjects: classData.numberOfSubjects,
                     subjectPercentage: classData.subjectPercentage,
@@ -154,7 +157,6 @@ const ClassRegistration = () => {
             setIsSubmitting(false);
         }
     };
-
     const handleUpdate = (cls) => {
         setClassData({
             id: cls.id,
