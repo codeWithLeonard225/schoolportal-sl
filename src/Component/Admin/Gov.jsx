@@ -45,6 +45,7 @@ import AttendancePage from "../Voters/AttendancePage";
 import AttendancePageClass from "../TeacherAssignment/AttendancePageClass";
 import StaffAttendanceSimple from "../TeacherAssignment/StaffAttendance";
 import TimetableEntry from "../TeacherAssignment/TimetableEntry";
+import WeeklyTimetableReport from "../TeacherAssignment/WeeklyTimetableReport";
 import TimeTableTeacherAtt from "../TeacherAssignment/TimeTableTeacherAtt";
 import TimeTableDailyAttendanceReport from "../TeacherAssignment/TimeTableDailyAttendanceReport";
 import TimeTableTeacherReport from "../TeacherAssignment/TimeTableTeacherReport";
@@ -98,8 +99,8 @@ const NAV_ITEMS = [
     label: "Pupils ID Cards",
     icon: <MdBarChart />,
     children: [
-      { key: "PupilIDCard", label: "PupilIDCard", icon: <MdPerson /> },
       { key: "IDCardPage", label: "IDCardPage", icon: <MdPerson /> },
+   
 
       // { key: "Testing", label: "Testing", icon: <MdPerson /> },
 
@@ -116,18 +117,19 @@ const NAV_ITEMS = [
     icon: <MdWarning />, // 📖
   },
 
-       {
-      key: "timetable",
-      label: "TimeTable",
-      icon: <MdBarChart />,
-      children: [
-        { key: "TimetableEntry", label: "TimetableEntry", icon: <MdPerson /> },
-        { key: "TimeTableTeacherAtt", label: "TimeTableTeacherAtt", icon: <MdPerson /> },
-        { key: "TimeTableDailyAttendanceReport", label: "DailyAttendanceReport", icon: <MdPerson /> },
-        { key: "TimeTableTeacherReport", label: "TimeTableTeacherReport", icon: <MdPerson /> },
-  
-      ],
-    },
+  {
+    key: "timetable",
+    label: "TimeTable",
+    icon: <MdBarChart />,
+    children: [
+      { key: "TimetableEntry", label: "TimetableEntry", icon: <MdPerson /> },
+      { key: "WeeklyTimetableReport", label: "WeeklyTimetableReport", icon: <MdPerson /> },
+      { key: "TimeTableTeacherAtt", label: "TimeTableTeacherAtt", icon: <MdPerson /> },
+      { key: "TimeTableDailyAttendanceReport", label: "DailyAttendanceReport", icon: <MdPerson /> },
+      { key: "TimeTableTeacherReport", label: "MonthlyAttendanceReport", icon: <MdPerson /> },
+
+    ],
+  },
 
   {
     key: "LogoutPage",
@@ -222,15 +224,17 @@ function Gov() {
       case "TeacherAssignmentReport": return <TeacherAssignmentReport />;
       case "TeacherPupilsPageAdmin": return <TeacherPupilsPageAdmin />;
       case "PastQuestions": return <PastQuestions />;
-      case "PupilIDCard": return <PupilIDCard />;
       case "IDCardPage": return <IDCardPage />;
+     
       case "LogoutPage": return <LogoutPage />;
       case "staffAttendance": return <StaffAttendanceSimple />;
-      case "pupilAttendance": return <AttendancePage />;
       case "TimetableEntry": return <TimetableEntry />;
+      case "WeeklyTimetableReport": return <WeeklyTimetableReport />;
       case "TimeTableTeacherAtt": return <TimeTableTeacherAtt />;
       case "TimeTableDailyAttendanceReport": return <TimeTableDailyAttendanceReport />;
       case "TimeTableTeacherReport": return <TimeTableTeacherReport />;
+      case "pupilAttendance": return <AttendancePage />;
+
 
 
 

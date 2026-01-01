@@ -5,6 +5,9 @@ import TeacherGradesPage from "./TeacherPupilsPage";
 import TeacherQuestionsPageObjectives from "./TeacherQuestionsPageObjectives";
 import TeacherQuestionsPageTheory from "./TeacherQuestionsPageTheory";
 import TeacherAssignmentPage from "./TeacherAssignmentTheory";
+import TeacherTimetableReport from "./TeacherTimetableReport";
+import TeacherTimetableAtt from "./TeacherTimetableAtt";
+import StaffAttendanceReport from "./StaffAttendanceReport";
 import LogoutPage from "../Admin/LogoutPage"
 
 
@@ -28,6 +31,16 @@ const NAV_ITEMS = [
       // { key: "Quiz", label: "Test Yourself (Quiz)" },
       // { key: "syllabus", label: "Study syllabus" },
     ],
+  },
+  {
+    key: "Timetable",
+    label: "Timetable",
+    icon: <MdMenuBook />, // 📖
+  },
+  {
+    key: "TimetableAttendance",
+    label: "Timetable Attendance",
+    icon: <MdMenuBook />, // 📖
   },
   {
     key: "LogoutPage",
@@ -117,7 +130,7 @@ function TeachersDashboard() {
    const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard />;
+        return <StaffAttendanceReport />;
       case "grades":
         return <TeacherGradesPage />;
       case "objectives":
@@ -126,6 +139,10 @@ function TeachersDashboard() {
         return <TeacherQuestionsPageTheory />;
       case "assignment":
         return <TeacherAssignmentPage />;
+      case "Timetable":
+        return <TeacherTimetableReport />;
+      case "TimetableAttendance":
+        return <TeacherTimetableAtt />;
     
       case "LogoutPage":
         return <LogoutPage />;
@@ -142,7 +159,7 @@ function TeachersDashboard() {
         className={`fixed inset-y-0 left-0 z-40 w-64 bg-white p-4 border-r border-gray-200 shadow-lg transform transition-transform duration-300
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:static md:block`}
       >
-        <h2 className="text-3xl font-bold text-indigo-700 mb-6">Pupil Panel</h2>
+        <h2 className="text-3xl font-bold text-indigo-700 mb-6">Teacher Panel</h2>
         <div className="space-y-2 flex-grow">
           <Button
             variant={activeTab === "dashboard" ? "default" : "ghost"}

@@ -9,6 +9,7 @@ import {
   MdKeyboardArrowDown,
   MdPerson,
   MdAttachMoney,
+  MdMenuBook,
   MdAssignmentTurnedIn,
   MdBarChart,
   MdFormatListBulleted,
@@ -28,9 +29,30 @@ import TeacherAssignmentPage from "../TeacherAssignment/TeacherAssignmentPage";
 import TeacherRegistration from "../Voters/TeacherRegistration";
 import TeacherPupilsPage from "../TeacherAssignment/TeacherPupilsPage";
 import GradeSheetPage from "../TeacherAssignment/GradeSheetPage";
+import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPage";
+import ClassFullTermMatrixPage from "../TeacherAssignment/ClassFullTermMatrixPage";
 import GeneralReportCard from "../PupilsPage/GeneralReportCard";
+import SchoolRegistration from "../CeoPanel/SchoolRegistration"
+import AdminForm from "../CeoPanel/AdminForm"
+import RegDashboard from "../Dashboard/RegDashboard"
 import StudentFilterPage from "../Voters/StudentFilterPage";
+import StudentIDCards from "../Voters/StudentIDCards";
+import NationalResultPage from "../CeoPanel/NationalResultPage";
+import BECEStatementOfResult from "../CeoPanel/BECEStatementOfResult";
+import TeacherAssignmentReport from "../TeacherAssignment/TeacherAssignmentReport";
+import TeacherPupilsPageAdmin from "../TeacherAssignment/TeacherPupilsPageAdmin";
+import ExamUploader from "../Admin/PastQuestionUpload";
+import SchoolLibraryUpload from "../Admin/SchoolLibraryUpload";
+import PupilIDCard from "../Voters/PupilIDCard";
+import IDCardPage from "../Voters/IDCardPage";
 import LogoutPage from "../Admin/LogoutPage"
+import AttendancePage from "../Voters/AttendancePage"
+import StaffAttendance from "../TeacherAssignment/StaffAttendance";
+import StaffClocking from "../TeacherAssignment/StaffClocking";
+import TimetableEntry from "../TeacherAssignment/TimetableEntry";
+import TimeTableTeacherAtt from "../TeacherAssignment/TimeTableTeacherAtt";
+import TimeTableDailyAttendanceReport from "../TeacherAssignment/TimeTableDailyAttendanceReport";
+import TimeTableTeacherReport from "../TeacherAssignment/TimeTableTeacherReport";
 
 
 // --- Navigation Items ---
@@ -43,9 +65,9 @@ const NAV_ITEMS = [
       { key: "Form", label: " Pupils", icon: <MdPerson /> },
       { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
+
     ],
   },
-
   {
     key: "fees",
     label: "Fees",
@@ -53,19 +75,97 @@ const NAV_ITEMS = [
     children: [
       { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
       { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
+
     ],
   },
+  {
+    key: "Staff",
+    label: "staff",
+    icon: <MdBarChart />,
+    children: [
+      { key: "TeacherRegistration", label: "Teacher Regis", icon: <MdPerson /> },
+      { key: "subjects", label: "Subjects", icon: <MdPerson /> },
+      { key: "TeacherAssignment", label: "Teacher Assignment", icon: <MdPerson /> },
+      { key: "TeacherAssignmentReport", label: "Teacher Assignment Report ", icon: <MdPerson /> },
+      { key: "PastQuestions", label: "Upload Past Questions ", icon: <MdPerson /> },
+      { key: "SchoolLibraryUpload", label: "SchoolLibrary Upload ", icon: <MdPerson /> },
+
+
+
+    ],
+  },
+  {
+    key: "results",
+    label: "Pupils Results",
+    icon: <MdBarChart />,
+    children: [
+      { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
+      { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
+      { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
+      { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
+      { key: "GeneralReportCard", label: "ReportCard", icon: <MdPerson /> },
+      // { key: "Testing", label: "Testing", icon: <MdPerson /> },
+
+    ],
+  },
+  {
+    key: "NationalResults",
+    label: "National Results",
+    icon: <MdBarChart />,
+    children: [
+      { key: "beceResult", label: "Bece Result Entering", icon: <MdPerson /> },
+      { key: "beceReport", label: "Bece Result Report", icon: <MdPerson /> },
+
+
+    ],
+  },
+  {
+    key: "idcards",
+    label: "Pupils ID Cards",
+    icon: <MdBarChart />,
+    children: [
+      { key: "PupilIDCard", label: "PupilIDCard", icon: <MdPerson /> },
+      { key: "IDCardPage", label: "IDCardPage", icon: <MdPerson /> },
+
+      // { key: "Testing", label: "Testing", icon: <MdPerson /> },
+
+    ],
+  },
+    {
+    key: "pupilAttendance",
+    label: "Pupil Attendance",
+    icon: <MdWarning />, // 📖
+  },
+    {
+    key: "staffAttendance",
+    label: "Staff Attendance",
+    icon: <MdWarning />, // 📖
+  },
+    {
+      key: "timetable",
+      label: "TimeTable",
+      icon: <MdBarChart />,
+      children: [
+        { key: "TimetableEntry", label: "TimetableEntry", icon: <MdPerson /> },
+        { key: "TimeTableTeacherAtt", label: "TimeTableTeacherAtt", icon: <MdPerson /> },
+        { key: "TimeTableDailyAttendanceReport", label: "DailyAttendanceReport", icon: <MdPerson /> },
+        { key: "TimeTableTeacherReport", label: "MonthlyAttendanceReport", icon: <MdPerson /> },
+  
+      ],
+    },
+ 
   {
     key: "LogoutPage",
     label: "Logout",
     icon: <MdWarning />, // 📖
   },
+
 ];
 
 // --- Button component ---
 const Button = ({ variant = "default", onClick, className = "", children }) => {
   let baseStyles =
-    "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-950 disabled:pointer-events-none disabled:opacity-50";
+    "inline-flex items-center justify-start whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-950 disabled:pointer-events-none disabled:opacity-50";
   let variantStyles =
     variant === "default"
       ? "bg-indigo-600 text-white shadow hover:bg-indigo-700"
@@ -129,19 +229,39 @@ function FeesPanel() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case "dashboard": return <FeesDashboard />;
+      case "dashboard": return <RegDashboard />;
       case "Form": return <Registration />;
       case "class": return <ClassRegistration />;
       case "classList": return <StudentFilterPage />;
+      case "StudentIDCards": return <StudentIDCards />;
       case "fees": return <FeeReceipt />;
       case "feesCost": return <FeesCostPage />;
       case "TeacherRegistration": return <TeacherRegistration />;
       case "subjects": return <SubjectPage />;
       case "TeacherAssignment": return <TeacherAssignmentPage />;
       case "TeacherPupilsPage": return <TeacherPupilsPage />;
+      case "SubGradeMatrixPage": return <SubGradeMatrixPage />;
+      case "ClassFullTermMatrixPage": return <ClassFullTermMatrixPage />;
       case "GradeSheetPage": return <GradeSheetPage />;
       case "GeneralReportCard": return <GeneralReportCard />;
-       case "LogoutPage": return <LogoutPage />;
+      case "AdminForm": return <AdminForm />;
+      case "beceResult": return <NationalResultPage />;
+      case "beceReport": return <BECEStatementOfResult />;
+      case "TeacherAssignmentReport": return <TeacherAssignmentReport />;
+      case "TeacherPupilsPageAdmin": return <TeacherPupilsPageAdmin />;
+      case "PastQuestions": return <ExamUploader />;
+      case "SchoolLibraryUpload": return <SchoolLibraryUpload />;
+      case "PupilIDCard": return <PupilIDCard />;
+      case "IDCardPage": return <IDCardPage />;
+      case "schoolreg": return <SchoolRegistration />;
+      case "staffAttendance": return <StaffAttendance />;
+      case "pupilAttendance": return <AttendancePage />;
+      case "staffClockin": return <StaffClocking />;
+      case "TimetableEntry": return <TimetableEntry />;
+      case "TimeTableTeacherAtt": return <TimeTableTeacherAtt />;
+      case "TimeTableDailyAttendanceReport": return <TimeTableDailyAttendanceReport />;
+      case "TimeTableTeacherReport": return <TimeTableTeacherReport />;
+      case "LogoutPage": return <LogoutPage />;
 
       default: return <Placeholder title={activeTab} />;
     }
