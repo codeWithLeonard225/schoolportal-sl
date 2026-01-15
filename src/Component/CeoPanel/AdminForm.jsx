@@ -414,6 +414,12 @@ const handleSubmit = async (e) => {
                             <option value="Fees">Fees Admin</option>
                             <option value="Special">Special/Super Admin</option>
                             <option value="PupilAttendance">Pupil Attendance</option>
+                             <option value="StaffAttendanceSimple">Staff Attendance</option>
+                            <option value="SupervisorOne">Supervisor One</option>
+                            <option value="SupervisorTwo">Supervisor Two</option>
+                            <option value="SupervisorThree">Supervisor Three</option>
+                            <option value="SupervisorFour">Supervisor Four</option>
+                            <option value="SupervisorFive">Supervisor Five</option>
                         </select>
                     </div>
                       {/* ✅ UPDATED: Role is now a text input */}

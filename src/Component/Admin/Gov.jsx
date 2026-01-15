@@ -44,6 +44,7 @@ import LogoutPage from "../Admin/LogoutPage"
 import AttendancePage from "../Voters/AttendancePage";
 import AttendancePageClass from "../TeacherAssignment/AttendancePageClass";
 import StaffAttendanceSimple from "../TeacherAssignment/StaffAttendance";
+import GeneralStaffAttendanceReport from "../TeacherAssignment/GeneralStaffAttendanceReport";
 import TimetableEntry from "../TeacherAssignment/TimetableEntry";
 import WeeklyTimetableReport from "../TeacherAssignment/WeeklyTimetableReport";
 import TimeTableTeacherAtt from "../TeacherAssignment/TimeTableTeacherAtt";
@@ -111,10 +112,17 @@ const NAV_ITEMS = [
     label: "Pupil Attendance",
     icon: <MdWarning />, // 📖
   },
-  {
+ 
+   {
     key: "staffAttendance",
-    label: "Staff Attendance",
-    icon: <MdWarning />, // 📖
+    label: "Staff  Record",
+    icon: <MdBarChart />,
+    children: [
+      { key: "staffAttendance", label: "Staff Attendance", icon: <MdPerson /> },
+      { key: "GeneralStaffAttendanceReport", label: "Staff Attendance Report", icon: <MdPerson /> },
+  
+
+    ],
   },
 
   {
@@ -228,6 +236,7 @@ function Gov() {
      
       case "LogoutPage": return <LogoutPage />;
       case "staffAttendance": return <StaffAttendanceSimple />;
+      case "GeneralStaffAttendanceReport": return <GeneralStaffAttendanceReport />;
       case "TimetableEntry": return <TimetableEntry />;
       case "WeeklyTimetableReport": return <WeeklyTimetableReport />;
       case "TimeTableTeacherAtt": return <TimeTableTeacherAtt />;

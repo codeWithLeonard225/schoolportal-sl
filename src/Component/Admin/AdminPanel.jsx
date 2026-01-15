@@ -20,6 +20,9 @@ import {
   MdRemoveCircle,
 } from "react-icons/md";
 import Registration from "../Voters/Registration";
+import BulkRegistration from "../Voters/BulkRegistration";
+import BulkTeacherRegistration from "../Voters/BulkTeacherRegistration";
+import PupilsWithoutSchool from "../Voters/PupilsWithoutSchool";
 import ClassRegistration from "./ClassRegistration";
 import FeeReceipt from "../FeeReceipt.jsx/FeeReceipt";
 import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
@@ -48,6 +51,7 @@ import IDCardPage from "../Voters/IDCardPage";
 import LogoutPage from "../Admin/LogoutPage"
 import AttendancePage from "../Voters/AttendancePage"
 import StaffAttendance from "../TeacherAssignment/StaffAttendance";
+import GeneralStaffAttendanceReport from "../TeacherAssignment/GeneralStaffAttendanceReport";
 import StaffClocking from "../TeacherAssignment/StaffClocking";
 import TimetableEntry from "../TeacherAssignment/TimetableEntry";
 import WeeklyTimetableReport from "../TeacherAssignment/WeeklyTimetableReport";
@@ -64,6 +68,9 @@ const NAV_ITEMS = [
     icon: <MdEdit />,
     children: [
       { key: "Form", label: " Pupils", icon: <MdPerson /> },
+      { key: "BulkRegistration", label: " BulkRegistration", icon: <MdPerson /> },
+      { key: "BulkTeacherRegistration", label: " BulkTeacherRegistration", icon: <MdPerson /> },
+      { key: "PupilsWithoutSchool", label: " PupilsWithoutSchool", icon: <MdPerson /> },
       { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
 
@@ -136,10 +143,17 @@ const NAV_ITEMS = [
     label: "Pupil Attendance",
     icon: <MdWarning />, // 📖
   },
-    {
+ 
+   {
     key: "staffAttendance",
-    label: "Staff Attendance",
-    icon: <MdWarning />, // 📖
+    label: "Staff  Record",
+    icon: <MdBarChart />,
+    children: [
+      { key: "staffAttendance", label: "Staff Attendance", icon: <MdPerson /> },
+      { key: "GeneralStaffAttendanceReport", label: "Staff Attendance Report", icon: <MdPerson /> },
+  
+
+    ],
   },
 
   {
@@ -233,6 +247,9 @@ function AdminPanel() {
     switch (activeTab) {
       case "dashboard": return <RegDashboard />;
       case "Form": return <Registration />;
+      case "BulkRegistration": return <BulkRegistration />;
+      case "BulkTeacherRegistration": return <BulkTeacherRegistration />;
+      case "PupilsWithoutSchool": return <PupilsWithoutSchool />;
       case "class": return <ClassRegistration />;
       case "classList": return <StudentFilterPage />;
       case "StudentIDCards": return <StudentIDCards />;
@@ -257,6 +274,7 @@ function AdminPanel() {
       case "IDCardPage": return <IDCardPage />;
       case "schoolreg": return <SchoolRegistration />;
         case "staffAttendance": return <StaffAttendance />;
+        case "GeneralStaffAttendanceReport": return <GeneralStaffAttendanceReport />;
         case "pupilAttendance": return <AttendancePage />;
         case "staffClockin": return <StaffClocking />;
       case "TimetableEntry": return <TimetableEntry />;

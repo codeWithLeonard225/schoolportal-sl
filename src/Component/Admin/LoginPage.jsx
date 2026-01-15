@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../firebase";
-import { pupilLoginFetch } from "../Database/PupilLogin";
+import { 
+    
+ } from "../Database/PupilLogin";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Security/AuthContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -32,7 +34,7 @@ const LoginPage = () => {
         { name: "Teachers", idField: "teacherID", nameField: "teacherName", role: "teacher" },
         { name: "Admins", idField: "adminID", nameField: "adminName", role: "admin" },
         // ⭐ FIX 1: Added role: "ceo" to ensure userRole is not null in the session
-        { name: "CEOs", idField: "ceoID", nameField: "ceoName", role: "ceo", route: "/developer" }, 
+        { name: "CEOs", idField: "ceoID", nameField: "ceoName", role: "ceo", route: "/developer" },
         { name: "Classes", idField: "classId", nameField: "className", role: "class", route: "/PupilUpdate" },
     ];
 
@@ -44,6 +46,12 @@ const LoginPage = () => {
             case "Fees": return "/registra";
             case "Special": return "/special";
             case "PupilAttendance": return "/PupilAttendance";
+            case "StaffAttendanceSimple": return "/StaffAttDashboard"
+            case "SupervisorOne": return "/SupervisorOneDashboard";
+            case "SupervisorTwo": return "/SupervisorTwoDashboard";
+            case "SupervisorThree": return "/SupervisorThreeDashboard";
+            case "SupervisorFour": return "/StaffAttDashboard";
+            case "SupervisorFive": return "/StaffAttDashboard";
             default: return "/admin";
         }
     };
@@ -54,7 +62,6 @@ const LoginPage = () => {
             case "Private": return "/PrivatePupilsDashboard";
             case "GovSpecial": return "/GovPupilSpecial";
             case "PrivateSpecial": return "/PrivatePupilSpecial";
-            case "StaffAttendanceSimple": return "/StaffAttendanceSimple";
             default: return "/contact-admin";
         }
     };
@@ -108,7 +115,7 @@ const LoginPage = () => {
                         } else if (name === "Teachers") {
                             navigationRoute = "/subjectTeacher";
                         }
-                        
+
                         break; // Stop searching once user is found
                     }
                 }
@@ -120,7 +127,7 @@ const LoginPage = () => {
                 if (schoolId) {
                     const schoolQuery = query(collection(pupilLoginFetch, "Schools"), where("schoolID", "==", schoolId));
                     const schoolSnap = await getDocs(schoolQuery);
-                    
+
                     if (!schoolSnap.empty) {
                         const schoolData = schoolSnap.docs[0].data();
                         schoolInfo = {
@@ -137,10 +144,10 @@ const LoginPage = () => {
                 // ✅ Combine user + school info
                 const userSession = {
                     // role will now be "ceo" for CEO login
-                    role: userRole, 
+                    role: userRole,
                     data: foundUser,
                     schoolId,
-                    navigationRoute, 
+                    navigationRoute,
                     ...schoolInfo,
                 };
 
@@ -204,9 +211,8 @@ const LoginPage = () => {
 
                     <button
                         type="submit"
-                        className={`w-full p-2 rounded-lg font-semibold transition ${
-                            loading ? "bg-gray-400 cursor-not-allowed" : "bg-indigo-700 text-white hover:bg-indigo-800"
-                        }`}
+                        className={`w-full p-2 rounded-lg font-semibold transition ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-indigo-700 text-white hover:bg-indigo-800"
+                            }`}
                         disabled={loading}
                     >
                         {loading ? "Logging In..." : "Login"}

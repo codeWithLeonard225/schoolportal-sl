@@ -16,7 +16,10 @@ import PrintableStudentForm from "./Component/Voters/PrintableStudentForm";
 import TeachersDashboard from "./Component/TeacherAssignment/TeachersDashboard";
 import AttendancePage from "./Component/Voters/AttendancePage";
 import ClassMasterDashboard from "./Component/TeacherAssignment/ClassMasterDashboard";
-import StaffAttendanceSimple from "./Component/TeacherAssignment/StaffAttendance";
+import StaffAttDashboard from "./Component/Dashboard/StaffAttDashboard";
+import SupervisorOneDashboard from "./Component/Dashboard/SupervisorOneDashboard";
+import SupervisorThreeDashboard from "./Component/Dashboard/SupervisorThreeDashboard";
+import SupervisorTwoDashboard from "./Component/Dashboard/SupervisorTwoDashboard";
 
 
 
@@ -75,11 +78,35 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/StaffAttendanceSimple"
+            <Route
+            path="/StaffAttDashboard"
             element={
               <ProtectedRoute role="admin">
-                <StaffAttendanceSimple/>
+                <StaffAttDashboard/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/SupervisorTwoDashboard"
+            element={
+              <ProtectedRoute role="admin">
+                <SupervisorTwoDashboard/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/SupervisorOneDashboard"
+            element={
+              <ProtectedRoute role="admin">
+                <SupervisorOneDashboard/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/SupervisorThreeDashboard"
+            element={
+              <ProtectedRoute role="admin">
+                <SupervisorThreeDashboard/>
               </ProtectedRoute>
             }
           />
