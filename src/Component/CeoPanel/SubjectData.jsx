@@ -98,7 +98,7 @@ const SubjectData = () => {
     "SSS Science": [
       "Chemistry", "Biology", "Physics", "Further Mathematics", "Geography",
       "General Mathematics", "English Language", "French", "I.C.T",
-      "Economics", "Science Core", "Agricultural Science",
+      "Economics", "Science Core", "Agricultural Science", "Health Science",
       "Engineering Science", "P.H.E"
     ],
     "SSS Language & Literature": [
@@ -109,8 +109,8 @@ const SubjectData = () => {
     "SSS Business (BEE)": [
       "General Mathematics", "English Language", "Agricultural Science",
       "Health Science", "French", "ICT", "Business Accounting",
-      "Principle of Accounting", "Business Management",
-      "Principle of Commerce", "Principle of Economics"
+      "Principle of Accounting", "Business Management","F/Accounting","C/Accounting",
+      "Principle of Commerce", "Principle of Economics","Commerce", "Health Science"
     ],
     "JSS": [
       "Integrated Science", "Mathematics", "Language Arts", "Social Studies",

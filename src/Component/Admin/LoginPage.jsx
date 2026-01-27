@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../firebase";
-import { 
-    
- } from "../Database/PupilLogin";
+import { pupilLoginFetch} from "../Database/PupilLogin";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Security/AuthContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa";

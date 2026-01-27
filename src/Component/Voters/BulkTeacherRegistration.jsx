@@ -14,16 +14,40 @@ const BulkTeacherRegistration = () => {
     const registeredBy = user?.data?.adminID || user?.data?.teacherID || "Admin";
 
     const [searchTerm, setSearchTerm] = useState("");
-    
-    // ✅ Updated with your newest list of 23 teachers
-    const [teachersList, setTeachersList] = useState([
-        { name: "D. Sankoh", gender: "Male" },
-        { name: "El-Kudi", gender: "Female" },
-    ]);
+
+    // Raw names list from your timetable
+    const rawNames = [
+        "Mr. Komba F. Amadu", "Mr. Musa Mansaray", "Mr. Cheche N. Koker", "Mr. Osman Forfanah",
+        "Mr. Mahmoud Kabba", "Mr. Emmanuel Sesay", "Mr. Paul Eddet Dumba", "Mr. Abubakarr Sesay",
+        "Mr. Lahai M. Bangura", "Mr. Aruna Koroma", "Ms. Princess S. Turay", "Mr. Mohamed B. Marrah",
+        "Mr. Mohamed Wudie", "Mr. Alex Benia Jr.", "Mr. Desmond Kamara", "Mr. Ibrahim M. Allie",
+        "Ms. Jennifer Kargbo", "Mr. Christian T. Abdulai", "Mr. Joshua Lebbie", "Mr. Yusuf Tejan",
+        "Mr. Michael Abu Bangura", "Mr. Abubakarr Koroma", "Mr. Aly Jalloh", "Mr. Charles Gbondo",
+        "Mr. Sulaiman Tommy", "Mr. Lawrence Janneh", "Mr. Sorie Ibrahim Kabia", "Mr. Aziz Contch",
+        "Mrs. Alice Bundu Foday", "Mrs. Linda Koroma", "Mrs. Veronica S. Thoronka", "Mrs. Hawa Massaquoi",
+        "Mrs. Lucy Kamara", "Mr. Mohamed Kainessie", "Mrs. Theresa Jimmy", "Mr. Maseray K. Bangura",
+        "Mr. Lebbie", "Mrs. Christiana Kamara", "Ms. Rachel Kange", "Ms. Kadijatu Kargbo",
+        "Mrs. Theresa M. Koroma", "Ms. Finda King", "Ms. Mariama Mattia", "Hawa Sia Sesay"
+    ];
+
+    // Helper to auto-detect gender based on prefix
+    const detectGender = (name) => {
+        const n = name.toLowerCase();
+        if (n.startsWith("mrs.") || n.startsWith("ms.") || n.startsWith("madam") || n.startsWith("miss")) return "Female";
+        return "Male"; // Default to Male for Mr. or unknown
+    };
+
+    // Initialize state with auto-detected genders
+    const [teachersList, setTeachersList] = useState(
+        rawNames.map(name => ({
+            name: name,
+            gender: detectGender(name)
+        }))
+    );
 
     const [commonData, setCommonData] = useState({
         registrationDate: new Date().toISOString().slice(0, 10),
-        address: "School Campus", 
+        address: "School Campus",
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,14 +59,16 @@ const BulkTeacherRegistration = () => {
     };
 
     const handleBulkSubmit = async () => {
-        if (schoolId === "N/A") return toast.error("User Auth Error: School ID not detected.");
+        if (schoolId === "N/A") return toast.error("Error: School ID missing.");
         if (!window.confirm(`Register all ${teachersList.length} staff members?`)) return;
         
         setIsSubmitting(true);
-        const loadToast = toast.loading("Processing Bulk Registration...");
+        const loadToast = toast.loading(`Uploading 1 of ${teachersList.length}...`);
 
         try {
+            let count = 0;
             for (const t of teachersList) {
+                count++;
                 const teacherData = {
                     teacherID: uuidv4().slice(0, 8),
                     teacherName: t.name.toUpperCase().trim(),
@@ -59,9 +85,11 @@ const BulkTeacherRegistration = () => {
                 };
 
                 await addDoc(collection(db, "Teachers"), teacherData);
+                // Update toast progress every 5 records to save performance
+                if (count % 5 === 0) toast.update(loadToast, { render: `Uploading ${count} of ${teachersList.length}...` });
             }
             
-            toast.update(loadToast, { render: `✅ Success! ${teachersList.length} teachers added.`, type: "success", isLoading: false, autoClose: 3000 });
+            toast.update(loadToast, { render: "✅ All Staff Registered Successfully!", type: "success", isLoading: false, autoClose: 3000 });
             navigate(-1);
         } catch (error) {
             console.error(error);
@@ -71,54 +99,49 @@ const BulkTeacherRegistration = () => {
         }
     };
 
-    // Filter list based on search term
-    const filteredList = teachersList.filter(t => 
-        t.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredList = teachersList.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
-        <div className="min-h-screen bg-slate-50 p-4">
-            <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
-                <div className="bg-slate-900 p-8 text-white">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h2 className="text-3xl font-black tracking-tight">Staff Onboarding</h2>
-                            <p className="text-slate-400 text-sm mt-1">Bulk upload for {schoolId}</p>
-                        </div>
-                        <button onClick={() => navigate(-1)} className="text-xs uppercase font-bold tracking-widest opacity-50 hover:opacity-100">Close</button>
+        <div className="min-h-screen bg-slate-100 p-2 md:p-6">
+            <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div className="bg-emerald-800 p-6 text-white shadow-inner">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-2xl font-bold italic">Staff Batch Upload</h2>
+                        <span className="bg-emerald-700 px-3 py-1 rounded-full text-xs font-mono">{teachersList.length} Records</span>
                     </div>
                 </div>
 
-                <div className="p-8">
-                    {/* Controls */}
-                    <div className="space-y-4 mb-6">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Date</label>
-                                <input type="date" value={commonData.registrationDate} onChange={(e) => setCommonData({...commonData, registrationDate: e.target.value})} className="border-slate-200 border p-3 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none" />
-                            </div>
-                            <div className="flex flex-col">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Search List</label>
-                                <input type="text" placeholder="Find name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="border-slate-200 border p-3 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none" />
-                            </div>
-                        </div>
+                <div className="p-4 md:p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <input 
+                            type="text" 
+                            placeholder="🔍 Filter by name..." 
+                            className="w-full p-3 border rounded-xl bg-gray-50 focus:bg-white outline-none ring-2 ring-transparent focus:ring-emerald-500 transition-all"
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <input 
+                            type="date" 
+                            value={commonData.registrationDate} 
+                            onChange={(e) => setCommonData({...commonData, registrationDate: e.target.value})}
+                            className="w-full p-3 border rounded-xl bg-gray-50 outline-none"
+                        />
                     </div>
 
-                    {/* Teacher List */}
-                    <div className="max-h-[400px] overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50/50 p-2">
+                    <div className="max-h-[500px] overflow-y-auto border-t border-b divide-y scrollbar-thin">
                         {filteredList.map((t, index) => {
-                            // Find actual index in original list to keep toggle working
                             const originalIndex = teachersList.findIndex(item => item.name === t.name);
                             return (
-                                <div key={index} className="flex justify-between items-center p-4 bg-white rounded-xl mb-2 shadow-sm border border-slate-100">
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-slate-300 font-mono text-xs">{originalIndex + 1}</span>
-                                        <span className="text-sm font-bold text-slate-700">{t.name}</span>
+                                <div key={index} className="flex justify-between items-center py-3 px-2 hover:bg-slate-50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold">
+                                            {originalIndex + 1}
+                                        </div>
+                                        <span className="text-sm font-medium text-slate-700">{t.name}</span>
                                     </div>
                                     <button 
                                         onClick={() => toggleGender(originalIndex)}
-                                        className={`text-[10px] px-5 py-1.5 rounded-full font-black transition-all ${
-                                            t.gender === "Male" ? "bg-cyan-100 text-cyan-700" : "bg-rose-100 text-rose-700"
+                                        className={`w-20 py-1 rounded-lg text-[10px] font-black tracking-tighter uppercase transition-all ${
+                                            t.gender === "Male" ? "bg-blue-600 text-white" : "bg-pink-500 text-white"
                                         }`}
                                     >
                                         {t.gender}
@@ -131,9 +154,9 @@ const BulkTeacherRegistration = () => {
                     <button 
                         onClick={handleBulkSubmit}
                         disabled={isSubmitting}
-                        className="w-full mt-8 bg-slate-900 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 disabled:bg-slate-300 transition-all active:scale-[0.98] shadow-xl"
+                        className="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white py-5 rounded-2xl font-bold text-lg shadow-lg shadow-emerald-200 transition-all disabled:bg-slate-400"
                     >
-                        {isSubmitting ? "Syncing with Cloud..." : `Finalize ${teachersList.length} Registrations`}
+                        {isSubmitting ? "Syncing Teachers..." : "Confirm & Save All Staff"}
                     </button>
                 </div>
             </div>
