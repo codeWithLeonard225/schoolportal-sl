@@ -68,9 +68,9 @@ const NAV_ITEMS = [
     icon: <MdEdit />,
     children: [
       { key: "Form", label: " Pupils", icon: <MdPerson /> },
-      { key: "BulkRegistration", label: " BulkRegistration", icon: <MdPerson /> },
-      { key: "BulkTeacherRegistration", label: " BulkTeacherRegistration", icon: <MdPerson /> },
-      { key: "PupilsWithoutSchool", label: " PupilsWithoutSchool", icon: <MdPerson /> },
+      // { key: "BulkRegistration", label: " BulkRegistration", icon: <MdPerson /> },
+      // { key: "BulkTeacherRegistration", label: " BulkTeacherRegistration", icon: <MdPerson /> },
+      // { key: "PupilsWithoutSchool", label: " PupilsWithoutSchool", icon: <MdPerson /> },
       { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
 

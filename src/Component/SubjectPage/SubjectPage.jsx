@@ -306,6 +306,46 @@ const SubjectPage = () => {
     };
 
     const isLoading = loadingClasses || loadingSubjects || loadingCategories;
+    // 🆕 Print Preview Handler
+    const handlePrintPreview = (cls) => {
+        const printWindow = window.open("", "_blank", "width=800,height=600");
+        const subjectsHtml = cls.subjects
+            .map((s) => `<li>${s}</li>`)
+            .join("");
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Print Subject List - ${cls.className}</title>
+                    <style>
+                        body { font-family: sans-serif; padding: 40px; }
+                        .header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; }
+                        h1 { margin-bottom: 5px; }
+                        ul { column-count: 2; margin-top: 20px; }
+                        li { padding: 5px 0; }
+                        .footer { margin-top: 50px; font-size: 0.8em; color: #666; text-align: center; }
+                        @media print { .no-print { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>${cls.className}</h1>
+                        <p>Subject List Configuration</p>
+                    </div>
+                    <ul>${subjectsHtml}</ul>
+                    <div class="footer">Generated on ${new Date().toLocaleDateString()}</div>
+                    <script>
+                        // Automatically open print dialog after images/styles load
+                        window.onload = () => { 
+                            window.print(); 
+                            // window.close(); // Optional: close window after printing
+                        };
+                    </script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
 
     // --- RENDER BLOCK ---
     return (
@@ -477,6 +517,14 @@ const SubjectPage = () => {
                                         >
                                             Delete
                                         </button>
+                                        {/* 🆕 PRINT PREVIEW BUTTON */}
+                                    <button
+                                        onClick={() => handlePrintPreview(cls)}
+                                        className="bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition"
+                                        title="Preview and Print"
+                                    >
+                                        🖨️ Print
+                                    </button>
                                     </td>
                                 </tr>
                             ))

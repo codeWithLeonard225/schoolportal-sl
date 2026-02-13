@@ -15,44 +15,45 @@ const BulkRegistration = () => {
     const registeredBy = user?.data?.adminID || user?.data?.teacherID || "";
 
     // ✅ List updated with 36 students from JSS III Indigo roster
-    const [students, setStudents] = useState([
-        { name: "Jusu O. Kallon", gender: "Male" },
-        { name: "Daniel A.D. Sawyerr", gender: "Male" },
-        { name: "Osman M. Conteh", gender: "Male" },
-        { name: "Joshua S. Silla", gender: "Male" },
-        { name: "Assiatu Mansaray", gender: "Female" },
-        { name: "Unisa Sall", gender: "Male" },
-        { name: "Moses N. Kamara", gender: "Male" },
-        { name: "Alvin A. Saccoh", gender: "Male" },
-        { name: "Emmanuel D.F. Sesay", gender: "Male" },
-        { name: "Patrick Lamboi", gender: "Male" },
-        { name: "Emery J. Kowa", gender: "Male" },
-        { name: "Portlyen A.R.E.S Stevens", gender: "Male" },
-        { name: "Yatta Mansaray", gender: "Female" },
-        { name: "Alphonson Fambullen", gender: "Male" },
-        { name: "Isatu I. Conteh", gender: "Female" },
-        { name: "Franklyn B. Mansaray", gender: "Male" },
-        { name: "Alicia G. Conteh", gender: "Female" },
-        { name: "Joshua T. Lebbie", gender: "Male" },
-        { name: "Mustapha T. Harding", gender: "Male" },
-        { name: "Christiana K. Samura", gender: "Female" },
-        { name: "Ezekiel W. Konuwa", gender: "Male" },
-        { name: "Grace J.M. Konuwa", gender: "Female" },
-        { name: "Francess M.S.M. Sadiu", gender: "Female" },
-        { name: "Nathaniel D. Swaray", gender: "Male" },
-        { name: "Fatima E. Koroma", gender: "Female" },
-        { name: "Mauren A. Koroma", gender: "Female" },
-        { name: "Christoper Koroma", gender: "Male" },
-        { name: "Elija Bangura", gender: "Male" },
-        { name: "Ola Bisi J. Frazer", gender: "Female" },
-        { name: "Susan Brima", gender: "Female" },
-        { name: "Fatima E. Fornah", gender: "Female" },
-        { name: "Makoya V. Koroma", gender: "Female" },
-        { name: "Naomi E. Maclean", gender: "Female" }
-    ]);
+const [students, setStudents] = useState([
+    { name: "Zainab M. Kamara", gender: "Female" },
+    { name: "Elizabeth M. Mansaray", gender: "Female" },
+    { name: "Kadiatu A. Bangura", gender: "Female" },
+    { name: "Ibrahim S. Mansaray", gender: "Male" },
+    { name: "Mohamed O. Kamara", gender: "Male" },
+    { name: "Saidu M. Conteh", gender: "Male" },
+    { name: "Zainab R. Bangura", gender: "Female" },
+    { name: "Mohamed B. Kamara", gender: "Male" },
+    { name: "Abu Bakarr Mansaray", gender: "Male" },
+    { name: "Zainab B. Kamara", gender: "Female" },
+    { name: "Alusine S. Kamara", gender: "Male" },
+    { name: "Fatmata B. Jalloh", gender: "Female" },
+    { name: "Hawanatu S. Kamara", gender: "Female" },
+    { name: "Isatu S. Kamara", gender: "Female" },
+    { name: "Hawanatu M. Bangura", gender: "Female" },
+    { name: "Isatu M. Bangura", gender: "Female" },
+    { name: "Abdulai M. Kamara", gender: "Male" },
+    { name: "Aminata S. Kamara", gender: "Female" },
+    { name: "Alhassan S. Kamara", gender: "Male" },
+    { name: "Isatu B. Kamara", gender: "Female" },
+    { name: "Mohamed S. Kamara", gender: "Male" },
+    { name: "Fatmata S. Kamara", gender: "Female" },
+    { name: "Isatu R. Kamara", gender: "Female" },
+    { name: "Sorie B. Kamara", gender: "Male" }
+]);
+
+
+
+
+
+
+
+
+
+
 
     const [commonData, setCommonData] = useState({
-        class: "Jss 3 Indigo", 
+        class: "JSS 3", 
         academicYear: "2025/2026", 
         pupilType: "Private", 
         registrationDate: new Date().toISOString().slice(0, 10),
@@ -141,7 +142,7 @@ const BulkRegistration = () => {
                         disabled={isSubmitting}
                         className="w-full mt-6 bg-indigo-800 text-white py-3 rounded-lg font-bold hover:bg-indigo-900 disabled:bg-gray-400 shadow-md transition-all"
                     >
-                        {isSubmitting ? "Processing Batch..." : `Finalize ${students.length} Indigo Registrations`}
+                        {isSubmitting ? "Processing Batch..." : `Finalize ${students.length} Registrations`}
                     </button>
                 </div>
             </div>
