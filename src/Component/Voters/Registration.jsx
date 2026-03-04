@@ -73,6 +73,7 @@ const Registration = () => {
         parentName: "",
         parentPhone: "",
         class: "",
+        feesCategory: "Continue", // NEW FIELD
         academicYear: "",
         registrationDate: new Date().toISOString().slice(0, 10),
         registeredBy: "",
@@ -402,6 +403,7 @@ const Registration = () => {
         if (!formData.class.trim()) return toast.error("Class is required.");
         if (!formData.academicYear.trim()) return toast.error("Academic year is required.");
         if (!formData.pupilType.trim()) return toast.error("Pupil type is required.");
+        if (!formData.feesCategory.trim()) return toast.error("Fees category is required.");
 
         setIsSubmitting(true);
 
@@ -420,6 +422,7 @@ const Registration = () => {
                 parentName: formData.parentName,
                 parentPhone: formData.parentPhone,
                 class: formData.class,
+                feesCategory: formData.feesCategory,
                 academicYear: formData.academicYear,
                 registrationDate: formData.registrationDate,
                 registeredBy: formData.registeredBy,
@@ -485,6 +488,7 @@ const Registration = () => {
                 registeredBy: user?.data?.adminID || user?.data?.teacherID || "",
                 userPhoto: null,
                 userPublicId: null,
+                feesCategory: "",
                 schoolId: currentSchoolId,
             });
 
@@ -545,6 +549,7 @@ const Registration = () => {
             userPhoto: user.userPhotoUrl,
             userPublicId: user.userPublicId,
             schoolId: user.schoolId || "",
+            feesCategory: user.feesCategory || "",
             pupilType: user.pupilType || "", // ✅ Added pupilType
         });
         toast.info(`Editing student: ${user.studentName}`);
@@ -712,6 +717,24 @@ const Registration = () => {
                         )}
                     </div>
                     <div className="flex-1">
+                        <label className="block mb-2 font-medium text-sm">
+                            Fees Category
+                        </label>
+
+                        <select
+                            name="feesCategory"
+                            value={formData.feesCategory}
+                            onChange={handleInputChange}
+                            className="w-full p-2 border rounded-lg"
+                            required
+                        >
+                            <option value="">Select Category</option>
+                            <option value="New">New</option>
+                            <option value="Continue">Continue</option>
+                            <option value="Scholarship">Scholarship</option>
+                        </select>
+                    </div>
+                    <div className="flex-1">
                         <label className="block mb-2 font-medium text-sm">Academic Year</label>
                         <select name="academicYear" value={formData.academicYear} onChange={handleInputChange} className="w-full p-2 border rounded-lg" required >
                             <option value="">Select Year</option>
@@ -855,6 +878,7 @@ const Registration = () => {
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Class</th>
+                                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fees Type</th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">AcademicYear</th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
 
@@ -869,6 +893,9 @@ const Registration = () => {
                                     <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.studentID}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{user.studentName}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{user.class}</td>
+                                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {user.feesCategory}
+                                    </td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{user.academicYear}</td>
 
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">

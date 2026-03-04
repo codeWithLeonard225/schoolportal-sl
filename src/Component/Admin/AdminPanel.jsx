@@ -23,6 +23,8 @@ import Registration from "../Voters/Registration";
 import BulkRegistration from "../Voters/BulkRegistration";
 import BulkTeacherRegistration from "../Voters/BulkTeacherRegistration";
 import PupilsWithoutSchool from "../Voters/PupilsWithoutSchool";
+import ClassDelete from "../Voters/ClassDelete";
+import ClassPromotion from "../Voters/ClassPromotion";
 import ClassRegistration from "./ClassRegistration";
 import FeeReceipt from "../FeeReceipt.jsx/FeeReceipt";
 import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
@@ -71,6 +73,8 @@ const NAV_ITEMS = [
       // { key: "BulkRegistration", label: " BulkRegistration", icon: <MdPerson /> },
       // { key: "BulkTeacherRegistration", label: " BulkTeacherRegistration", icon: <MdPerson /> },
       // { key: "PupilsWithoutSchool", label: " PupilsWithoutSchool", icon: <MdPerson /> },
+      // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+      // { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
       { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
 
@@ -250,6 +254,8 @@ function AdminPanel() {
       case "BulkRegistration": return <BulkRegistration />;
       case "BulkTeacherRegistration": return <BulkTeacherRegistration />;
       case "PupilsWithoutSchool": return <PupilsWithoutSchool />;
+      case "ClassDelete": return <ClassDelete />;
+      case "ClassPromotion": return <ClassPromotion />;
       case "class": return <ClassRegistration />;
       case "classList": return <StudentFilterPage />;
       case "StudentIDCards": return <StudentIDCards />;

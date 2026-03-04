@@ -69,61 +69,91 @@ const TeacherGradesPage = () => {
 
   }, []);
 
-  // 1. Fetch Teacher Assignments (from Firebase or localStorage)
+   // 1. Fetch Teacher Assignments (APPLYING FIX)
   useEffect(() => {
     if (!teacherName) return;
-    const assignmentsKey = `assignments_${teacherName}_${schoolId}`;
-    const fetchAssignments = async () => {
-      // 1. Check Local Storage first
-      const cachedAssignments = localStorage.getItem(assignmentsKey);
-      let data = [];
-      if (cachedAssignments) {
-        data = JSON.parse(cachedAssignments);
-      } else {
-        // 2. Fetch from Firebase (getDocs, not onSnapshot)
-        const q = query(
-          collection(db, "TeacherAssignments"),
-          where("teacher", "==", teacherName),
-          where("schoolId", "==", schoolId)
-        );
 
+    const q = query(
+      collection(db, "TeacherAssignments"),
+      where("teacher", "==", teacherName),
+      where("schoolId", "==", schoolId)
+    );
 
-
-        const snap = await getDocs(q);
-
-        data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-
-
-        // 3. Update Local Storage
-
-        localStorage.setItem(assignmentsKey, JSON.stringify(data));
-
-      }
-
-
-
+    const unsub = onSnapshot(q, (snapshot) => {
+      // ⭐ FIX 1: Trim the className from the assignments upon fetch
+      const data = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        className: doc.data().className.trim() 
+      }));
+      
       setAssignments(data);
 
-
-
       if (data.length > 0 && !selectedClass) {
-
         setSelectedClass(data[0].className);
-
         setSelectedSubject(data[0].subjects[0]);
-
       }
+    });
 
-    };
+    return () => unsub();
+  }, [teacherName, schoolId]);
+
+
+  // 1. Fetch Teacher Assignments (from Firebase or localStorage)
+  // useEffect(() => {
+  //   if (!teacherName) return;
+  //   const assignmentsKey = `assignments_${teacherName}_${schoolId}`;
+  //   const fetchAssignments = async () => {
+  //     // 1. Check Local Storage first
+  //     const cachedAssignments = localStorage.getItem(assignmentsKey);
+  //     let data = [];
+  //     if (cachedAssignments) {
+  //       data = JSON.parse(cachedAssignments);
+  //     } else {
+  //       // 2. Fetch from Firebase (getDocs, not onSnapshot)
+  //       const q = query(
+  //         collection(db, "TeacherAssignments"),
+  //         where("teacher", "==", teacherName),
+  //         where("schoolId", "==", schoolId)
+  //       );
 
 
 
-    fetchAssignments();
+  //       const snap = await getDocs(q);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  //       data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  }, [teacherName, schoolId]); // Note: selectedClass is NOT a dependency here
+
+
+  //       // 3. Update Local Storage
+
+  //       localStorage.setItem(assignmentsKey, JSON.stringify(data));
+
+  //     }
+
+
+
+  //     setAssignments(data);
+
+
+
+  //     if (data.length > 0 && !selectedClass) {
+
+  //       setSelectedClass(data[0].className);
+
+  //       setSelectedSubject(data[0].subjects[0]);
+
+  //     }
+
+  //   };
+
+
+
+  //   fetchAssignments();
+
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+
+  // }, [teacherName, schoolId]); 
 
 
 
