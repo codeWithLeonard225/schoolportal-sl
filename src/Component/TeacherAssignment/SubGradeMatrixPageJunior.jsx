@@ -68,21 +68,31 @@ const SubGradeMatrixPage = () => {
             where("schoolId", "==", schoolId)
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map((doc) => doc.data());
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+    const data = snapshot.docs.map((doc) => doc.data());
 
-            const years = [...new Set(data.map((d) => d.academicYear))].sort().reverse();
-            const classes = [...new Set(data.map((d) => d.className))].sort();
-            const subjects = [...new Set(data.map((d) => d.subject))].sort();
+    const years = [...new Set(data.map((d) => d.academicYear))]
+        .sort()
+        .reverse();
 
-            setAcademicYears(years);
-            setAvailableClasses(classes);
-            setSubjectOptions(subjects); // Update subject options state
-            
-            if (years.length > 0 && !academicYear) setAcademicYear(years[0]);
-            if (classes.length > 0 && !selectedClass) setSelectedClass(classes[0]);
-            if (subjects.length > 0 && !selectedSubject) setSelectedSubject(subjects[0]);
-        });
+    // ✅ Only allow JSS and SSS classes
+    const classes = [...new Set(data.map((d) => d.className))]
+        .filter(c =>
+            c?.toUpperCase().startsWith("Class") ||
+            c?.toUpperCase().startsWith("Nursery")
+        )
+        .sort();
+
+    const subjects = [...new Set(data.map((d) => d.subject))].sort();
+
+    setAcademicYears(years);
+    setAvailableClasses(classes);
+    setSubjectOptions(subjects);
+
+    if (years.length > 0 && !academicYear) setAcademicYear(years[0]);
+    if (classes.length > 0 && !selectedClass) setSelectedClass(classes[0]);
+    if (subjects.length > 0 && !selectedSubject) setSelectedSubject(subjects[0]);
+});
 
         return () => unsubscribe();
     }, [schoolId]);

@@ -388,12 +388,6 @@ useEffect(() => {
       
       {/* LEFT SIDE */}
       <div className="hidden md:flex md:w-[70%] flex-col p-4 space-y-4">
-        {/* Loading Indicator */}
-        {overallLoading && (
-            <div className="p-2 text-center text-lg text-blue-600 font-semibold bg-blue-100 rounded-lg">
-                Loading data from cache or server...
-            </div>
-        )}
         
         {/* Pupils Per Class */}
         <div className="flex-1 bg-red-300 p-4 rounded-lg shadow-md">

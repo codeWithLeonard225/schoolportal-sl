@@ -20,6 +20,8 @@ import StaffAttDashboard from "./Component/Dashboard/StaffAttDashboard";
 import SupervisorOneDashboard from "./Component/Dashboard/SupervisorOneDashboard";
 import SupervisorThreeDashboard from "./Component/Dashboard/SupervisorThreeDashboard";
 import SupervisorTwoDashboard from "./Component/Dashboard/SupervisorTwoDashboard";
+import HipsaIndianDashboard  from "./Component/Dashboard/HipsaIndianDashboard";
+import HipsaDijaDashboard from "./Component/Dashboard/HipsaDijaDashboard";
 
 
 
@@ -107,6 +109,22 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <SupervisorThreeDashboard/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HipsaIndianDashboard"
+            element={
+              <ProtectedRoute role="admin">
+                <HipsaIndianDashboard/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HipsaDijaDashboard"
+            element={
+              <ProtectedRoute role="admin">
+                <HipsaDijaDashboard/>
               </ProtectedRoute>
             }
           />

@@ -50,6 +50,8 @@ const LoginPage = () => {
             case "SupervisorThree": return "/SupervisorThreeDashboard";
             case "SupervisorFour": return "/StaffAttDashboard";
             case "SupervisorFive": return "/StaffAttDashboard";
+            case "HipsaIndian": return "/HipsaIndianDashboard";
+            case "HipsaDija": return "/HipsaDijaDashboard";
             default: return "/admin";
         }
     };

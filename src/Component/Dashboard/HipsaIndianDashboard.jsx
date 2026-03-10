@@ -1,27 +1,22 @@
+
 // AdminPanel.jsx
 import React, { useState, useEffect } from "react";
 import {
     MdDashboard,
-    MdBook,
-    MdPeople,
-    MdAssignment,
-    MdEdit,
     MdKeyboardArrowDown,
-    MdPerson,
-    MdAttachMoney,
-    MdMenuBook,
-    MdAssignmentTurnedIn,
-    MdBarChart,
-    MdFormatListBulleted,
-    MdDescription,
-    MdTrendingUp,
     MdWarning,
-    MdCheckCircle,
-    MdRemoveCircle,
+    MdPerson,
+    MdBarChart,
+
 } from "react-icons/md";
 import StaffAttendance from "../TeacherAssignment/StaffAttendance";
 import GeneralStaffAttendanceReport from "../TeacherAssignment/GeneralStaffAttendanceReport";
 import LogoutPage from "../Admin/LogoutPage"
+import FeesDashboard from "./FeesDsahboard";
+import TeacherPupilsPageAdmin from "../TeacherAssignment/TeacherPupilsPageAdminSenior";
+import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPageSenior";
+import TermResult from "../TeacherAssignment/TermResultSenior";
+import GeneralReportCard from "../PupilsPage/GeneralReportCardSenior";
 
 
 // --- Navigation Items ---
@@ -36,16 +31,29 @@ const NAV_ITEMS = [
         label: "Staff Report",
         icon: <MdWarning />, // 📖
     },
-
     {
-        key: "timetable",
-        label: "TimeTable",
+        key: "results",
+        label: "Pupils Results",
         icon: <MdBarChart />,
         children: [
-            { key: "WeeklyTimetableReport", label: "WeeklyTimetableReport", icon: <MdPerson /> },
-            { key: "TimeTableDailyAttendanceReport", label: "DailyAttendanceReport", icon: <MdPerson /> },
+            { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
+            { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
+            { key: "TermResult", label: "Term Grade Sheet", icon: <MdPerson /> },
+            { key: "GeneralReportCard", label: "ReportCard", icon: <MdPerson /> },
+            // { key: "Testing", label: "Testing", icon: <MdPerson /> },
+
         ],
     },
+
+    // {
+    //     key: "timetable",
+    //     label: "TimeTable",
+    //     icon: <MdBarChart />,
+    //     children: [
+    //         { key: "WeeklyTimetableReport", label: "WeeklyTimetableReport", icon: <MdPerson /> },
+    //         { key: "TimeTableDailyAttendanceReport", label: "DailyAttendanceReport", icon: <MdPerson /> },
+    //     ],
+    // },
 
     {
         key: "LogoutPage",
@@ -74,13 +82,13 @@ const Button = ({ variant = "default", onClick, className = "", children }) => {
 // --- Placeholder Dashboard ---
 const Dashboard = () => (
     <div className="p-6 bg-white rounded-xl shadow-md">
-        <h2 className="text-2xl font-semibold text-gray-800">Welcome to Admin Dashboard!</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">Welcome to Your Admin Dashboard!</h2>
         <p className="mt-2 text-gray-600">Select an item from the sidebar to get started.</p>
     </div>
 );
 
 // --- Main Admin Panel ---
-function StaffAttDashboard() {
+function HipsaIndianDashboard() {
     const [activeTab, setActiveTab] = useState("dashboard");
     const [openDropdown, setOpenDropdown] = useState(null);
     const [openNestedDropdowns, setOpenNestedDropdowns] = useState({});
@@ -122,11 +130,15 @@ function StaffAttDashboard() {
 
     const renderContent = () => {
         switch (activeTab) {
-            case "dashboard": return <Dashboard />;
+            case "dashboard": return <FeesDashboard />;
             case "staffAttendance": return <StaffAttendance />;
             case "GeneralStaffAttendanceReport": return <GeneralStaffAttendanceReport />;
             case "WeeklyTimetableReport": return <WeeklyTimetableReport />;
             case "TimeTableDailyAttendanceReport": return <TimeTableDailyAttendanceReport />;
+            case "TeacherPupilsPageAdmin": return <TeacherPupilsPageAdmin />;
+            case "SubGradeMatrixPage": return <SubGradeMatrixPage />;
+            case "GeneralReportCard": return <GeneralReportCard />;
+            case "TermResult": return <TermResult />;
             case "LogoutPage": return <LogoutPage />;
 
             default: return <Placeholder title={activeTab} />;
@@ -140,7 +152,7 @@ function StaffAttDashboard() {
                 className={`fixed inset-y-0 left-0 z-40 w-64 bg-white p-4 border-r border-gray-200 shadow-lg transform transition-transform duration-300 
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:static md:block`}
             >
-                <h2 className="text-3xl font-bold text-indigo-700 mb-6">Admin Panel</h2>
+                <h2 className="text-3xl font-bold text-indigo-700 mb-6">Patrick Dashboard</h2>
                 <div className="space-y-2 flex-grow">
                     <Button
                         variant={activeTab === "dashboard" ? "default" : "ghost"}
@@ -176,4 +188,4 @@ function StaffAttDashboard() {
     );
 }
 
-export default StaffAttDashboard;
+export default HipsaIndianDashboard;

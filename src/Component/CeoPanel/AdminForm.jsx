@@ -19,7 +19,7 @@ const ADMIN_PASSWORD = "superadmin";
 
 // Define the available access types for the new form
 const ACCESS_TYPES = [
-   
+
     "DEVELOPER",
     "Private",
     "PrivateSpecial",
@@ -33,10 +33,11 @@ const AdminForm = () => {
     const [adminID, setAdminID] = useState("");
     const [adminName, setAdminName] = useState("");
     const [schoolId, setSchoolId] = useState("");
+    const [schoolName, setSchoolName] = useState("");
     const [adminType, setAdminType] = useState("");
     const [editingId, setEditingId] = useState(null);
     const [admins, setAdmins] = useState([]);
-     const [role, setRole] = useState(""); // Role state remains a string
+    const [role, setRole] = useState(""); // Role state remains a string
 
     // --- 2. SCHOOL ACCESS FORM STATES (NEW - MODIFIED) ---
     const [accessSchoolId, setAccessSchoolId] = useState("");
@@ -55,9 +56,10 @@ const AdminForm = () => {
         setAdminID("");
         setAdminName("");
         setSchoolId("");
+        setSchoolName(""); // add this
         setAdminType("");
         setEditingId(null);
-           setRole(""); // Reset role to empty string
+        setRole(""); // Reset role to empty string
     };
 
     // Helper to reset the School Access form fields (MODIFIED)
@@ -90,88 +92,90 @@ const AdminForm = () => {
     };
 
     // 2. Handle Form Submission (Add or Update Admin) - UPDATED
- // 2. Handle Form Submission (Add or Update Admin) - CORRECTION APPLIED HERE
-// 2. Handle Form Submission (Add or Update Admin) - FIX APPLIED HERE
-const handleSubmit = async (e) => {
-    e.preventDefault();
+    // 2. Handle Form Submission (Add or Update Admin) - CORRECTION APPLIED HERE
+    // 2. Handle Form Submission (Add or Update Admin) - FIX APPLIED HERE
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-    if (!adminID || !adminName || !schoolId || !adminType) {
-        alert("Please fill in all fields, including Admin Type.");
-        return;
-    }
-
-    setIsSubmitting(true);
-
-    const adminData = {
-        adminID,
-        adminName,
-        schoolId,
-        adminType,
-        role,
-    };
-
-    const loginData = {
-        adminID: adminData.adminID,
-        adminName: adminData.adminName,
-        schoolId: adminData.schoolId,
-        adminType: adminData.adminType,
-        role: adminData.role,
-    };
-
-    try {
-        if (editingId) {
-            // --- 1. UPDATE LOGIC (Use existing editingId for main DB) ---
-            
-            // 1. Update in main "Admins" collection (using Firestore Document ID: editingId)
-            const adminRef = doc(db, "Admins", editingId);
-            await updateDoc(adminRef, adminData);
-
-            
-            // If the secondary DB MUST use the random Firestore ID, use editingId:
-            const loginRef = doc(pupilLoginFetch, "Admins", editingId); // Use the random Firestore ID
-            await setDoc(loginRef, loginData, { merge: true });
-            
-            alert(`Admin ${adminName} updated successfully!`);
-
-        } else {
-            // --- 2. NEW ADMIN LOGIC (Generate ID once and use in both) ---
-            
-            // 1. Check for existing ID (This check uses the 'adminID' field, which is good)
-            const q = query(collection(db, "Admins"), where("adminID", "==", adminID));
-            const snapshot = await getDocs(q);
-
-            if (!snapshot.empty) {
-                alert("Admin ID already exists!");
-                setIsSubmitting(false);
-                return;
-            }
-            
-            // **🔥 FIX: Generate a unique ID (the Document ID) upfront**
-            const newAdminRef = doc(collection(db, "Admins")); // Generates a new unique DocumentReference
-            const newDocId = newAdminRef.id; // This is the ID you want to use in both databases
-
-            // 1. ADD to main "Admins" collection using the generated Document ID
-            await setDoc(newAdminRef, adminData); // Use setDoc to manually set the document and its ID
-
-            // 2. Set (Create) in secondary "Admins" collection using the SAME new Document ID
-            const loginRef = doc(pupilLoginFetch, "Admins", newDocId); // Use newDocId as the Document ID
-            await setDoc(loginRef, loginData); 
-
-            alert(`Admin ${adminName} added successfully! (Doc ID: ${newDocId})`);
+        if (!adminID || !adminName || !schoolId || !adminType) {
+            alert("Please fill in all fields, including Admin Type.");
+            return;
         }
 
-        await fetchAdmins();
-        resetForm();
+        setIsSubmitting(true);
 
-    } catch (error) {
-        console.error(`Error ${editingId ? "updating" : "adding"} admin:`, error);
-        alert(`Failed to ${editingId ? "update" : "add"} admin. Check console.`);
-    } finally {
-        setIsSubmitting(false);
-    }
-};
+        const adminData = {
+            adminID,
+            adminName,
+            schoolId,
+            schoolName,
+            adminType,
+            role,
+        };
 
-// ... (rest of the component code, including handleAccessSubmit which is separate)
+        const loginData = {
+            adminID: adminData.adminID,
+            adminName: adminData.adminName,
+            schoolId: adminData.schoolId,
+            schoolName: adminData.schoolName, // add this
+            adminType: adminData.adminType,
+            role: adminData.role,
+        };
+
+        try {
+            if (editingId) {
+                // --- 1. UPDATE LOGIC (Use existing editingId for main DB) ---
+
+                // 1. Update in main "Admins" collection (using Firestore Document ID: editingId)
+                const adminRef = doc(db, "Admins", editingId);
+                await updateDoc(adminRef, adminData);
+
+
+                // If the secondary DB MUST use the random Firestore ID, use editingId:
+                const loginRef = doc(pupilLoginFetch, "Admins", editingId); // Use the random Firestore ID
+                await setDoc(loginRef, loginData, { merge: true });
+
+                alert(`Admin ${adminName} updated successfully!`);
+
+            } else {
+                // --- 2. NEW ADMIN LOGIC (Generate ID once and use in both) ---
+
+                // 1. Check for existing ID (This check uses the 'adminID' field, which is good)
+                const q = query(collection(db, "Admins"), where("adminID", "==", adminID));
+                const snapshot = await getDocs(q);
+
+                if (!snapshot.empty) {
+                    alert("Admin ID already exists!");
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                // **🔥 FIX: Generate a unique ID (the Document ID) upfront**
+                const newAdminRef = doc(collection(db, "Admins")); // Generates a new unique DocumentReference
+                const newDocId = newAdminRef.id; // This is the ID you want to use in both databases
+
+                // 1. ADD to main "Admins" collection using the generated Document ID
+                await setDoc(newAdminRef, adminData); // Use setDoc to manually set the document and its ID
+
+                // 2. Set (Create) in secondary "Admins" collection using the SAME new Document ID
+                const loginRef = doc(pupilLoginFetch, "Admins", newDocId); // Use newDocId as the Document ID
+                await setDoc(loginRef, loginData);
+
+                alert(`Admin ${adminName} added successfully! (Doc ID: ${newDocId})`);
+            }
+
+            await fetchAdmins();
+            resetForm();
+
+        } catch (error) {
+            console.error(`Error ${editingId ? "updating" : "adding"} admin:`, error);
+            alert(`Failed to ${editingId ? "update" : "add"} admin. Check console.`);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // ... (rest of the component code, including handleAccessSubmit which is separate)
 
     // 3. Function to load data into the form for editing
     const handleEdit = (admin) => {
@@ -179,8 +183,9 @@ const handleSubmit = async (e) => {
         setAdminID(admin.adminID);
         setAdminName(admin.adminName);
         setSchoolId(admin.schoolId);
+        setSchoolName(admin.schoolName || "");
         setAdminType(admin.adminType);
-           setRole(admin.role || ""); // Load existing role string
+        setRole(admin.role || ""); // Load existing role string
     };
 
     // 4. Function to delete an admin record - UPDATED
@@ -398,6 +403,17 @@ const handleSubmit = async (e) => {
                             placeholder="Enter school ID"
                         />
                     </div>
+                    {/* School ID Field */}
+                    <div>
+                        <label className="block font-semibold mb-1 text-gray-700">School Name</label>
+                        <input
+                            type="text"
+                            value={schoolName}
+                            onChange={(e) => setSchoolName(e.target.value)}
+                            className="w-full border px-4 py-2 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                            placeholder="Enter school name"
+                        />
+                    </div>
 
                     {/* Admin Type Selection Field */}
                     <div>
@@ -414,15 +430,17 @@ const handleSubmit = async (e) => {
                             <option value="Fees">Fees Admin</option>
                             <option value="Special">Special/Super Admin</option>
                             <option value="PupilAttendance">Pupil Attendance</option>
-                             <option value="StaffAttendanceSimple">Staff Attendance</option>
+                            <option value="StaffAttendanceSimple">Staff Attendance</option>
                             <option value="SupervisorOne">Supervisor One</option>
                             <option value="SupervisorTwo">Supervisor Two</option>
                             <option value="SupervisorThree">Supervisor Three</option>
                             <option value="SupervisorFour">Supervisor Four</option>
                             <option value="SupervisorFive">Supervisor Five</option>
+                            <option value="HipsaIndian">Hipsa Indian</option>
+                            <option value="HipsaDija">Hipsa Dijakay</option>
                         </select>
                     </div>
-                      {/* ✅ UPDATED: Role is now a text input */}
+                    {/* ✅ UPDATED: Role is now a text input */}
                     <div className="flex-1">
                         <label className="block font-semibold mb-1 text-gray-700">Role</label>
                         <input
