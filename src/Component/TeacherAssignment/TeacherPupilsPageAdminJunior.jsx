@@ -52,17 +52,18 @@ const GradesAuditPage = () => {
             where("schoolId", "==", schoolId)
         );
 
-       const unsub = onSnapshot(qAssignments, (snapshot) => {
+  const unsub = onSnapshot(qAssignments, (snapshot) => {
     const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
     const uniqueTeachers = [...new Set(data.map(a => a.teacher))].sort();
     setAllTeachers(uniqueTeachers);
 
-    // ✅ Filter only JSS and SSS classes for Admin
-    const filteredData = data.filter(a =>
-        a.className?.toUpperCase().startsWith("Class") ||
-        a.className?.toUpperCase().startsWith("Nursery")
-    );
+    // ✅ Show ALL classes (Nursery, Primary, JSS, SSS)
+  const filteredData = data.filter(a =>
+    a.className?.toUpperCase().startsWith("NURSERY") ||
+    a.className?.toUpperCase().startsWith("PRIMARY") ||
+    a.className?.toUpperCase().startsWith("CLASS")
+);
 
     const uniqueAssignments = filteredData.reduce((acc, assignment) => {
         const existing = acc.find(a => a.className === assignment.className);

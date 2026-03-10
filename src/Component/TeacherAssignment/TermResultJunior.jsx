@@ -44,13 +44,14 @@ useEffect(() => {
       .sort()
       .reverse();
 
-    // ✅ Only show JSS and SSS classes
+    // ✅ Show only Nursery and Primary classes
     const classes = [...new Set(data.map((d) => d.className))]
-      .filter(
-        (c) =>
-          c?.toUpperCase().startsWith("Class") ||
-          c?.toUpperCase().startsWith("Nursery")
-      )
+     .filter(
+  (c) =>
+    c?.toUpperCase().startsWith("CLASS") ||
+    c?.toUpperCase().startsWith("NURSERY") ||
+    c?.toUpperCase().startsWith("PRIMARY")
+)
       .sort();
 
     setAcademicYears(years);

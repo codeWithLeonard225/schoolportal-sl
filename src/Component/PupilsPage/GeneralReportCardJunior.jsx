@@ -65,11 +65,12 @@ const GeneralReportCard = () => {
 
     // ✅ Only show JSS and SSS classes
     const classes = [...new Set(data.map((d) => d.className))]
-      .filter(c =>
-        c?.toUpperCase().startsWith("Nursery") ||
-        c?.toUpperCase().startsWith("Class")
-      )
-      .sort();
+     .filter(
+    (c) =>
+      c?.toUpperCase().startsWith("CLASS") ||
+      c?.toUpperCase().startsWith("NURSERY")
+  )
+  .sort();
 
     setAcademicYears(years);
     setAvailableClasses(classes);

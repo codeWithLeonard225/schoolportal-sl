@@ -76,12 +76,13 @@ const SubGradeMatrixPage = () => {
         .reverse();
 
     // ✅ Only allow JSS and SSS classes
-    const classes = [...new Set(data.map((d) => d.className))]
-        .filter(c =>
-            c?.toUpperCase().startsWith("Class") ||
-            c?.toUpperCase().startsWith("Nursery")
-        )
-        .sort();
+  const classes = [...new Set(data.map((d) => d.className))]
+  .filter(
+    (c) =>
+      c?.toUpperCase().startsWith("CLASS") ||
+      c?.toUpperCase().startsWith("NURSERY")
+  )
+  .sort();
 
     const subjects = [...new Set(data.map((d) => d.subject))].sort();
 

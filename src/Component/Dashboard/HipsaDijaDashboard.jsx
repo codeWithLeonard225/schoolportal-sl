@@ -14,9 +14,9 @@ import GeneralStaffAttendanceReport from "../TeacherAssignment/GeneralStaffAtten
 import LogoutPage from "../Admin/LogoutPage"
 import FeesDashboard from "./FeesDsahboard";
 import TeacherPupilsPageAdmin from "../TeacherAssignment/TeacherPupilsPageAdminJunior";
-import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPageSenior";
-import TermResult from "../TeacherAssignment/TermResultSenior";
-import GeneralReportCard from "../PupilsPage/GeneralReportCardSenior";
+import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPageJunior";
+import TermResult from "../TeacherAssignment/TermResultJunior";
+import GeneralReportCard from "../PupilsPage/GeneralReportCardJunior";
 
 
 // --- Navigation Items ---
