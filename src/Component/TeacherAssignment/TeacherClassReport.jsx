@@ -102,7 +102,7 @@ const TeacherClassReport = () => {
     
     doc.setFontSize(18);
     doc.setTextColor(31, 41, 55);
-    doc.text("Teachers Subject Assign", 14, 20);
+    doc.text("teacher Class Report", 14, 20);
     
     doc.setFontSize(10);
     doc.setTextColor(107, 114, 128);
