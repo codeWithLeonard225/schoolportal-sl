@@ -62,6 +62,7 @@ import TimeTableDailyAttendanceReport from "../TeacherAssignment/TimeTableDailyA
 import TimeTableTeacherReport from "../TeacherAssignment/TimeTableTeacherReport";
 import YearlyResult from "../TeacherAssignment/YearlyResult";
 import TermResult from "../TeacherAssignment/TermResult";
+import TeacherClassReport from "../TeacherAssignment/TeacherClassReport";
 
 
 // --- Navigation Items ---
@@ -72,11 +73,11 @@ const NAV_ITEMS = [
     icon: <MdEdit />,
     children: [
       { key: "Form", label: " Pupils", icon: <MdPerson /> },
-      // { key: "BulkRegistration", label: " BulkRegistration", icon: <MdPerson /> },
-      // { key: "BulkTeacherRegistration", label: " BulkTeacherRegistration", icon: <MdPerson /> },
-      // { key: "PupilsWithoutSchool", label: " PupilsWithoutSchool", icon: <MdPerson /> },
-      // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
-      // { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
+      { key: "BulkRegistration", label: " BulkRegistration", icon: <MdPerson /> },
+      { key: "BulkTeacherRegistration", label: " BulkTeacherRegistration", icon: <MdPerson /> },
+      { key: "PupilsWithoutSchool", label: " PupilsWithoutSchool", icon: <MdPerson /> },
+      { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+      { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
       { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
 
@@ -100,6 +101,7 @@ const NAV_ITEMS = [
       { key: "TeacherRegistration", label: "Teacher Regis", icon: <MdPerson /> },
       { key: "subjects", label: "Subjects", icon: <MdPerson /> },
       { key: "TeacherAssignment", label: "Teacher Assignment", icon: <MdPerson /> },
+      { key: "TeacherClassReport", label: "Teacher Class Report ", icon: <MdPerson /> },
       { key: "TeacherAssignmentReport", label: "Teacher Assignment Report ", icon: <MdPerson /> },
       { key: "PastQuestions", label: "Upload Past Questions ", icon: <MdPerson /> },
       { key: "SchoolLibraryUpload", label: "SchoolLibrary Upload ", icon: <MdPerson /> },
@@ -278,6 +280,7 @@ function AdminPanel() {
       case "AdminForm": return <AdminForm />;
       case "beceResult": return <NationalResultPage />;
       case "beceReport": return <BECEStatementOfResult />;
+      case "TeacherClassReport": return <TeacherClassReport />;
       case "TeacherAssignmentReport": return <TeacherAssignmentReport />;
       case "TeacherPupilsPageAdmin": return <TeacherPupilsPageAdmin />;
       case "PastQuestions": return <ExamUploader />;
