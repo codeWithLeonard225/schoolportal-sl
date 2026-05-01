@@ -48,6 +48,10 @@ const TeacherRegistration = () => {
         userPhoto: null,
         userPublicId: null,
         schoolId: schoolId,
+
+         // ✅ NEW
+    isFormTeacher: false,
+    assignClass: "",
     });
 
     const [searchTerm, setSearchTerm] = useState("");
@@ -57,6 +61,7 @@ const TeacherRegistration = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(true); // ⬅️ Added loading state
+    const [classes, setClasses] = useState([]);
 
     // 🧠 Fetch and Cache Teachers list
     useEffect(() => {
@@ -120,6 +125,27 @@ const TeacherRegistration = () => {
         loadAndListen();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [schoolId]);
+
+
+    useEffect(() => {
+    if (schoolId === "N/A") return;
+
+    const q = query(
+        collection(db, "Classes"),
+        where("schoolId", "==", schoolId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const classList = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        setClasses(classList);
+    });
+
+    return () => unsubscribe();
+}, [schoolId]);
+
 
     // 🔍 Filter teachers by name or ID (unchanged)
     const filteredTeachers = useMemo(() => {
@@ -213,6 +239,10 @@ const TeacherRegistration = () => {
                 userPhotoUrl: formData.userPhoto,
                 userPublicId: formData.userPublicId,
                 schoolId: formData.schoolId,
+
+                    // ✅ NEW
+    isFormTeacher: formData.isFormTeacher,
+    assignClass: formData.assignClass || null,
             };
 
             if (formData.id) {
@@ -267,6 +297,9 @@ const TeacherRegistration = () => {
                 userPhoto: null,
                 userPublicId: null,
                 schoolId: schoolId,
+                 // ✅ RESET NEW FIELDS
+    isFormTeacher: false,
+    assignClass: "",
             });
         } catch (err) {
             console.error(err);
@@ -291,6 +324,10 @@ const TeacherRegistration = () => {
             userPhoto: teacher.userPhotoUrl,
             userPublicId: teacher.userPublicId,
             schoolId: teacher.schoolId || schoolId,
+
+                    // ✅ NEW
+        isFormTeacher: teacher.isFormTeacher || false,
+        assignClass: teacher.assignClass || "",
         });
         toast.info(`Editing teacher: ${teacher.teacherName}`);
     };
@@ -405,6 +442,45 @@ const TeacherRegistration = () => {
                         className="w-full p-2 mb-4 border rounded-lg"
                     />
                 </div>
+
+                <div className="mb-4">
+    <label className="flex items-center space-x-2">
+        <input
+            type="checkbox"
+            checked={formData.isFormTeacher}
+            onChange={(e) =>
+                setFormData(prev => ({
+                    ...prev,
+                    isFormTeacher: e.target.checked,
+                    assignClass: e.target.checked ? prev.assignClass : ""
+                }))
+            }
+        />
+        <span className="font-medium text-sm">Form Teacher</span>
+    </label>
+</div>
+
+{formData.isFormTeacher && (
+    <div className="mb-4">
+        <label className="block mb-2 font-medium text-sm">
+            Assign Class
+        </label>
+        <select
+            name="assignClass"
+            value={formData.assignClass}
+            onChange={handleInputChange}
+            className="w-full p-2 border rounded-lg"
+            required
+        >
+            <option value="">Select Class</option>
+            {classes.map((cls) => (
+                <option key={cls.id} value={cls.className}>
+                    {cls.className}
+                </option>
+            ))}
+        </select>
+    </div>
+)}
 
                 <div className="flex flex-col md:flex-row md:space-x-4">
                     <div className="flex-1">
@@ -535,6 +611,9 @@ const TeacherRegistration = () => {
                                     Photo
                                 </th>
                                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+    Form Teacher
+</th>
+                                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                     Actions
                                 </th>
                             </tr>
@@ -557,6 +636,7 @@ const TeacherRegistration = () => {
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
                                         {teacher.registrationDate}
                                     </td>
+                                    
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {teacher.userPhotoUrl && (
                                             <img
@@ -566,6 +646,15 @@ const TeacherRegistration = () => {
                                             />
                                         )}
                                     </td>
+                                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+    {teacher.isFormTeacher ? (
+        <span className="text-green-600 font-semibold">
+            {teacher.assignClass}
+        </span>
+    ) : (
+        <span className="text-gray-400">No</span>
+    )}
+</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm font-medium">
                                         <button
                                             onClick={() => handleUpdate(teacher)}
