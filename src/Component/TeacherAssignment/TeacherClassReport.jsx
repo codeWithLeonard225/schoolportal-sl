@@ -3,7 +3,7 @@ import { db } from "../../../firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
 import localforage from "localforage";
-import jsPDF from "jsPDF";
+import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 // 1. Initialize Cache
