@@ -738,7 +738,8 @@ const Registration = () => {
                         <label className="block mb-2 font-medium text-sm">Academic Year</label>
                         <select name="academicYear" value={formData.academicYear} onChange={handleInputChange} className="w-full p-2 border rounded-lg" required >
                             <option value="">Select Year</option>
-                            <option value="2025/2026">2025/2026</option>
+                            {/* <option value="2025/2026">2025/2026</option> */}
+                            <option value="2026/2027">2026/2027</option>
                         </select>
                         {/* Display Previous Year */}
                         {formData.id && originalAcademicInfo && (

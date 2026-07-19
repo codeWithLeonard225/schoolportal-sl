@@ -22,36 +22,37 @@ const PrintableStudentForm = () => {
     const [isLoadingSchool, setIsLoadingSchool] = useState(true);
 
     // Effect to fetch school data
-    useEffect(() => {
-        if (!studentData?.schoolId) {
-            setIsLoadingSchool(false);
-            return;
-        }
+   // Effect to fetch school data
+useEffect(() => {
+    if (!studentData?.schoolId) {
+        setIsLoadingSchool(false);
+        return;
+    }
 
-        const fetchSchoolInfo = async () => {
-            try {
-                // Query the 'Schools' collection where 'schoolID' matches the student's ID
-                const schoolsRef = collection(db, "Schools");
-                const q = query(schoolsRef, where("schoolID", "==", studentData.schoolId));
+    const fetchSchoolInfo = async () => {
+        try {
+            // ✅ CORRECTION: Changed "schoolID" to "schoolId"
+            const schoolsRef = collection(db, "Schools");
+            const q = query(schoolsRef, where("schoolId", "==", studentData.schoolId));
 
-                const querySnapshot = await getDocs(q);
+            const querySnapshot = await getDocs(q);
 
-                if (!querySnapshot.empty) {
-                    // Assuming schoolID is unique, take the first document found
-                    setSchoolInfo(querySnapshot.docs[0].data());
-                } else {
-                    console.warn(`No school found with ID: ${studentData.schoolId}`);
-                }
-            } catch (error) {
-                console.error("Error fetching school information:", error);
-                toast.error("Failed to load school header information.");
-            } finally {
-                setIsLoadingSchool(false);
+            if (!querySnapshot.empty) {
+                // Assuming schoolId is unique, take the first document found
+                setSchoolInfo(querySnapshot.docs[0].data());
+            } else {
+                console.warn(`No school found with ID: ${studentData.schoolId}`);
             }
-        };
+        } catch (error) {
+            console.error("Error fetching school information:", error);
+            toast.error("Failed to load school header information.");
+        } finally {
+            setIsLoadingSchool(false);
+        }
+    };
 
-        fetchSchoolInfo();
-    }, [studentData?.schoolId]);
+    fetchSchoolInfo();
+}, [studentData?.schoolId]);
 
     // Effect to auto-trigger the print dialog
     useEffect(() => {

@@ -16,10 +16,12 @@ const ClassPromotion = () => {
   const { user } = useAuth();
   const schoolId = user?.schoolId || "";
 
-  // Academic years usually change annually, so we keep these as a preset
+  // Target preset academic years (for the promotion destination)
   const academicYears = ["2024/2025", "2025/2026", "2026/2027", "2027/2028"];
 
-  const [classesInDb, setClassesInDb] = useState([]); 
+  // States
+  const [selectedSourceYear, setSelectedSourceYear] = useState("");
+  const [allRegisteredClasses, setAllRegisteredClasses] = useState([]); // Master list from 'Classes' collection
   const [sourceClass, setSourceClass] = useState("");
   const [targetClass, setTargetClass] = useState("");
   const [newAcademicYear, setNewAcademicYear] = useState("2026/2027");
@@ -29,33 +31,40 @@ const ClassPromotion = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPromoting, setIsPromoting] = useState(false);
 
-  // 1. Fetch ALL unique class names currently existing in your DB
+  // 1. Fetch ALL official school classes from the "Classes" collection
+  // This instantly includes any newly added class from your handleSubmit form!
   useEffect(() => {
-    const fetchClasses = async () => {
+    const fetchOfficialClasses = async () => {
       if (!schoolId) return;
       try {
-        const q = query(collection(db, "PupilsReg"), where("schoolId", "==", schoolId));
+        const q = query(
+          collection(db, "Classes"),
+          where("schoolId", "==", schoolId)
+        );
         const snapshot = await getDocs(q);
-        const classSet = new Set();
+        const classList = [];
         
         snapshot.forEach((doc) => {
           const data = doc.data();
-          // This captures "Class 1 A", "Class 2 B" exactly as they are typed in the DB
-          if (data.class) classSet.add(data.class);
+          if (data.className) classList.push(data.className);
         });
-        
-        setClassesInDb([...classSet].sort());
+
+        // Remove potential duplicates and sort alphabetically
+        const uniqueSortedClasses = [...new Set(classList)].sort();
+        setAllRegisteredClasses(uniqueSortedClasses);
       } catch (error) {
-        toast.error("Failed to load classes from database");
+        console.error("Error fetching classes list:", error);
+        toast.error("Failed to load registered system classes");
       }
     };
-    fetchClasses();
-  }, [schoolId]);
 
-  // 2. Fetch pupils when the Source Class is selected
+    fetchOfficialClasses();
+  }, [schoolId, isPromoting]); // Re-runs/refreshes safely if a promotion completes
+
+  // 2. Fetch pupils when the Source Class AND Source Academic Year match
   useEffect(() => {
     const fetchPupils = async () => {
-      if (!sourceClass || !schoolId) {
+      if (!sourceClass || !schoolId || !selectedSourceYear) {
         setPupils([]);
         setSelectedIds([]);
         return;
@@ -65,12 +74,21 @@ const ClassPromotion = () => {
         const q = query(
           collection(db, "PupilsReg"),
           where("schoolId", "==", schoolId),
+          where("academicYear", "==", selectedSourceYear), 
           where("class", "==", sourceClass)
         );
         const snapshot = await getDocs(q);
         const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Sort pupils alphabetically by studentName
+        list.sort((a, b) => {
+          const nameA = a.studentName || "";
+          const nameB = b.studentName || "";
+          return nameA.localeCompare(nameB);
+        });
+
         setPupils(list);
-        setSelectedIds(list.map(p => p.id)); // Default to selecting all
+        setSelectedIds([]); 
       } catch (error) {
         toast.error("Error loading pupils");
       } finally {
@@ -78,7 +96,7 @@ const ClassPromotion = () => {
       }
     };
     fetchPupils();
-  }, [sourceClass, schoolId]);
+  }, [sourceClass, schoolId, selectedSourceYear]);
 
   const toggleStudent = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
@@ -86,10 +104,12 @@ const ClassPromotion = () => {
 
   const handlePromotion = async () => {
     if (!targetClass) return toast.error("Please select a Target Class.");
-    if (sourceClass === targetClass) return toast.warn("Source and Target classes are identical.");
+    if (sourceClass === targetClass && selectedSourceYear === newAcademicYear) {
+      return toast.warn("Source and Target parameters are completely identical.");
+    }
     if (selectedIds.length === 0) return toast.error("No students selected.");
 
-    const confirmPromote = window.confirm(`Move ${selectedIds.length} pupils to ${targetClass}?`);
+    const confirmPromote = window.confirm(`Move ${selectedIds.length} pupils to ${targetClass} (${newAcademicYear})?`);
     if (!confirmPromote) return;
 
     setIsPromoting(true);
@@ -104,7 +124,7 @@ const ClassPromotion = () => {
           promotionDate: new Date().toISOString()
         };
 
-        // Update main DB and Login DB (Syncing)
+        // Dual system database update
         await updateDoc(doc(db, "PupilsReg", id), updateData);
         await updateDoc(doc(pupilLoginFetch, "PupilsReg", id), updateData);
       });
@@ -112,7 +132,7 @@ const ClassPromotion = () => {
       await Promise.all(updatePromises);
       toast.update(toastId, { render: "Promotion Successful!", type: "success", isLoading: false, autoClose: 3000 });
       
-      // Remove successfully promoted students from the current preview list
+      // Clear out updated records from view dashboard
       setPupils(prev => prev.filter(p => !selectedIds.includes(p.id)));
       setSelectedIds([]);
     } catch (error) {
@@ -130,7 +150,7 @@ const ClassPromotion = () => {
         <div className="p-8 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex justify-between items-center">
             <div>
                 <h2 className="text-2xl font-black tracking-tight">CLASS PROMOTION</h2>
-                <p className="text-slate-400 text-sm font-medium">Using existing database class architecture</p>
+                <p className="text-slate-400 text-sm font-medium">Filtered by target academic cycle structures</p>
             </div>
             <div className="bg-emerald-500/20 px-4 py-2 rounded-2xl border border-emerald-500/30">
                 <span className="text-emerald-400 font-bold">{selectedIds.length} Selected</span>
@@ -141,44 +161,67 @@ const ClassPromotion = () => {
             
             {/* Control Panel */}
             <div className="lg:col-span-4 space-y-6">
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Class</label>
-                    <select 
-                        value={sourceClass} 
-                        onChange={(e)=>setSourceClass(e.target.value)}
-                        className="w-full mt-2 p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all"
-                    >
-                        <option value="">-- Choose Source --</option>
-                        {classesInDb.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-
-                    <div className="flex justify-center my-4">
-                        <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                            <span className="text-indigo-600 font-bold">↓</span>
-                        </div>
+                
+                {/* Source Selectors */}
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                    <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Source Academic Year</label>
+                        <select 
+                            value={selectedSourceYear} 
+                            onChange={(e)=>setSelectedSourceYear(e.target.value)}
+                            className="w-full mt-2 p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all"
+                        >
+                            <option value="">-- Choose Source Year --</option>
+                            {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
                     </div>
 
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Promote To</label>
-                    <select 
-                        value={targetClass} 
-                        onChange={(e)=>setTargetClass(e.target.value)}
-                        className="w-full mt-2 p-3 bg-indigo-50 border-2 border-indigo-200 rounded-xl font-bold text-indigo-700 outline-none focus:border-indigo-600 transition-all"
-                    >
-                        <option value="">-- Choose Target --</option>
-                        {/* ✅ Uses the same list as the source class */}
-                        {classesInDb.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Class</label>
+                        <select 
+                            value={sourceClass} 
+                            disabled={!selectedSourceYear}
+                            onChange={(e)=>setSourceClass(e.target.value)}
+                            className="w-full mt-2 p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all disabled:bg-slate-100 disabled:text-slate-400"
+                        >
+                            <option value="">-- Choose Source Class --</option>
+                            {allRegisteredClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
                 </div>
 
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Academic Year</label>
-                    <select 
-                        value={newAcademicYear} 
-                        onChange={(e)=>setNewAcademicYear(e.target.value)}
-                        className="w-full mt-2 p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all"
-                    >
-                        {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
+                {/* Transition Visual Divider */}
+                <div className="flex justify-center my-2">
+                    <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center shadow-inner">
+                        <span className="text-indigo-600 font-bold">↓</span>
+                    </div>
+                </div>
+
+                {/* Target Destination Setup */}
+                <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 space-y-4">
+                    <div>
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Promote To Class</label>
+                        <select 
+                            value={targetClass} 
+                            onChange={(e)=>setTargetClass(e.target.value)}
+                            className="w-full mt-2 p-3 bg-white border-2 border-indigo-200 rounded-xl font-bold text-indigo-700 outline-none focus:border-indigo-600 transition-all"
+                        >
+                            <option value="">-- Choose Target Class --</option>
+                            {/* Uses the master classes collection list so fresh classes show up instantly! */}
+                            {allRegisteredClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Target Academic Year</label>
+                        <select 
+                            value={newAcademicYear} 
+                            onChange={(e)=>setNewAcademicYear(e.target.value)}
+                            className="w-full mt-2 p-3 bg-white border-2 border-indigo-200 rounded-xl font-bold text-indigo-700 outline-none focus:border-indigo-600 transition-all"
+                        >
+                            {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                    </div>
                 </div>
 
                 <button
@@ -193,11 +236,13 @@ const ClassPromotion = () => {
             {/* Selection List */}
             <div className="lg:col-span-8 border border-slate-100 rounded-3xl bg-slate-50/50 overflow-hidden">
                 <div className="px-6 py-4 bg-white border-b flex justify-between items-center">
-                    <h3 className="text-xs font-black text-slate-400 uppercase">Class Roster: {sourceClass || 'Select Class'}</h3>
+                    <h3 className="text-xs font-black text-slate-400 uppercase">
+                      Roster: {sourceClass ? `${sourceClass} (${selectedSourceYear})` : 'Select filters'}
+                    </h3>
                     <div className="text-[10px] font-bold text-slate-400">{pupils.length} Total</div>
                 </div>
 
-                <div className="max-h-[500px] overflow-y-auto p-4 space-y-2">
+                <div className="max-h-[540px] overflow-y-auto p-4 space-y-2">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 text-slate-300">
                             <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
@@ -226,7 +271,7 @@ const ClassPromotion = () => {
                         ))
                     ) : (
                         <div className="text-center py-24">
-                            <p className="text-slate-300 italic font-medium text-sm">Choose a source class to view the student list</p>
+                            <p className="text-slate-300 italic font-medium text-sm">Choose source academic year and class to load student roster</p>
                         </div>
                     )}
                 </div>
