@@ -22,6 +22,7 @@ const TermResult = () => {
   const [classGradesData, setClassGradesData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState("Term 1");
+  const [classInfo, setClassInfo] = useState(null);
   const location = useLocation();
 
   const { schoolId, schoolName, schoolLogoUrl } = location.state || {};
@@ -83,6 +84,31 @@ const TermResult = () => {
     };
   }, [academicYear, selectedClass, schoolId]);
 
+
+  // 🔹 Fetch Class Settings (numberOfSubjects)
+useEffect(() => {
+    if (!selectedClass || !schoolId) return;
+
+    const q = query(
+        collection(db, "Classes"),
+        where("className", "==", selectedClass),
+        where("schoolId", "==", schoolId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+
+        if (!snapshot.empty) {
+            setClassInfo(snapshot.docs[0].data());
+        } else {
+            setClassInfo(null);
+        }
+
+    });
+
+    return () => unsubscribe();
+
+}, [selectedClass, schoolId]);
+
   // Matrix Processing Engine utilizing central helpers
   const broadSheetData = useMemo(() => {
     if (classGradesData.length === 0 || pupils.length === 0) {
@@ -97,6 +123,12 @@ const TermResult = () => {
 
     const studentMap = {};
     const summaries = {};
+
+const totalNumberOfSubjects = Number(
+    classInfo?.numberOfSubjects || uniqueSubjects.length
+);
+
+const totalSubjectPercentage = totalNumberOfSubjects * 100;
 
     pupils.forEach((pupil) => {
       const results = {};
@@ -115,7 +147,15 @@ const TermResult = () => {
       studentMap[pupil.studentID] = results;
 
       // Calculate term summaries (totals, percentages, overall positions)
-      const overallMetrics = calculateOverallMetrics(classGradesData, pupilIDs, uniqueSubjects, pupil.studentID);
+     
+      const overallMetrics = calculateOverallMetrics(
+    classGradesData,
+    pupilIDs,
+    uniqueSubjects,
+    pupil.studentID,
+    totalSubjectPercentage,
+    "auto"
+);
       const termSummary = overallMetrics.termSummaries[selectedTerm];
 
       summaries[pupil.studentID] = {
@@ -126,7 +166,12 @@ const TermResult = () => {
     });
 
     return { subjects: uniqueSubjects, studentMap, summaries };
-  }, [classGradesData, pupils, selectedTerm]);
+  }, [
+    classGradesData,
+    pupils,
+    selectedTerm,
+    classInfo
+]);
 
   // Print Mode A: Original Layout (Subjects on Left, Students on Top)
   const handlePrintStandard = () => {

@@ -24,11 +24,11 @@ export const getTermScores = (gradesArray, pupilId, subj, termPrefix) => {
         rawMean = (v1 + v2) / 2;
     }
 
-    return { 
-        t1: t1Val !== null ? Math.round(t1Val) : null, 
-        t2: t2Val !== null ? Math.round(t2Val) : null, 
+    return {
+        t1: t1Val !== null ? Math.round(t1Val) : null,
+        t2: t2Val !== null ? Math.round(t2Val) : null,
         rawMean: rawMean, // High-precision float for ranking and summation
-        mean: rawMean !== null ? Math.round(rawMean) : null 
+        mean: rawMean !== null ? Math.round(rawMean) : null
     };
 };
 
@@ -134,12 +134,12 @@ export const calculateSubjectAnnualRanks = (gradesArray, pupilIDs, uniqueSubject
             const t2 = getTermScores(gradesArray, id, subj, "Term 2").rawMean;
             const t3 = getTermScores(gradesArray, id, subj, "Term 3").rawMean;
 
-       const annualAvg = calculateAnnualMean(
-    t1,
-    t2,
-    t3,
-    calculationMode
-);
+            const annualAvg = calculateAnnualMean(
+                t1,
+                t2,
+                t3,
+                calculationMode
+            );
             return { id, annualAvg };
         }).filter(item => item.annualAvg !== null);
 
@@ -192,9 +192,9 @@ export const calculateOverallMetrics = (
             if (termSubjectCount > 0) {
                 // If specific class subject percentage is passed, calculate relative to that.
                 // Otherwise, fall back to standard subject count * 100
-                const maxTermPercentage = totalSubjectPercentage && totalSubjectPercentage > 0 
-                    ? totalSubjectPercentage 
-                    : (termSubjectCount * 100);
+               const maxTermPercentage = totalSubjectPercentage > 0
+    ? totalSubjectPercentage
+    : (uniqueSubjects.length * 100);
 
                 const percentage = (termSum / maxTermPercentage) * 100;
                 classTermTotals[term].push({ id, total: termSum, percentage });
@@ -207,16 +207,16 @@ export const calculateOverallMetrics = (
             const t3 = getTermScores(gradesArray, id, subj, "Term 3").rawMean;
 
             const annualAverage = calculateAnnualMean(
-    t1,
-    t2,
-    t3,
-    calculationMode
-);
+                t1,
+                t2,
+                t3,
+                calculationMode
+            );
 
-if (annualAverage !== null) {
-    annualSumOfAverages += annualAverage;
-    annualSubjectCount++;
-}
+            if (annualAverage !== null) {
+                annualSumOfAverages += annualAverage;
+                annualSubjectCount++;
+            }
         });
 
         if (annualSubjectCount > 0) {
@@ -262,10 +262,10 @@ if (annualAverage !== null) {
         rank: selectedAnnualStats ? selectedAnnualStats.rank : "—"
     };
 
-    return { 
-        termSummaries: termSummariesCalculated, 
+    return {
+        termSummaries: termSummariesCalculated,
         annualSummary,
-        classTermTotals, 
-        classAnnualAverages 
+        classTermTotals,
+        classAnnualAverages
     };
 };

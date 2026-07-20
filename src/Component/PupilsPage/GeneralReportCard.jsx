@@ -46,7 +46,7 @@ const GeneralReportCard = () => {
     const location = useLocation();
     const [totalPupilsInClass, setTotalPupilsInClass] = useState(0);
     const [calculationMode, setCalculationMode] = useState("auto");
-
+    const [classInfo, setClassInfo] = useState(null);
     const {
         schoolId,
         schoolName,
@@ -81,6 +81,28 @@ const GeneralReportCard = () => {
 
         return () => unsubscribe();
     }, [schoolId, selectedClass]);
+
+    // 🔹 Fetch Class Settings (numberOfSubjects)
+useEffect(() => {
+    if (!selectedClass || !schoolId) return;
+
+    const q = query(
+        collection(pupilLoginFetch, "Classes"),
+        where("className", "==", selectedClass),
+        where("schoolId", "==", schoolId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+            setClassInfo(snapshot.docs[0].data());
+        } else {
+            setClassInfo(null);
+        }
+    });
+
+    return () => unsubscribe();
+
+}, [selectedClass, schoolId]);
 
     // 🔹 Count total pupils in class
     useEffect(() => {
@@ -170,83 +192,90 @@ const GeneralReportCard = () => {
     const pupilInfo = pupils.find((p) => p.studentID === selectedPupil);
 
     // 🧮 Process All Three Terms with Subject Ranks and Dynamic Term Summary Metrics
-   const reportCardData = useMemo(() => {
-    if (pupilGradesData.length === 0) {
-        return {
-            reportRows: [],
-            termSummaries: { "Term 1": null, "Term 2": null, "Term 3": null },
-            annualSummary: { avg: "0.0", rank: "—" }
-        };
-    }
+    const reportCardData = useMemo(() => {
+        if (pupilGradesData.length === 0) {
+            return {
+                reportRows: [],
+                termSummaries: { "Term 1": null, "Term 2": null, "Term 3": null },
+                annualSummary: { avg: "0.0", rank: "—" }
+            };
+        }
 
-    const uniqueSubjects = [...new Set(classGradesData.map((d) => d.subject))].sort();
-    const pupilIDs = [...new Set(classGradesData.map((d) => d.pupilID))];
+        const uniqueSubjects = [...new Set(classGradesData.map((d) => d.subject))].sort();
+        const pupilIDs = [...new Set(classGradesData.map((d) => d.pupilID))];
 
-    // Compute ranks using shared utils engine
-    const subjectTermRanks = calculateSubjectRanks(classGradesData, pupilIDs, uniqueSubjects);
-    const subjectAnnualRanks = calculateSubjectAnnualRanks(classGradesData, pupilIDs, uniqueSubjects, calculationMode);
-    
-    // Compute total metrics using shared utils engine
-    const { termSummaries, annualSummary } = calculateOverallMetrics(
-        classGradesData, 
-        pupilIDs, 
-        uniqueSubjects, 
-        selectedPupil
-    );
+        // Compute ranks using shared utils engine
+        const subjectTermRanks = calculateSubjectRanks(classGradesData, pupilIDs, uniqueSubjects);
+        const subjectAnnualRanks = calculateSubjectAnnualRanks(classGradesData, pupilIDs, uniqueSubjects, calculationMode);
 
-    const reportRows = uniqueSubjects.map((subj) => {
-        const t1Data = getTermScores(pupilGradesData, selectedPupil, subj, "Term 1");
-        const t2Data = getTermScores(pupilGradesData, selectedPupil, subj, "Term 2");
-        const t3Data = getTermScores(pupilGradesData, selectedPupil, subj, "Term 3");
+        // Compute total metrics using shared utils engine
+       const totalNumberOfSubjects = Number(
+    classInfo?.numberOfSubjects || uniqueSubjects.length
+);
 
-        const t1Rank = subjectTermRanks[`${subj}_Term 1`]?.[selectedPupil] || "—";
-        const t2Rank = subjectTermRanks[`${subj}_Term 2`]?.[selectedPupil] || "—";
-        const t3Rank = subjectTermRanks[`${subj}_Term 3`]?.[selectedPupil] || "—";
 
-        const subjectAnnualAverage = calculateAnnualMean(
-    t1Data.rawMean,
-    t2Data.rawMean,
-    t3Data.rawMean,
+const { termSummaries, annualSummary } = calculateOverallMetrics(
+    classGradesData,
+    pupilIDs,
+    uniqueSubjects,
+    selectedPupil,
+    totalNumberOfSubjects * 100,
     calculationMode
 );
 
-        const annualRank = subjectAnnualRanks[subj]?.[selectedPupil] || "—";
+        const reportRows = uniqueSubjects.map((subj) => {
+            const t1Data = getTermScores(pupilGradesData, selectedPupil, subj, "Term 1");
+            const t2Data = getTermScores(pupilGradesData, selectedPupil, subj, "Term 2");
+            const t3Data = getTermScores(pupilGradesData, selectedPupil, subj, "Term 3");
 
-        return {
-            subject: subj,
-            t1: {
-                t1: t1Data.t1 !== null ? t1Data.t1 : "—",
-                t2: t1Data.t2 !== null ? t1Data.t2 : "—",
-                mean: t1Data.mean !== null ? t1Data.mean : "—",
-                rank: t1Rank
-            },
-            t2: {
-                t1: t2Data.t1 !== null ? t2Data.t1 : "—",
-                t2: t2Data.t2 !== null ? t2Data.t2 : "—",
-                mean: t2Data.mean !== null ? t2Data.mean : "—",
-                rank: t2Rank
-            },
-            t3: {
-                t1: t3Data.t1 !== null ? t3Data.t1 : "—",
-                t2: t3Data.t2 !== null ? t3Data.t2 : "—",
-                mean: t3Data.mean !== null ? t3Data.mean : "—",
-                rank: t3Rank
-            },
-            annualAverage:
-    subjectAnnualAverage !== null
-        ? Math.round(subjectAnnualAverage)
-        : "—",
-            annualRank: annualRank
-        };
-    }).filter(row =>
-        row.t1.mean !== "—" || row.t2.mean !== "—" || row.t3.mean !== "—"
-    );
+            const t1Rank = subjectTermRanks[`${subj}_Term 1`]?.[selectedPupil] || "—";
+            const t2Rank = subjectTermRanks[`${subj}_Term 2`]?.[selectedPupil] || "—";
+            const t3Rank = subjectTermRanks[`${subj}_Term 3`]?.[selectedPupil] || "—";
 
-    return { reportRows, termSummaries, annualSummary };
-}, [pupilGradesData, classGradesData, selectedPupil, calculationMode]);
+            const subjectAnnualAverage = calculateAnnualMean(
+                t1Data.rawMean,
+                t2Data.rawMean,
+                t3Data.rawMean,
+                calculationMode
+            );
+
+            const annualRank = subjectAnnualRanks[subj]?.[selectedPupil] || "—";
+
+            return {
+                subject: subj,
+                t1: {
+                    t1: t1Data.t1 !== null ? t1Data.t1 : "—",
+                    t2: t1Data.t2 !== null ? t1Data.t2 : "—",
+                    mean: t1Data.mean !== null ? t1Data.mean : "—",
+                    rank: t1Rank
+                },
+                t2: {
+                    t1: t2Data.t1 !== null ? t2Data.t1 : "—",
+                    t2: t2Data.t2 !== null ? t2Data.t2 : "—",
+                    mean: t2Data.mean !== null ? t2Data.mean : "—",
+                    rank: t2Rank
+                },
+                t3: {
+                    t1: t3Data.t1 !== null ? t3Data.t1 : "—",
+                    t2: t3Data.t2 !== null ? t3Data.t2 : "—",
+                    mean: t3Data.mean !== null ? t3Data.mean : "—",
+                    rank: t3Rank
+                },
+                annualAverage:
+                    subjectAnnualAverage !== null
+                        ? Math.round(subjectAnnualAverage)
+                        : "—",
+                annualRank: annualRank
+            };
+        }).filter(row =>
+            row.t1.mean !== "—" || row.t2.mean !== "—" || row.t3.mean !== "—"
+        );
+
+        return { reportRows, termSummaries, annualSummary };
+    }, [pupilGradesData, classGradesData, selectedPupil, calculationMode]);
 
     // Rest of your file component (handlePrintPDF, render code, etc.) is unchanged
- // 🧾 Generate Professional Three-Term PDF with Custom Prints
+    // 🧾 Generate Professional Three-Term PDF with Custom Prints
     const handlePrintPDF = () => {
         if (!pupilInfo) return;
 
@@ -562,66 +591,66 @@ const GeneralReportCard = () => {
             currentY += 92;
 
             // ======================================
-// PRINCIPAL'S COMMENTS
-// ======================================
-doc.setFont("Helvetica", "bold");
-doc.setFontSize(8);
-doc.setTextColor(79, 70, 229);
+            // PRINCIPAL'S COMMENTS
+            // ======================================
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(8);
+            doc.setTextColor(79, 70, 229);
 
-doc.text("PRINCIPAL'S COMMENTS:", 40, currentY);
+            doc.text("PRINCIPAL'S COMMENTS:", 40, currentY);
 
-doc.setDrawColor(80);
-doc.line(160, currentY + 1, pageWidth - 40, currentY + 1);
+            doc.setDrawColor(80);
+            doc.line(160, currentY + 1, pageWidth - 40, currentY + 1);
 
-currentY += 15;
-
-
-// ======================================
-// GRADING SCALE
-// ======================================
-doc.setFont("Helvetica", "normal");
-doc.setFontSize(7);
-doc.setTextColor(148, 163, 184);
-
-doc.text(
-  "GRADING SCALE:  [Excellent: 80-100]   [Very Good: 70-79]   [Credit: 50-69]   [Pass: 40-49]   [Fail: Under 40]",
-  40,
-  currentY
-);
-
-currentY += 28;
+            currentY += 15;
 
 
-// ======================================
-// SIGNATURES
-// ======================================
-doc.setFont("Helvetica", "normal");
-doc.setFontSize(8);
-doc.setTextColor(100, 116, 139);
+            // ======================================
+            // GRADING SCALE
+            // ======================================
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(7);
+            doc.setTextColor(148, 163, 184);
 
-// Class Teacher
-doc.line(40, currentY, 180, currentY);
-doc.text("Class Teacher's Signature & Date", 40, currentY + 12);
+            doc.text(
+                "GRADING SCALE:  [Excellent: 80-100]   [Very Good: 70-79]   [Credit: 50-69]   [Pass: 40-49]   [Fail: Under 40]",
+                40,
+                currentY
+            );
 
-// Principal
-doc.line(pageWidth / 2 - 70, currentY, pageWidth / 2 + 70, currentY);
-doc.text(
-  "Principal's Signature & Date",
-  pageWidth / 2 - 70,
-  currentY + 12
-);
-
-// School Stamp
-doc.line(pageWidth - 220, currentY, pageWidth - 80, currentY);
-doc.text(
-  "Official School Stamp",
-  pageWidth - 220,
-  currentY + 12
-);
+            currentY += 28;
 
 
-// Save PDF
-doc.save(`${pupilInfo.studentName}_Comprehensive_Annual_Report.pdf`);
+            // ======================================
+            // SIGNATURES
+            // ======================================
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+
+            // Class Teacher
+            doc.line(40, currentY, 180, currentY);
+            doc.text("Class Teacher's Signature & Date", 40, currentY + 12);
+
+            // Principal
+            doc.line(pageWidth / 2 - 70, currentY, pageWidth / 2 + 70, currentY);
+            doc.text(
+                "Principal's Signature & Date",
+                pageWidth / 2 - 70,
+                currentY + 12
+            );
+
+            // School Stamp
+            doc.line(pageWidth - 220, currentY, pageWidth - 80, currentY);
+            doc.text(
+                "Official School Stamp",
+                pageWidth - 220,
+                currentY + 12
+            );
+
+
+            // Save PDF
+            doc.save(`${pupilInfo.studentName}_Comprehensive_Annual_Report.pdf`);
         });
     };
 
@@ -668,33 +697,33 @@ doc.save(`${pupilInfo.studentName}_Comprehensive_Annual_Report.pdf`);
                     </div>
 
                     {/* Calculation Mode Selector */}
-<div>
-    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-        Annual Calculation
-    </label>
+                    <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                            Annual Calculation
+                        </label>
 
-    <select
-        className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        value={calculationMode}
-        onChange={(e) => setCalculationMode(e.target.value)}
-    >
-        <option value="auto">
-            Auto (Available Terms)
-        </option>
+                        <select
+                            className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            value={calculationMode}
+                            onChange={(e) => setCalculationMode(e.target.value)}
+                        >
+                            <option value="auto">
+                                Auto (Available Terms)
+                            </option>
 
-        <option value="term1_2">
-            Term 1 + Term 2
-        </option>
+                            <option value="term1_2">
+                                Term 1 + Term 2
+                            </option>
 
-        <option value="term2_3">
-            Term 2 + Term 3
-        </option>
+                            <option value="term2_3">
+                                Term 2 + Term 3
+                            </option>
 
-        <option value="3">
-            Divide by 3 Terms
-        </option>
-    </select>
-</div>
+                            <option value="3">
+                                Divide by 3 Terms
+                            </option>
+                        </select>
+                    </div>
                 </div>
 
                 <div className="flex justify-end mt-6 border-t border-slate-100 pt-4">
