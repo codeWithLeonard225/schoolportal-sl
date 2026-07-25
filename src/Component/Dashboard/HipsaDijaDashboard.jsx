@@ -9,7 +9,7 @@ import {
     MdBarChart,
 
 } from "react-icons/md";
-import StaffAttendance from "../TeacherAssignment/StaffAttendance";
+import StaffAttendance from "../TeacherAssignment/HammondAttendance/StaffAttendance";
 import GeneralStaffAttendanceReport from "../TeacherAssignment/GeneralStaffAttendanceReport";
 import LogoutPage from "../Admin/LogoutPage"
 import FeesDashboard from "./FeesDsahboard";

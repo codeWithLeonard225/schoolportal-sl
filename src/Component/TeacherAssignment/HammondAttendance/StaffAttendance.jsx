@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "react-toastify";
-import { db } from "../../../firebase"; 
-import { schoollpq } from "../Database/schoollibAndPastquestion";
+import { db } from "../../../../firebase"; 
+import { schoollpq } from "../../Database/schoollibAndPastquestion";
+import { className } from "../../TeacherAssignment/HammondAttendance/ClassNAmeData"; // 👈 Import className object
 import {
   collection,
   addDoc,
@@ -12,7 +13,7 @@ import {
   onSnapshot,
   getDocs,
 } from "firebase/firestore";
-import { useAuth } from "../Security/AuthContext";
+import { useAuth } from "../../Security/AuthContext";
 import localforage from "localforage";
 
 const STORE_NAME = "StaffSimpleCache";
@@ -35,6 +36,9 @@ export default function StaffAttendanceSimple() {
   const [attendanceDate, setAttendanceDate] = useState(getTodayDate());
   const [unsaved, setUnsaved] = useState({});
   const [attendanceRecords, setAttendanceRecords] = useState({}); 
+
+  // ✅ New State: Active Section Filter ('All' | 'Primary' | 'Secondary')
+  const [activeCategory, setActiveCategory] = useState("All");
 
   const CACHE_KEY = `staff_list_${schoolId}`;
 
@@ -103,9 +107,24 @@ export default function StaffAttendanceSimple() {
     })();
   }, [schoolId, attendanceDate]);
 
+  // ✅ Filter staff by section category and sort alphabetically
   const filtered = useMemo(() => {
-    return [...staffList].sort((a,b) => (a.teacherName||"").localeCompare(b.teacherName || ""));
-  }, [staffList]);
+    return staffList
+      .filter((s) => {
+        if (activeCategory === "All") return true;
+
+        // Check if teacher is assigned to a class in the active category array
+        if (activeCategory === "Primary") {
+          return className.Primary.includes(s.assignClass);
+        }
+        if (activeCategory === "Secondary") {
+          return className.Secondary.includes(s.assignClass);
+        }
+
+        return true;
+      })
+      .sort((a, b) => (a.teacherName || "").localeCompare(b.teacherName || ""));
+  }, [staffList, activeCategory]);
 
   // Checks if record is saved or for a past date
   const isAttendanceLocked = useCallback((staffID) => {
@@ -232,9 +251,26 @@ export default function StaffAttendanceSimple() {
   return (
     <div className="max-w-5xl mx-auto p-3 sm:p-6 bg-gray-50 min-h-screen">
       <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-        <h2 className="text-2xl sm:text-3xl font-extrabold mb-4 sm:mb-6 text-center text-indigo-700">
+        <h2 className="text-2xl sm:text-3xl font-extrabold mb-4 text-center text-indigo-700">
           Staff Daily Attendance 🗓️
         </h2>
+
+        {/* --- Category Filter Buttons --- */}
+        <div className="flex justify-center items-center gap-2 mb-6">
+          {["All", "Primary", "Secondary"].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-5 py-2 text-sm font-bold rounded-lg transition-all shadow-sm ${
+                activeCategory === cat
+                  ? "bg-indigo-600 text-white shadow-md scale-105"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+              }`}
+            >
+              {cat === "All" ? "All Staff" : `${cat} Section`}
+            </button>
+          ))}
+        </div>
 
         {/* --- Filter & Action Bar --- */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
@@ -271,7 +307,9 @@ export default function StaffAttendanceSimple() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center p-8 text-gray-600 bg-gray-100 rounded-lg shadow-inner">
-            <p className="font-medium text-lg">No staff members found in the system for this school.</p>
+            <p className="font-medium text-lg">
+              No staff members found {activeCategory !== "All" ? `for ${activeCategory} Section` : "in the system"}.
+            </p>
           </div>
         ) : (
           <div className="border border-gray-200 rounded-lg shadow-md overflow-hidden">
@@ -304,10 +342,13 @@ export default function StaffAttendanceSimple() {
                       key={s.id} 
                       className={`hover:bg-gray-50 ${rowHasUnsaved ? 'bg-yellow-50 border-l-4 border-yellow-400' : ''} ${isLocked ? 'bg-gray-100 opacity-60' : ''}`}
                     >
-                      {/* Name & ID Column */}
+                      {/* Name & ID & Class Column */}
                       <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm font-medium text-gray-900">
                         <div className="flex flex-col">
                           <span>{s.teacherName} {isLocked && '🔒'}</span>
+                          <span className="text-xs text-gray-500 font-normal">
+                            Assigned Class: <strong className="text-indigo-600">{s.assignClass || "None"}</strong>
+                          </span>
                           <span className="text-xs text-gray-400 font-normal sm:hidden">
                             ID: {s.teacherID || "N/A"}
                           </span>
@@ -322,7 +363,7 @@ export default function StaffAttendanceSimple() {
                       {/* Actions Column */}
                       <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
                         
-                        {/* --- SMALL SCREENS: Dropdown Select --- */}
+                        {/* SMALL SCREENS: Dropdown Select */}
                         <div className="block sm:hidden">
                           <select
                             value={status}
@@ -342,7 +383,7 @@ export default function StaffAttendanceSimple() {
                           </select>
                         </div>
 
-                        {/* --- MEDIUM & LARGER SCREENS: Button Group --- */}
+                        {/* MEDIUM & LARGER SCREENS: Button Group */}
                         <div className="hidden sm:flex justify-center space-x-1.5">
                           <button 
                             onClick={() => handleAttendanceChange(idKey, "Present")} 

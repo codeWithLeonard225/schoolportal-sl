@@ -7,10 +7,12 @@ import autoTable from "jspdf-autotable";
 import { useLocation } from "react-router-dom";
 
 // Centralized computation engine imports
-import { getTermScores, 
-    calculateSubjectRanks, 
-    calculateSubjectAnnualRanks, 
-    calculateOverallMetrics } from "../Utilis/ResultCalculators";
+import {
+  getTermScores,
+  calculateAnnualMean,
+  calculateSubjectAnnualRanks,
+  calculateOverallMetrics
+} from "../Utilis/ResultCalculators";
 
 const YearlyResult = () => {
   const [academicYear, setAcademicYear] = useState("");
@@ -72,92 +74,198 @@ const YearlyResult = () => {
 
   // 3. Yearly Logic Engine (Using Centralized Utilities)
   const yearlyData = useMemo(() => {
-    if (allYearGrades.length === 0 || pupils.length === 0) {
-      return { subjects: [], studentMap: {}, summaries: {} };
+
+  if (allYearGrades.length === 0 || pupils.length === 0) {
+    return {
+      subjects: [],
+      studentMap: {},
+      summaries: {}
+    };
+  }
+
+
+  const subjects = [
+    ...new Set(allYearGrades.map(d => d.subject))
+  ].sort();
+
+
+  const pupilIDs = pupils.map(
+    p => p.studentID
+  );
+
+
+  const studentMap = {};
+  const summaries = {};
+
+
+  // Subject annual position
+  const subjectAnnualRanks =
+    calculateSubjectAnnualRanks(
+      allYearGrades,
+      pupilIDs,
+      subjects,
+      calcMode
+    );
+
+
+  /*
+    Generate each student's subject results
+  */
+  pupils.forEach(pupil => {
+
+    const pId = pupil.studentID;
+
+    studentMap[pId] = {};
+
+
+    subjects.forEach(sub => {
+
+
+      const t1 =
+        getTermScores(
+          allYearGrades,
+          pId,
+          sub,
+          "Term 1"
+        );
+
+
+      const t2 =
+        getTermScores(
+          allYearGrades,
+          pId,
+          sub,
+          "Term 2"
+        );
+
+
+      const t3 =
+        getTermScores(
+          allYearGrades,
+          pId,
+          sub,
+          "Term 3"
+        );
+
+
+      const yearlyMean =
+        calculateAnnualMean(
+          t1.mean,
+          t2.mean,
+          t3.mean,
+          calcMode
+        );
+
+
+      studentMap[pId][sub] = {
+
+        m1: t1.mean,
+
+        m2: t2.mean,
+
+        m3: t3.mean,
+
+
+        yearlyMean,
+
+
+        subRank:
+          subjectAnnualRanks[sub]?.[pId] || "-"
+      };
+
+
+    });
+
+  });
+
+
+
+  /*
+    Overall class calculation
+  */
+
+  const metrics =
+    calculateOverallMetrics(
+      allYearGrades,
+      pupilIDs,
+      subjects,
+      null,
+      calcMode
+    );
+
+
+  const allStats =
+    metrics.allStudentsStats;
+
+
+
+  /*
+    Generate footer summaries
+  */
+
+  pupils.forEach(p => {
+
+
+    const stat =
+      allStats.find(
+        s => s.id === p.studentID
+      );
+
+
+    if(stat){
+
+      const total =
+        stat.annual;
+
+
+      const percentage =
+        (
+          total / subjects.length
+        ).toFixed(1);
+
+
+
+      const sorted =
+        [...allStats]
+        .sort(
+          (a,b)=>
+          b.annual - a.annual
+        );
+
+
+      const rank =
+        sorted.findIndex(
+          s=>s.id===p.studentID
+        ) + 1;
+
+
+
+      summaries[p.studentID]={
+        total,
+        percentage,
+        rank
+      };
+
+
     }
 
-    const subjects = [...new Set(allYearGrades.map(d => d.subject))].sort();
-    const pupilIDs = pupils.map(p => p.studentID);
-    const studentMap = {};
-    const summaries = {};
 
-    // Calculate subject-specific annual rankings across the class
-    const subjectAnnualRanks = calculateSubjectAnnualRanks(allYearGrades, pupilIDs, subjects);
+  });
 
-    pupils.forEach(pupil => {
-      const pId = pupil.studentID;
-      const results = {};
-      let totalYearlySum = 0;
-      let totalMaxAchievableScore = 0;
 
-      subjects.forEach(sub => {
-        // Fetch raw decimal term means
-        const t1Data = getTermScores(allYearGrades, pId, sub, "Term 1");
-        const t2Data = getTermScores(allYearGrades, pId, sub, "Term 2");
-        const t3Data = getTermScores(allYearGrades, pId, sub, "Term 3");
 
-        const m1 = t1Data.mean !== null ? t1Data.mean : 0;
-        const m2 = t2Data.mean !== null ? t2Data.mean : 0;
-        const m3 = t3Data.mean !== null ? t3Data.mean : 0;
+  return {
+    subjects,
+    studentMap,
+    summaries
+  };
 
-        let divisor = 3;
-        let scoreSum = m1 + m2 + m3;
 
-        // Apply Calculation Mode overrides on the UI display rules
-        if (calcMode === "auto") {
-          let activeTermsCount = 0;
-          if (t1Data.mean !== null) activeTermsCount++;
-          if (t2Data.mean !== null) activeTermsCount++;
-          if (t3Data.mean !== null) activeTermsCount++;
-          divisor = activeTermsCount > 0 ? activeTermsCount : 1;
-        } else if (calcMode === "term1_2") {
-          divisor = 2;
-          scoreSum = m1 + m2;
-        } else if (calcMode === "term2_3") {
-          divisor = 2;
-          scoreSum = m2 + m3;
-        } else {
-          divisor = Number(calcMode);
-        }
-
-        const calculatedAvg = Math.round(scoreSum / divisor);
-        const subRank = subjectAnnualRanks[sub]?.[pId] || "—";
-
-        results[sub] = {
-          m1,
-          m2,
-          m3,
-          yearlyMean: calculatedAvg,
-          subRank
-        };
-
-        totalYearlySum += calculatedAvg;
-        totalMaxAchievableScore += 100;
-      });
-
-      studentMap[pId] = results;
-    });
-
-    // Obtain overall student class aggregates using the unified helper
-    const metrics = calculateOverallMetrics(allYearGrades, pupilIDs, subjects, null);
-    
-    // Convert overall averages from classAnnualAverages back to local UI formatting map
-    pupils.forEach(p => {
-      const pId = p.studentID;
-      const classEntry = metrics.classAnnualAverages.find(item => item.id === pId);
-      
-      const calculatedSum = Object.values(studentMap[pId] || {}).reduce((acc, curr) => acc + curr.yearlyMean, 0);
-      const calculatedPercentage = ((calculatedSum / (subjects.length * 100)) * 100).toFixed(1);
-
-      summaries[pId] = {
-        total: calculatedSum,
-        percentage: calculatedPercentage,
-        rank: classEntry ? classEntry.rank : "—"
-      };
-    });
-
-    return { subjects, studentMap, summaries };
-  }, [allYearGrades, pupils, calcMode]);
+},[
+  allYearGrades,
+  pupils,
+  calcMode
+]);
 
   // 4. Print Mode A: Standard Matrix (AVG & POS only)
   const handleExportPDF = () => {
