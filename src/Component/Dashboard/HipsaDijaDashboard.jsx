@@ -9,7 +9,7 @@ import {
     MdBarChart,
 
 } from "react-icons/md";
-import StaffAttendance from "../TeacherAssignment/HammondAttendance/StaffAttendance";
+import StaffAttendance from "../TeacherAssignment/StaffAttendance";
 import GeneralStaffAttendanceReport from "../TeacherAssignment/GeneralStaffAttendanceReport";
 import LogoutPage from "../Admin/LogoutPage"
 import FeesDashboard from "./FeesDsahboard";
@@ -19,6 +19,7 @@ import TeacherPupilsPageAdmin from "../TeacherAssignment/TeacherPupilsPageAdminJ
 import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPageJunior";
 import TermResult from "../TeacherAssignment/TermResultJunior";
 import GeneralReportCard from "../PupilsPage/GeneralReportCardJunior";
+import SubGradeMatrixGeneral from "../TeacherAssignment/SubGradeMatrixPage";
 
 
 // --- Navigation Items ---
@@ -49,6 +50,7 @@ const NAV_ITEMS = [
         children: [
             { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
             { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
+            { key: "SubGradeMatrixGeneral", label: "Sub Grade General", icon: <MdPerson /> },
             { key: "TermResult", label: "Term Grade Sheet", icon: <MdPerson /> },
             { key: "GeneralReportCard", label: "ReportCard", icon: <MdPerson /> },
             // { key: "Testing", label: "Testing", icon: <MdPerson /> },
@@ -151,6 +153,7 @@ function HipsaDijaDashboard() {
             case "TimeTableDailyAttendanceReport": return <TimeTableDailyAttendanceReport />;
             case "TeacherPupilsPageAdmin": return <TeacherPupilsPageAdmin />;
             case "SubGradeMatrixPage": return <SubGradeMatrixPage />;
+            case "SubGradeMatrixGeneral": return <SubGradeMatrixPage />;
             case "GeneralReportCard": return <GeneralReportCard />;
             case "TermResult": return <TermResult />;
             case "LogoutPage": return <LogoutPage />;
