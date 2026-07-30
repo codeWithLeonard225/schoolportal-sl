@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "react-toastify";
 import { db } from "../../../../firebase"; 
 import { schoollpq } from "../../Database/schoollibAndPastquestion";
-import { className } from "../../TeacherAssignment/HammondAttendance/ClassNAmeData"; // 👈 Import className object
+import { className } from "../HammondAttendance/ClassNAmeData"; // 👈 Import className object
+
 import {
   collection,
   addDoc,
