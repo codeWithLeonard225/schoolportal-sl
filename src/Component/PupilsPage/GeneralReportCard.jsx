@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { db } from "../../../firebase";
 import { schooldb } from "../Database/SchoolsResults";
-import { pupilLoginFetch } from "../Database/PupilLogin";
 import { getDocs, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -113,7 +112,7 @@ const GeneralReportCard = () => {
         }
 
         const pupilsRef = query(
-            collection(pupilLoginFetch, "PupilsReg"),
+            collection(db, "PupilsReg"),
             where("academicYear", "==", academicYear),
             where("schoolId", "==", schoolId)
         );
@@ -139,7 +138,7 @@ const GeneralReportCard = () => {
         setSelectedPupil("");
 
         const q = query(
-            collection(pupilLoginFetch, "PupilsReg"),
+            collection(db, "PupilsReg"),
             where("schoolId", "==", schoolId),
             where("academicYear", "==", academicYear),
         );
@@ -214,7 +213,7 @@ const GeneralReportCard = () => {
         );
 
 
-       const { termSummaries, annualSummary } = calculateOverallMetrics(
+        const { termSummaries, annualSummary } = calculateOverallMetrics(
     classGradesData,
     pupilIDs,
     uniqueSubjects,
@@ -238,9 +237,9 @@ const GeneralReportCard = () => {
                 calculationMode
             );
 
-           
 
-          
+
+
             const annualRank = subjectAnnualRanks[subj]?.[selectedPupil] || "—";
 
             return {
@@ -272,9 +271,9 @@ const GeneralReportCard = () => {
         }).filter(row =>
             row.t1.mean !== "—" || row.t2.mean !== "—" || row.t3.mean !== "—"
         );
-          const annualTotal = reportRows.reduce((sum, row) => {
-                return sum + (Number(row.annualAverage) || 0);
-            }, 0);
+        const annualTotal = reportRows.reduce((sum, row) => {
+            return sum + (Number(row.annualAverage) || 0);
+        }, 0);
 
 
         return {
@@ -557,26 +556,26 @@ const GeneralReportCard = () => {
             doc.setFont("Helvetica", "bold");
             doc.setTextColor(79, 70, 229);
 
-           doc.text(
-    `${reportCardData.annualTotal}`,
-    pageWidth / 2 - 55,
-    currentY + 28,
-    { align: "right" }
-);
+            doc.text(
+                `${reportCardData.annualTotal}`,
+                pageWidth / 2 - 55,
+                currentY + 28,
+                { align: "right" }
+            );
 
-doc.text(
-    `${reportCardData.annualSummary.avg}%`,
-    pageWidth / 2 - 55,
-    currentY + 43,
-    { align: "right" }
-);
+            doc.text(
+                `${reportCardData.annualSummary.avg}%`,
+                pageWidth / 2 - 55,
+                currentY + 43,
+                { align: "right" }
+            );
 
-doc.text(
-    `${reportCardData.annualSummary.rank} / ${totalPupilsInClass}`,
-    pageWidth / 2 - 55,
-    currentY + 58,
-    { align: "right" }
-);
+            doc.text(
+                `${reportCardData.annualSummary.rank} / ${totalPupilsInClass}`,
+                pageWidth / 2 - 55,
+                currentY + 58,
+                { align: "right" }
+            );
 
             // Blank line for promotion class
             doc.setTextColor(30, 41, 59);
@@ -921,8 +920,8 @@ doc.text(
                                             <td className="py-2.5 border-r border-slate-200 text-slate-800">{reportCardData.termSummaries["Term 3"]?.total}</td>
                                             <td className="border-r border-slate-200"></td>
                                             <td className="py-2.5 border-r border-slate-200 font-bold text-indigo-800 bg-indigo-50/50">
-    {reportCardData.annualTotal}
-</td>
+                                                {reportCardData.annualTotal}
+                                            </td>
                                             <td className="border-r border-slate-200"></td>
                                             <td></td>
                                         </tr>

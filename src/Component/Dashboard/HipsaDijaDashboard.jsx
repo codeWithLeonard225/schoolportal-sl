@@ -13,6 +13,8 @@ import StaffAttendance from "../TeacherAssignment/HammondAttendance/StaffAttenda
 import GeneralStaffAttendanceReport from "../TeacherAssignment/GeneralStaffAttendanceReport";
 import LogoutPage from "../Admin/LogoutPage"
 import FeesDashboard from "./FeesDsahboard";
+import TeacherRegistration from "../Voters/TeacherRegistration";
+import Registration from "../Voters/Registration";
 import TeacherPupilsPageAdmin from "../TeacherAssignment/TeacherPupilsPageAdminJunior";
 import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPageJunior";
 import TermResult from "../TeacherAssignment/TermResultJunior";
@@ -21,6 +23,15 @@ import GeneralReportCard from "../PupilsPage/GeneralReportCardJunior";
 
 // --- Navigation Items ---
 const NAV_ITEMS = [
+   {
+        key: "Registration",
+        label: "Registration",
+        icon: <MdBarChart />,
+        children: [
+            { key: "pupilReg", label: "Pupil Reg", icon: <MdPerson /> },
+            { key: "staffReg", label: "Staff Reg", icon: <MdPerson /> },
+        ],
+    },
     {
         key: "staffAttendance",
         label: "Staff Attendance",
@@ -43,6 +54,7 @@ const NAV_ITEMS = [
             // { key: "Testing", label: "Testing", icon: <MdPerson /> },
 
         ],
+ 
     },
 
     // {
@@ -132,6 +144,8 @@ function HipsaDijaDashboard() {
         switch (activeTab) {
             case "dashboard": return <FeesDashboard />;
             case "staffAttendance": return <StaffAttendance />;
+            case "pupilReg": return <Registration />;
+            case "staffReg": return <TeacherRegistration />;
             case "GeneralStaffAttendanceReport": return <GeneralStaffAttendanceReport />;
             case "WeeklyTimetableReport": return <WeeklyTimetableReport />;
             case "TimeTableDailyAttendanceReport": return <TimeTableDailyAttendanceReport />;

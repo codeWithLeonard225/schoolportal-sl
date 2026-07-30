@@ -11,6 +11,7 @@ import {
     query,
     where,
     getDocs,
+    // ⭐️ Firestore CRUD Imports
     updateDoc,
     addDoc,
     deleteDoc,
@@ -19,15 +20,20 @@ import {
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
-// 💾 Initialize localforage stores
+// 💾 Initialize localforage stores with NEW names
+const assignmentStore = localforage.createInstance({
+    name: "TeacherDataCache",
+    storeName: "teacher_assignments",
+});
+
 const pupilStore = localforage.createInstance({
     name: "TeacherDataCache",
-    storeName: "teacher_pupils",
+    storeName: "teacher_pupils", // ⭐️ NEW NAME
 });
 
 const gradeStore = localforage.createInstance({
     name: "TeacherDataCache",
-    storeName: "teacher_grades",
+    storeName: "teacher_grades", // ⭐️ NEW NAME
 });
 
 const GradeSheetPage = () => {
@@ -44,12 +50,14 @@ const GradeSheetPage = () => {
     const [loading, setLoading] = useState(false);
     const [classesCache, setClassesCache] = useState([]);
 
+    // ⭐️ State for tracking temporary edits
+    // Format: { 'pupilID-subjectName': { value: newGrade, gradeDocId: firestoreId } }
     const [editingGrades, setEditingGrades] = useState({});
 
     const tests = ["Term 1 T1", "Term 1 T2", "Term 2 T1", "Term 2 T2", "Term 3 T1", "Term 3 T2"];
     const MAX_SCORE_PER_SUBJECT = 100;
 
-    // Fetch Classes Cache
+    // 🔹 Fetch Classes Cache (for subjectPercentage) - NO CACHING IMPLEMENTED HERE
     useEffect(() => {
         if (!schoolId) return;
         const fetchClasses = async () => {
@@ -60,7 +68,7 @@ const GradeSheetPage = () => {
         fetchClasses();
     }, [schoolId]);
 
-    // Fetch academic years and classes
+    // 🔹 Fetch academic years and classes from grades - NO CACHING IMPLEMENTED HERE (Uses Live Snapshot)
     useEffect(() => {
         if (!schoolId || schoolId === "N/A") return;
 
@@ -79,22 +87,27 @@ const GradeSheetPage = () => {
         return () => unsub();
     }, [schoolId, academicYear, selectedClass]);
 
-    // Fetch pupils
+    // 🔹 Fetch pupils (MODIFIED: Cache-First Strategy Implemented)
     useEffect(() => {
         if (!selectedClass || !academicYear || !schoolId) return;
 
         const cacheKey = `${schoolId}-${academicYear}-${selectedClass}-pupils`;
 
         const fetchPupils = async () => {
+            // 1. Check Cache First
             try {
                 const cachedPupils = await pupilStore.getItem(cacheKey);
                 if (cachedPupils) {
                     setPupils(cachedPupils);
+                    console.log(`✅ Loaded ${cachedPupils.length} pupils from cache.`);
+                } else {
+                    console.log("No pupils found in cache. Fetching from Firestore...");
                 }
             } catch (error) {
                 console.error("Error reading pupils cache:", error);
             }
 
+            // 2. Fetch Live Data from Firestore
             const pupilsQuery = query(
                 collection(pupilLoginFetch, "PupilsReg"),
                 where("schoolId", "==", schoolId),
@@ -102,13 +115,17 @@ const GradeSheetPage = () => {
                 where("academicYear", "==", academicYear)
             );
 
+            // Use onSnapshot for live updates (Firestore default behavior is offline-first anyway)
+            // But we explicitly use the snapshot listener for real-time sync.
             const unsub = onSnapshot(pupilsQuery, async (snapshot) => {
                 const liveData = snapshot.docs
                     .map((doc) => ({ id: doc.id, ...doc.data(), studentID: doc.data().studentID }))
                     .sort((a, b) => a.studentName.localeCompare(b.studentName));
 
+                // 3. Update UI and Cache
                 setPupils(liveData);
                 await pupilStore.setItem(cacheKey, liveData);
+                console.log(`🔄 Updated ${liveData.length} pupils from Firestore and saved to cache.`);
             });
 
             return unsub;
@@ -120,24 +137,31 @@ const GradeSheetPage = () => {
         };
     }, [selectedClass, academicYear, schoolId]);
 
-    // Fetch grades (Initial fetch only triggers full loading UI)
-    const fetchGrades = React.useCallback(async (isInitialLoad = false) => {
+
+    // 🔹 Fetch grades (MODIFIED: Cache-First Strategy Implemented)
+    const fetchGrades = React.useCallback(async () => {
         if (!selectedClass || !selectedTest || !academicYear || !schoolId) return;
 
-        if (isInitialLoad) setLoading(true);
+        setLoading(true);
+        setEditingGrades({}); // Clear edits state when filters change
 
         const cacheKey = `${schoolId}-${academicYear}-${selectedClass}-${selectedTest}-grades`;
 
+        // 1. Check Cache First
         try {
             const cachedGrades = await gradeStore.getItem(cacheKey);
-            if (cachedGrades && isInitialLoad) {
+            if (cachedGrades) {
                 setGradesData(cachedGrades);
                 setLoading(false);
+                console.log(`✅ Loaded ${cachedGrades.length} grades from cache.`);
+            } else {
+                console.log("No grades found in cache. Fetching from Firestore...");
             }
         } catch (error) {
             console.error("Error reading grades cache:", error);
         }
 
+        // 2. Fetch Live Data from Firestore
         const gradesQuery = query(
             collection(schooldb, "PupilGrades"),
             where("schoolId", "==", schoolId),
@@ -148,27 +172,31 @@ const GradeSheetPage = () => {
 
         try {
             const snapshot = await getDocs(gradesQuery);
+            // ⭐️ Store the Firestore Document ID (gradeDocId) for updates/deletes
             const liveData = snapshot.docs.map(doc => ({
                 gradeDocId: doc.id,
                 ...doc.data()
             }));
 
+            // 3. Update UI and Cache
             setGradesData(liveData);
             await gradeStore.setItem(cacheKey, liveData);
+            console.log(`🔄 Updated ${liveData.length} grades from Firestore and saved to cache.`);
 
         } catch (error) {
             console.error("Error fetching grades from Firestore:", error);
             toast.error("Failed to fetch latest grades.");
         } finally {
-            if (isInitialLoad) setLoading(false);
+            setLoading(false);
         }
     }, [selectedClass, selectedTest, academicYear, schoolId]);
 
     useEffect(() => {
-        fetchGrades(true);
+        fetchGrades();
     }, [fetchGrades]);
 
-    // Calculate totals, percentages, ranks
+
+    // 🔹 Calculate subjects, grades, totals, percentages, and ranks (Unchanged)
     const { subjects, pupilGradesMap, pupilTotals, gradeDocMap } = React.useMemo(() => {
         if (!gradesData.length || !pupils.length) return { subjects: [], pupilGradesMap: {}, pupilTotals: {}, gradeDocMap: {} };
 
@@ -179,10 +207,12 @@ const GradeSheetPage = () => {
         gradesData.forEach(g => {
             if (gradesMap[g.subject]) {
                 gradesMap[g.subject][g.pupilID] = g.grade;
+                // ⭐️ Map the Firestore Document ID to pupil and subject
                 docMap[g.subject][g.pupilID] = g.gradeDocId;
             }
         });
 
+        // Get subjectPercentage for selected class
         const classInfo = classesCache.find(c => c.schoolId === schoolId && c.className === selectedClass);
         const totalSubjectPercentage = classInfo?.subjectPercentage || (uniqueSubjects.length * MAX_SCORE_PER_SUBJECT);
 
@@ -190,6 +220,7 @@ const GradeSheetPage = () => {
         const perf = pupils.map(pupil => {
             let total = 0;
             uniqueSubjects.forEach(sub => {
+                // Use the fetched grade for total calculation
                 const grade = gradesMap[sub]?.[pupil.studentID];
                 if (grade != null) total += grade;
             });
@@ -199,32 +230,41 @@ const GradeSheetPage = () => {
 
         perf.sort((a, b) => b.percentage - a.percentage);
         let rank = 1;
+        // Logic for calculating ranks while handling ties
         perf.forEach((p, i) => {
             if (i > 0 && p.percentage < perf[i - 1].percentage) {
                 rank = i + 1;
             } else if (i > 0 && p.percentage === perf[i - 1].percentage) {
+                // If tied with the previous, retain the rank of the previous entry
                 rank = totalsMap[perf[i - 1].studentID].rank; 
             } else {
+                // First element or first element after a tie break
                 rank = i + 1;
             }
 
             totalsMap[p.studentID] = { totalSum: p.total, percentage: p.percentage.toFixed(1), rank: p.total === 0 ? "N/A" : rank };
         });
 
+
         return { subjects: uniqueSubjects, pupilGradesMap: gradesMap, pupilTotals: totalsMap, gradeDocMap: docMap };
     }, [gradesData, pupils, selectedClass, schoolId, classesCache]);
 
+
+    // 🔹 Handler for grade input change (Unchanged)
     const handleGradeInputChange = (pupilID, subject, gradeDocId, value) => {
+        // Store temporary edits
         setEditingGrades(prev => ({
             ...prev,
-            [`${pupilID}-${subject}`]: { value, gradeDocId }
+            [`${pupilID}-${subject}`]: {
+                value,
+                gradeDocId
+            }
         }));
     };
 
-    // ⚡ Save without page flash or scroll jump
-    const handleSaveGrade = async (e, pupilID, subject, gradeDocId) => {
-        if (e) e.preventDefault();
 
+    // 🔹 Handler for saving the updated grade OR adding new (Will refresh by calling fetchGrades)
+    const handleSaveGrade = async (pupilID, subject, gradeDocId) => {
         const editKey = `${pupilID}-${subject}`;
         const editedGrade = editingGrades[editKey];
 
@@ -242,19 +282,13 @@ const GradeSheetPage = () => {
 
         try {
             if (gradeDocId) {
-                // Update Firestore
+                // ✅ UPDATE existing grade
                 const gradeRef = doc(schooldb, "PupilGrades", gradeDocId);
                 await updateDoc(gradeRef, { grade: newGradeValue });
-
-                // Update local state smoothly (no reload)
-                setGradesData(prev => prev.map(item => 
-                    item.gradeDocId === gradeDocId ? { ...item, grade: newGradeValue } : item
-                ));
-
-                toast.success(`✅ Updated ${subject} for ${pupilID}.`);
+                toast.success(`✅ Updated ${subject} for ${pupilID} to ${newGradeValue}.`);
             } else {
-                // Create new grade in Firestore
-                const newDocRef = await addDoc(collection(schooldb, "PupilGrades"), {
+                // 🆕 ADD new grade document
+                await addDoc(collection(schooldb, "PupilGrades"), {
                     schoolId,
                     pupilID,
                     subject,
@@ -264,31 +298,18 @@ const GradeSheetPage = () => {
                     test: selectedTest,
                     createdAt: new Date().toISOString(),
                 });
-
-                // Add to local state smoothly
-                setGradesData(prev => [
-                    ...prev, 
-                    {
-                        gradeDocId: newDocRef.id,
-                        schoolId,
-                        pupilID,
-                        subject,
-                        grade: newGradeValue,
-                        academicYear,
-                        className: selectedClass,
-                        test: selectedTest
-                    }
-                ]);
-
-                toast.success(`🆕 Added grade for ${pupilID} in ${subject}.`);
+                toast.success(`🆕 Added new grade for ${pupilID} in ${subject}.`);
             }
 
-            // Clear edit mode state
+            // Remove from temporary edits
             setEditingGrades(prev => {
                 const newState = { ...prev };
                 delete newState[editKey];
                 return newState;
             });
+
+            // Refresh grades (This will also update the localforage cache via fetchGrades)
+            await fetchGrades();
 
         } catch (error) {
             console.error("Error saving grade:", error);
@@ -296,10 +317,9 @@ const GradeSheetPage = () => {
         }
     };
 
-    // ⚡ Delete without page flash or scroll jump
-    const handleDeleteGrade = async (e, pupilID, subject, gradeDocId) => {
-        if (e) e.preventDefault();
 
+    // 🔹 Handler for deleting the grade (Will refresh by calling fetchGrades)
+    const handleDeleteGrade = async (pupilID, subject, gradeDocId) => {
         if (!window.confirm(`Are you sure you want to delete the grade for ${pupilID} in ${subject}?`)) {
             return;
         }
@@ -313,14 +333,15 @@ const GradeSheetPage = () => {
             const gradeRef = doc(schooldb, "PupilGrades", gradeDocId);
             await deleteDoc(gradeRef);
 
-            // Update local state directly (no refresh)
-            setGradesData(prev => prev.filter(item => item.gradeDocId !== gradeDocId));
-
+            // Remove from temporary edits
             setEditingGrades(prev => {
                 const newState = { ...prev };
                 delete newState[`${pupilID}-${subject}`];
                 return newState;
             });
+
+            // Re-fetch grades to update the table calculations (This will also update the localforage cache)
+            await fetchGrades();
 
             toast.warn(`🗑️ Grade for ${pupilID} in ${subject} deleted.`);
 
@@ -330,28 +351,37 @@ const GradeSheetPage = () => {
         }
     };
 
+    // 🔹 Helper to get current grade value (Unchanged)
     const getCurrentGradeValue = (pupilID, subject) => {
         const editKey = `${pupilID}-${subject}`;
+        // If it's being edited, return the edited value. Otherwise, return the original fetched value.
         return editingGrades[editKey]?.value ?? pupilGradesMap[subject]?.[pupilID] ?? "";
     };
 
+
+    // 🔹 Helper for grade colors (Unchanged)
     const getGradeColor = (grade) => {
         if (grade == null || grade === "") return "text-gray-400";
+        // Convert to number for comparison if it's a string from input
         const numericGrade = parseFloat(grade);
         if (numericGrade >= 50) return "text-blue-600 font-bold";
         return "text-red-600 font-bold";
     };
 
+    // 🔹 Print Preview (Unchanged)
     const handlePrint = () => window.print();
 
+    // 🔹 Download PDF (Unchanged)
     const handleDownloadPDF = () => {
         const doc = new jsPDF({ orientation: "landscape" });
         doc.setFontSize(14);
         doc.text(`Grade Sheet - ${selectedClass} (${academicYear}) - ${selectedTest}`, 14, 15);
 
+        // Map over subjects for rows, and pupils for columns
         const tableHeaders = ["Subject", ...pupils.map(p => p.studentName)];
         const tableRows = subjects.map(sub => [
             sub,
+            // Note: This uses the original fetched grades (pupilGradesMap), not the unsaved edits
             ...pupils.map(p => pupilGradesMap[sub]?.[p.studentID] ?? "—")
         ]);
 
@@ -366,7 +396,7 @@ const GradeSheetPage = () => {
             theme: "grid",
             styles: { fontSize: 8 },
             headStyles: { fillColor: [63, 81, 181] },
-            columnStyles: { 0: { cellWidth: 30 } },
+            columnStyles: { 0: { cellWidth: 30 } }, // Adjust subject column width
             margin: { left: 10, right: 10 }
         });
 
@@ -436,15 +466,13 @@ const GradeSheetPage = () => {
             {loading ? (
                 <div className="text-center text-indigo-600 p-6">Loading grades...</div>
             ) : subjects.length > 0 && pupils.length > 0 ? (
-                <div className="overflow-auto border rounded-lg shadow-lg max-h-[70vh]">
-                    <table className="min-w-full divide-y divide-gray-200 border-separate border-spacing-0">
-                        <thead>
+                <div className="overflow-x-auto border rounded-lg shadow-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-indigo-600 text-white sticky top-0 z-10">
                             <tr>
-                                <th className="sticky top-0 left-0 z-30 bg-indigo-700 text-white px-4 py-3 text-left border-r border-b min-w-[140px]">
-                                    Subject
-                                </th>
+                                <th className="px-4 py-3 text-left border-r min-w-[120px]">Subject</th>
                                 {pupils.map((p) => (
-                                    <th key={p.studentID} className="sticky top-0 z-20 bg-indigo-600 text-white px-2 py-3 text-center border-r border-b min-w-[150px]">
+                                    <th key={p.studentID} className="px-2 py-3 text-center border-r min-w-[150px]">
                                         <div className="text-xs font-normal opacity-80 mb-1">{p.studentID}</div>
                                         {p.studentName}
                                     </th>
@@ -453,20 +481,20 @@ const GradeSheetPage = () => {
                         </thead>
                         <tbody>
                             {subjects.map((sub, i) => (
-                                <tr key={i} className="hover:bg-gray-50">
-                                    <td className="sticky left-0 z-10 bg-white font-semibold px-4 py-3 border-r border-b">
-                                        {sub}
-                                    </td>
+                                <tr key={i} className="hover:bg-gray-50 border-b">
+                                    <td className="px-4 py-3 font-semibold border-r">{sub}</td>
                                     {pupils.map((p) => {
                                         const pupilID = p.studentID;
+                                        // Use gradeDocMap to retrieve the document ID for actions
                                         const gradeDocId = gradeDocMap[sub]?.[pupilID] ?? "";
                                         const currentValue = getCurrentGradeValue(pupilID, sub);
                                         const isBeingEdited = editingGrades[`${pupilID}-${sub}`];
                                         const hasGrade = gradeDocId !== "";
 
                                         return (
-                                            <td key={pupilID} className="px-2 py-1 border-r border-b">
+                                            <td key={pupilID} className="px-2 py-1 border-r">
                                                 <div className="flex items-center space-x-1 justify-center">
+                                                    {/* ⭐️ Grade Input Field */}
                                                     <input
                                                         type="number"
                                                         min="0"
@@ -479,10 +507,10 @@ const GradeSheetPage = () => {
                                                         placeholder="—"
                                                     />
 
+                                                    {/* ⭐️ Save Button (Shows only if actively editing) */}
                                                     {isBeingEdited && (
                                                         <button
-                                                            type="button"
-                                                            onClick={(e) => handleSaveGrade(e, pupilID, sub, gradeDocId)}
+                                                            onClick={() => handleSaveGrade(pupilID, sub, gradeDocId)}
                                                             className="text-green-600 hover:text-green-800 p-1 rounded-full text-lg"
                                                             title="Save Grade"
                                                         >
@@ -490,10 +518,10 @@ const GradeSheetPage = () => {
                                                         </button>
                                                     )}
 
+                                                    {/* ⭐️ Delete Button (Shows only if a grade exists and is not currently being edited) */}
                                                     {hasGrade && !isBeingEdited && (
                                                         <button
-                                                            type="button"
-                                                            onClick={(e) => handleDeleteGrade(e, pupilID, sub, gradeDocId)}
+                                                            onClick={() => handleDeleteGrade(pupilID, sub, gradeDocId)}
                                                             className="text-red-500 hover:text-red-700 p-1 rounded-full text-lg"
                                                             title="Delete Grade"
                                                         >
@@ -506,41 +534,17 @@ const GradeSheetPage = () => {
                                     })}
                                 </tr>
                             ))}
-
-                            {/* Total Sum Row */}
-                            <tr className="font-bold border-t-2 border-indigo-600">
-                                <td className="sticky left-0 z-10 bg-gray-100 px-4 py-3 border-r border-b">
-                                    Total Sum
-                                </td>
-                                {pupils.map((p) => (
-                                    <td key={p.studentID} className="bg-gray-100 px-4 py-3 text-center border-r border-b">
-                                        {pupilTotals[p.studentID]?.totalSum ?? "—"}
-                                    </td>
-                                ))}
+                            <tr className="bg-gray-100 font-bold border-t-2 border-indigo-600">
+                                <td className="px-4 py-3 border-r">Total Sum</td>
+                                {pupils.map((p) => <td key={p.studentID} className="px-4 py-3 text-center">{pupilTotals[p.studentID]?.totalSum ?? "—"}</td>)}
                             </tr>
-
-                            {/* Percentage Row */}
-                            <tr className="font-bold">
-                                <td className="sticky left-0 z-10 bg-indigo-50 px-4 py-3 border-r border-b">
-                                    Percentage (%)
-                                </td>
-                                {pupils.map((p) => (
-                                    <td key={p.studentID} className="bg-indigo-50 px-4 py-3 text-center border-r border-b">
-                                        {pupilTotals[p.studentID]?.percentage ?? "—"}%
-                                    </td>
-                                ))}
+                            <tr className="bg-indigo-50 font-bold">
+                                <td className="px-4 py-3 border-r">Percentage (%)</td>
+                                {pupils.map((p) => <td key={p.studentID} className="px-4 py-3 text-center">{pupilTotals[p.studentID]?.percentage ?? "—"}%</td>)}
                             </tr>
-
-                            {/* Rank Row */}
-                            <tr className="font-bold border-b-2 border-indigo-600">
-                                <td className="sticky left-0 z-10 bg-indigo-100 px-4 py-3 border-r">
-                                    Rank
-                                </td>
-                                {pupils.map((p) => (
-                                    <td key={p.studentID} className="bg-indigo-100 px-4 py-3 text-center text-red-700 border-r">
-                                        {pupilTotals[p.studentID]?.rank ?? "—"}
-                                    </td>
-                                ))}
+                            <tr className="bg-indigo-100 font-bold border-b-2 border-indigo-600">
+                                <td className="px-4 py-3 border-r">Rank</td>
+                                {pupils.map((p) => <td key={p.studentID} className="px-4 py-3 text-center text-red-700">{pupilTotals[p.studentID]?.rank ?? "—"}</td>)}
                             </tr>
                         </tbody>
                     </table>
