@@ -11,7 +11,6 @@ import {
     doc,
     serverTimestamp,
     orderBy,
-    limit,
     getDocs,
     deleteDoc,
 } from "firebase/firestore";
@@ -39,6 +38,9 @@ const GradesAuditPage = () => {
     const [selectedClass, setSelectedClass] = useState("");
     const [selectedSubject, setSelectedSubject] = useState("");
     const [selectedTest, setSelectedTest] = useState("Term 1 T1");
+    
+    // Academic Year State Management
+    const [academicYearOptions, setAcademicYearOptions] = useState([]);
     const [academicYear, setAcademicYear] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
@@ -82,16 +84,41 @@ const GradesAuditPage = () => {
         return () => unsub();
     }, [schoolId, selectedClass]);
 
-    // --- 2️⃣ Fetch latest academic year ---
+    // --- 2️⃣ Fetch Academic Years FOR THIS SPECIFIC SCHOOL ONLY ---
     useEffect(() => {
-        const q = query(collection(pupilLoginFetch, "PupilsReg"), orderBy("academicYear", "desc"), limit(1));
+        if (!schoolId || schoolId === "N/A") return;
+
+        const q = query(
+            collection(pupilLoginFetch, "PupilsReg"), 
+            where("schoolId", "==", schoolId)
+        );
+
         const unsub = onSnapshot(q, (snapshot) => {
             if (!snapshot.empty) {
-                setAcademicYear(snapshot.docs[0].data().academicYear);
+                // Extract unique academic years for this specific school
+                const years = snapshot.docs
+                    .map((doc) => doc.data().academicYear)
+                    .filter((year) => Boolean(year));
+
+                // Sort unique academic years descending (newest first)
+                const sortedUniqueYears = [...new Set(years)].sort().reverse();
+                
+                setAcademicYearOptions(sortedUniqueYears);
+
+                // Default to the latest year if not selected or invalid
+                if (sortedUniqueYears.length > 0) {
+                    setAcademicYear((prev) => 
+                        sortedUniqueYears.includes(prev) ? prev : sortedUniqueYears[0]
+                    );
+                }
+            } else {
+                setAcademicYearOptions([]);
+                setAcademicYear("");
             }
         });
+
         return () => unsub();
-    }, []);
+    }, [schoolId]);
 
     // --- 3️⃣ Fetch pupils for selected class ---
     useEffect(() => {
@@ -136,7 +163,6 @@ const GradesAuditPage = () => {
         try {
             const cachedGrades = await gradesStore.getItem(cacheKey);
             if (cachedGrades) {
-                console.log("📥 Loaded grades from local cache");
                 setCurrentGrades(cachedGrades);
             }
         } catch (err) {
@@ -259,7 +285,7 @@ const GradesAuditPage = () => {
         }
     };
 
-    // --- 7️⃣ Download PDF (unchanged, uses currentGrades & updatedGrades) ---
+    // --- 7️⃣ Download PDF ---
     const handleDownloadPDF = () => {
         if (pupils.length === 0) {
             alert("No data to generate PDF");
@@ -303,15 +329,36 @@ const GradesAuditPage = () => {
         doc.save(`Admin_Audit_${selectedClass}_${selectedSubject}_${selectedTest}_Grades.pdf`);
     };
 
-    // --- 8️⃣ Render component (unchanged structure) ---
+    // --- 8️⃣ Render component ---
     return (
         <div className="max-w-7xl mx-auto p-6 bg-white rounded-2xl shadow-xl relative">
             <h2 className="text-3xl font-bold mb-4 text-center text-blue-700">⭐ Admin Grade Audit & Management</h2>
             <p className="mb-6 text-gray-700 font-medium border-b pb-3">
-                School ID: <span className="font-bold">{schoolId}</span> | Academic Year: <span className="font-bold">{academicYear}</span>
+                School ID: <span className="font-bold">{schoolId}</span> | Academic Year: <span className="font-bold">{academicYear || "N/A"}</span>
             </p>
+            
             {/* Selector Row */}
-            <div className="flex gap-4 mb-6 items-end border p-3 rounded-lg bg-gray-50">
+            <div className="flex gap-4 mb-6 items-end border p-3 rounded-lg bg-gray-50 flex-wrap">
+                {/* Academic Year Dropdown */}
+                <div className="flex-1 min-w-[200px]">
+                    <label className="font-semibold text-gray-700 block mb-1">Academic Year:</label>
+                    <select
+                        value={academicYear}
+                        onChange={(e) => setAcademicYear(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 bg-white shadow-sm font-semibold text-blue-900"
+                    >
+                        {academicYearOptions.length === 0 ? (
+                            <option value="">No years found</option>
+                        ) : (
+                            academicYearOptions.map((year, i) => (
+                                <option key={i} value={year}>
+                                    {year} {i === 0 ? "(Current / Latest)" : ""}
+                                </option>
+                            ))
+                        )}
+                    </select>
+                </div>
+
                 <div className="flex-1 min-w-[200px]">
                     <label className="font-semibold text-gray-700 block mb-1">Filter by Teacher:</label>
                     <select
@@ -323,6 +370,7 @@ const GradesAuditPage = () => {
                         {allTeachers.map((name, i) => <option key={i} value={name}>{name}</option>)}
                     </select>
                 </div>
+                
                 <div className="flex-1 min-w-[200px]">
                     <label className="font-semibold text-gray-700 block mb-1">Select Test:</label>
                     <select
@@ -333,7 +381,8 @@ const GradesAuditPage = () => {
                         {tests.map((test, i) => <option key={i} value={test}>{test}</option>)}
                     </select>
                 </div>
-                <div className="flex-1">
+                
+                <div className="flex-1 min-w-[200px]">
                     <button
                         onClick={handleDownloadPDF}
                         className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-all shadow-md"
@@ -342,6 +391,7 @@ const GradesAuditPage = () => {
                     </button>
                 </div>
             </div>
+
             {/* Class & Subject Tabs */}
             <div className="mb-6 border-t pt-4">
                 <p className="font-semibold text-gray-700 mb-2">Filter by Class:</p>
@@ -370,9 +420,9 @@ const GradesAuditPage = () => {
 
             {/* Pupils Table */}
             <h3 className="text-xl font-bold mt-8 mb-4 border-b pb-2 text-gray-800">
-                Grades for: {selectedClass} - {selectedSubject} ({selectedTest})
+                Grades for: {selectedClass} - {selectedSubject} ({selectedTest}) | {academicYear}
             </h3>
-             <div className="overflow-x-auto shadow-lg rounded-xl">
+            <div className="overflow-x-auto shadow-lg rounded-xl">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-blue-50 text-blue-800 sticky top-0">
                         <tr>
@@ -388,7 +438,7 @@ const GradesAuditPage = () => {
                         {pupils.length === 0 ? (
                             <tr>
                                 <td colSpan="6" className="text-center py-8 text-gray-500 bg-gray-50">
-                                    No pupils found for the selected class.
+                                    No pupils found for {selectedClass} ({academicYear}).
                                 </td>
                             </tr>
                         ) : (
@@ -398,8 +448,6 @@ const GradesAuditPage = () => {
                                 const isModified = updatedGrades.hasOwnProperty(pupil.studentID);
                                 const isNewGrade = !gradeInfo && displayGrade !== "";
                                 const newGradeValue = updatedGrades[pupil.studentID];
-                                
-                                // Disable action on the current row if any other row is submitting
                                 const actionDisabled = submitting; 
 
                                 return (
@@ -424,7 +472,6 @@ const GradesAuditPage = () => {
                                             {gradeInfo?.teacher || (isNewGrade ? "Admin Override (New)" : "N/A")}
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            {/* Action Button: Visible only if modified or new grade */}
                                             {isModified || isNewGrade ? (
                                                 <button
                                                     onClick={() => handleAdminAction(pupil.studentID)}
@@ -432,8 +479,8 @@ const GradesAuditPage = () => {
                                                         actionDisabled
                                                             ? "bg-gray-400 cursor-wait"
                                                             : (newGradeValue === null && gradeInfo)
-                                                            ? "bg-red-600 hover:bg-red-700 text-white" // Deletion
-                                                            : "bg-orange-500 hover:bg-orange-600 text-white" // Update/New
+                                                            ? "bg-red-600 hover:bg-red-700 text-white"
+                                                            : "bg-orange-500 hover:bg-orange-600 text-white"
                                                     }`}
                                                     disabled={actionDisabled}
                                                     title={
@@ -461,7 +508,6 @@ const GradesAuditPage = () => {
                     </tbody>
                 </table>
             </div>
-            
         </div>
     );
 };

@@ -6,10 +6,15 @@ import localforage from "localforage";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// 1. Initialize Cache
+// 1. Initialize Cache Stores
 const classReportStore = localforage.createInstance({
   name: "ClassAssignmentCache",
   storeName: "classData",
+});
+
+const teachersStore = localforage.createInstance({
+  name: "TeacherData",
+  storeName: "teachers",
 });
 
 const TeacherClassReport = () => {
@@ -17,10 +22,12 @@ const TeacherClassReport = () => {
   const schoolId = location.state?.schoolId || "N/A";
 
   const [assignments, setAssignments] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [selectedClass, setSelectedClass] = useState("All Classes");
   const [loading, setLoading] = useState(true);
 
   const CACHE_KEY = `class_report_${schoolId}`;
+  const TEACHERS_CACHE_KEY = `teachers_${schoolId}`;
 
   // 2. Real-time Firestore Sync & Cache Fallback
   useEffect(() => {
@@ -29,40 +36,75 @@ const TeacherClassReport = () => {
       return;
     }
 
+    let unsubAssignments;
+    let unsubTeachers;
+
     const init = async () => {
-      // Load from cache for speed
+      // Load Teachers & Assignments from Cache
       try {
-        const cached = await classReportStore.getItem(CACHE_KEY);
-        if (cached?.data) {
-          setAssignments(cached.data);
-          setLoading(false);
+        const cachedAssignments = await classReportStore.getItem(CACHE_KEY);
+        if (cachedAssignments?.data) {
+          setAssignments(cachedAssignments.data);
+        }
+
+        const cachedTeachers = await teachersStore.getItem(TEACHERS_CACHE_KEY);
+        if (cachedTeachers?.data) {
+          setTeachers(cachedTeachers.data);
         }
       } catch (e) {
         console.error("Cache retrieval failed:", e);
       }
 
-      // Live Listener for instant updates
-      const q = query(
+      // Live Listener for Teachers
+      const qTeachers = query(
+        collection(db, "Teachers"),
+        where("schoolId", "==", schoolId)
+      );
+      unsubTeachers = onSnapshot(qTeachers, (snapshot) => {
+        const teacherData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setTeachers(teacherData);
+        teachersStore.setItem(TEACHERS_CACHE_KEY, { data: teacherData, ts: Date.now() });
+      });
+
+      // Live Listener for Assignments
+      const qAssignments = query(
         collection(db, "TeacherAssignments"),
         where("schoolId", "==", schoolId)
       );
 
-      const unsub = onSnapshot(q, (snapshot) => {
+      unsubAssignments = onSnapshot(qAssignments, (snapshot) => {
         const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setAssignments(data);
         setLoading(false);
-        // Update Cache
         classReportStore.setItem(CACHE_KEY, { data, ts: Date.now() });
       }, (error) => {
         console.error("Firestore error:", error);
         setLoading(false);
       });
-
-      return () => unsub();
     };
 
     init();
+
+    return () => {
+      if (unsubAssignments) unsubAssignments();
+      if (unsubTeachers) unsubTeachers();
+    };
   }, [schoolId]);
+
+  // Lookup map to pair teacher names with their respective teacher ID
+  const teacherIdMap = useMemo(() => {
+    const map = {};
+    teachers.forEach((t) => {
+      const rawName = t.fullName || t.teacherName || t.name || t.teacher || "";
+      const nameKey = rawName.toString().toUpperCase().trim();
+      const idVal = t.teacherID || t.teacherId || t.staffId || t.code || t.id || "";
+
+      if (nameKey && idVal) {
+        map[nameKey] = idVal;
+      }
+    });
+    return map;
+  }, [teachers]);
 
   // 3. Extract Unique Class Names for Dropdown
   const classList = useMemo(() => {
@@ -70,14 +112,25 @@ const TeacherClassReport = () => {
     return ["All Classes", ...uniqueClasses.sort()];
   }, [assignments]);
 
-  // 4. Group Data by Class
+  // 4. Group Data by Class & attach Teacher ID
   const groupedByClass = useMemo(() => {
     const grouped = {};
     assignments.forEach((item) => {
       const cls = item.className || "Unassigned Class";
+      const teacherName = item.teacher || item.teacherName || item.fullName || "Unknown Teacher";
+      const nameKey = teacherName.toString().toUpperCase().trim();
+
+      const teacherID = 
+        item.teacherID || 
+        item.teacherId || 
+        item.staffId || 
+        teacherIdMap[nameKey] || 
+        "N/A";
+
       if (!grouped[cls]) grouped[cls] = [];
       grouped[cls].push({
-        teacher: item.teacher || "Unknown Teacher",
+        teacher: teacherName,
+        teacherID: teacherID,
         subjects: item.subjects || [],
       });
     });
@@ -88,7 +141,7 @@ const TeacherClassReport = () => {
         className: key,
         teachers: grouped[key].sort((a, b) => a.teacher.localeCompare(b.teacher)),
       }));
-  }, [assignments]);
+  }, [assignments, teacherIdMap]);
 
   // 5. Filter for UI Display
   const filteredData = useMemo(() => {
@@ -102,7 +155,7 @@ const TeacherClassReport = () => {
     
     doc.setFontSize(18);
     doc.setTextColor(31, 41, 55);
-    doc.text("teacher Class Report", 14, 20);
+    doc.text("Teacher Class Report", 14, 20);
     
     doc.setFontSize(10);
     doc.setTextColor(107, 114, 128);
@@ -111,18 +164,17 @@ const TeacherClassReport = () => {
     let currentY = 40;
 
     filteredData.forEach((cls) => {
-      // Header for each Class
       doc.setFont(undefined, 'bold');
       doc.setFillColor(243, 244, 246);
       doc.rect(14, currentY, 182, 8, 'F');
       doc.setTextColor(30, 58, 138);
       doc.text(`CLASS: ${cls.className}`, 16, currentY + 6);
       
-      const tableRows = cls.teachers.map(t => [t.teacher, t.subjects.join(", ")]);
+      const tableRows = cls.teachers.map(t => [t.teacherID, t.teacher, t.subjects.join(", ")]);
       
       autoTable(doc, {
         startY: currentY + 10,
-        head: [['Teacher Name', 'Assigned Subjects']],
+        head: [['Teacher ID', 'Teacher Name', 'Assigned Subjects']],
         body: tableRows,
         theme: 'grid',
         headStyles: { fillColor: [31, 41, 55], textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -132,7 +184,6 @@ const TeacherClassReport = () => {
 
       currentY = doc.lastAutoTable.finalY + 12;
 
-      // Page overflow check
       if (currentY > 270) {
         doc.addPage();
         currentY = 20;
@@ -163,7 +214,6 @@ const TeacherClassReport = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            {/* Custom Dropdown */}
             <div className="relative group">
               <select
                 value={selectedClass}
@@ -209,6 +259,7 @@ const TeacherClassReport = () => {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50/50">
+                        <th className="px-8 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Teacher ID</th>
                         <th className="px-8 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Assigned Teacher</th>
                         <th className="px-8 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Subject Load</th>
                       </tr>
@@ -216,6 +267,11 @@ const TeacherClassReport = () => {
                     <tbody className="divide-y divide-gray-50">
                       {cls.teachers.map((t, i) => (
                         <tr key={i} className="hover:bg-blue-50/30 transition-colors group">
+                          <td className="px-8 py-5">
+                            <span className="inline-block bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-md">
+                              {t.teacherID}
+                            </span>
+                          </td>
                           <td className="px-8 py-5">
                             <span className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{t.teacher}</span>
                           </td>

@@ -68,7 +68,12 @@ const PupilIDCard = ({ studentData, schoolInfo }) => (
         className="w-[1.1in] h-[1.3in] object-cover border rounded-sm"
       />
       <div className="text-[8.5pt] leading-[1.9] flex flex-col justify-center space-y-[2px]">
-         <p><strong>ID:</strong> {studentData.studentID}</p>
+        <p>
+  <strong>ID:</strong>{" "}
+  {studentData.registrationFormNo?.trim()
+    ? studentData.registrationFormNo
+    : studentData.studentID}
+</p>
         <p><strong>Name:</strong> {studentData.studentName}</p>
       <p>
   <strong>Class:</strong>{" "}

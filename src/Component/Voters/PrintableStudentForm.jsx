@@ -22,37 +22,37 @@ const PrintableStudentForm = () => {
     const [isLoadingSchool, setIsLoadingSchool] = useState(true);
 
     // Effect to fetch school data
-   // Effect to fetch school data
-useEffect(() => {
-    if (!studentData?.schoolId) {
-        setIsLoadingSchool(false);
-        return;
-    }
-
-    const fetchSchoolInfo = async () => {
-        try {
-            // ✅ CORRECTION: Changed "schoolID" to "schoolId"
-            const schoolsRef = collection(db, "Schools");
-            const q = query(schoolsRef, where("schoolId", "==", studentData.schoolId));
-
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                // Assuming schoolId is unique, take the first document found
-                setSchoolInfo(querySnapshot.docs[0].data());
-            } else {
-                console.warn(`No school found with ID: ${studentData.schoolId}`);
-            }
-        } catch (error) {
-            console.error("Error fetching school information:", error);
-            toast.error("Failed to load school header information.");
-        } finally {
+    // Effect to fetch school data
+    useEffect(() => {
+        if (!studentData?.schoolId) {
             setIsLoadingSchool(false);
+            return;
         }
-    };
 
-    fetchSchoolInfo();
-}, [studentData?.schoolId]);
+        const fetchSchoolInfo = async () => {
+            try {
+                // ✅ CORRECTION: Changed "schoolID" to "schoolId"
+                const schoolsRef = collection(db, "Schools");
+                const q = query(schoolsRef, where("schoolId", "==", studentData.schoolId));
+
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    // Assuming schoolId is unique, take the first document found
+                    setSchoolInfo(querySnapshot.docs[0].data());
+                } else {
+                    console.warn(`No school found with ID: ${studentData.schoolId}`);
+                }
+            } catch (error) {
+                console.error("Error fetching school information:", error);
+                toast.error("Failed to load school header information.");
+            } finally {
+                setIsLoadingSchool(false);
+            }
+        };
+
+        fetchSchoolInfo();
+    }, [studentData?.schoolId]);
 
     // Effect to auto-trigger the print dialog
     useEffect(() => {
@@ -83,15 +83,15 @@ useEffect(() => {
     }
 
     // Converts a date string (YYYY-MM-DD or ISO) to "DD Month YYYY"
-const formatDate = (dateStr) => {
-  if (!dateStr) return "N/A";
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-};
+    const formatDate = (dateStr) => {
+        if (!dateStr) return "N/A";
+        const date = new Date(dateStr);
+        return date.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
+    };
 
 
     // --- RENDER PRINT-FRIENDLY STRUCTURE ---
@@ -158,12 +158,17 @@ const formatDate = (dateStr) => {
             {/* Photo and Core Info Header */}
             <div className="flex justify-between items-start mb-6 border-b pb-4">
                 <div className="space-y-1">
-                    <p><strong>Pupil ID:</strong> {studentData.studentID}</p>
+                    <p>
+                        <strong>ID:</strong>{" "}
+                        {studentData.registrationFormNo && studentData.registrationFormNo.trim() !== ""
+                            ? studentData.registrationFormNo
+                            : studentData.studentID}
+                    </p>
                     <p><strong>Student Name:</strong> {studentData.studentName}</p>
                     <p><strong>Date of Birth:</strong> {formatDate(studentData.dob)} (Age: {studentData.age})</p>
                     <p><strong>Gender:</strong> {studentData.gender}</p>
                     <p><strong>Address:</strong> {studentData.addressLine1 || 'N/A'}</p>
-                
+
                 </div>
                 {studentData.userPhotoUrl && (
                     <div className="p-1 border border-gray-400">
@@ -178,13 +183,34 @@ const formatDate = (dateStr) => {
 
             {/* Details Grid */}
             <section className="space-y-6">
-                
+
                 <h2 className="text-lg font-semibold border-b border-gray-300 pb-1 text-gray-800">Academic Information</h2>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
                     <p><strong>Registration Date:</strong> {formatDate(studentData.registrationDate)}</p>
                     <p><strong>Class:</strong> {studentData.class}</p>
                     <p><strong>Academic Year:</strong> {studentData.academicYear}</p>
-               
+
+                </div>
+
+                <h2 className="text-lg font-semibold border-b border-gray-300 pb-1 text-gray-800 pt-4">
+                    Medical Information
+                </h2>
+
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                    <p>
+                        <strong>Major Illness:</strong>{" "}
+                        {studentData.majorIllness || "None"}
+                    </p>
+
+                    <p>
+                        <strong>Minor Illness:</strong>{" "}
+                        {studentData.minorIllness || "None"}
+                    </p>
+
+                    <p className="col-span-2">
+                        <strong>Previous School:</strong>{" "}
+                        {studentData.previousSchool || "N/A"}
+                    </p>
                 </div>
 
                 <h2 className="text-lg font-semibold border-b border-gray-300 pb-1 text-gray-800 pt-4">Parent/Guardian & Contact</h2>
@@ -194,7 +220,7 @@ const formatDate = (dateStr) => {
                     <p className="col-span-2"><strong>Parent's Address:</strong> {studentData.addressLine2 || 'N/A'}</p>
                 </div>
 
-    
+
             </section>
 
             <footer className="mt-12 pt-20 border-t border-gray-400 text-sm text-gray-600 print:mt-10">

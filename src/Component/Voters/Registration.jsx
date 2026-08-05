@@ -65,6 +65,10 @@ const Registration = () => {
         id: null,
         studentID: uuidv4().slice(0, 8),
         studentName: "",
+        registrationFormNo: "",
+        majorIllness: "",
+        minorIllness: "",
+        previousSchool: "",
         dob: "",
         age: "",
         gender: "",
@@ -414,6 +418,10 @@ const Registration = () => {
             const studentData = {
                 studentID: formData.studentID,
                 studentName: formData.studentName.toUpperCase().trim(),
+                registrationFormNo: formData.registrationFormNo.trim(),
+                majorIllness: formData.majorIllness.trim(),
+                minorIllness: formData.minorIllness.trim(),
+                previousSchool: formData.previousSchool.trim(),
                 dob: formData.dob,
                 age: formData.age,
                 gender: formData.gender,
@@ -473,7 +481,11 @@ const Registration = () => {
             setFormData({
                 id: null,
                 studentID: generateUniqueId(),
+                registrationFormNo: "",
                 studentName: "",
+                majorIllness: "",
+                minorIllness: "",
+                previousSchool: "",
                 dob: "",
                 age: "",
                 gender: "",
@@ -534,7 +546,11 @@ const Registration = () => {
         setFormData({
             id: user.id,
             studentID: user.studentID,
+            registrationFormNo: user.registrationFormNo || "",
             studentName: user.studentName,
+            majorIllness: user.majorIllness || "",
+            minorIllness: user.minorIllness || "",
+            previousSchool: user.previousSchool || "",
             dob: user.dob || "",
             age: user.age || "",
             gender: user.gender || "",
@@ -596,6 +612,24 @@ const Registration = () => {
                             className="w-full p-2 mb-4 border rounded-lg bg-gray-100"
                         />
                     </div>
+
+                    <div className="flex-1">
+                        <label className="block mb-2 font-medium text-sm">
+                            Registration Form No
+                        </label>
+
+                        <input
+                            type="text"
+                            name="registrationFormNo"
+                            value={formData.registrationFormNo}
+                            onChange={handleInputChange}
+                            placeholder="Enter Registration Form No"
+                            className="w-full p-2 mb-4 border rounded-lg"
+                            required
+                        />
+                    </div>
+
+
                     <div className="flex-1">
                         <label className="block mb-2 font-medium text-sm">Student Name</label>
                         <input
@@ -696,6 +730,59 @@ const Registration = () => {
                         />
                     </div>
                 </div>
+
+                <h3 className="text-lg font-semibold mt-4 mb-2 border-t pt-4">
+    Medical & Previous School Information
+</h3>
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <div>
+        <label className="block mb-2 font-medium text-sm">
+            Major Illness (if any)
+        </label>
+
+        <input
+            type="text"
+            name="majorIllness"
+            value={formData.majorIllness}
+            onChange={handleInputChange}
+            placeholder="e.g. Asthma, Diabetes"
+            className="w-full p-2 border rounded-lg"
+        />
+    </div>
+
+    <div>
+        <label className="block mb-2 font-medium text-sm">
+            Minor Illness (if any)
+        </label>
+
+        <input
+            type="text"
+            name="minorIllness"
+            value={formData.minorIllness}
+            onChange={handleInputChange}
+            placeholder="e.g. Frequent headaches"
+            className="w-full p-2 border rounded-lg"
+        />
+    </div>
+
+    <div className="md:col-span-2">
+        <label className="block mb-2 font-medium text-sm">
+            Previous School
+        </label>
+
+        <input
+            type="text"
+            name="previousSchool"
+            value={formData.previousSchool}
+            onChange={handleInputChange}
+            placeholder="Enter previous school name"
+            className="w-full p-2 border rounded-lg"
+        />
+    </div>
+
+</div>
 
                 {/* --- ACADEMIC & SYSTEM INFO --- */}
                 <h3 className="text-lg font-semibold mt-4 mb-2 border-t pt-4">Academic & System Info</h3>
@@ -891,7 +978,11 @@ const Registration = () => {
                             {/* Loop over the filteredUsers array */}
                             {filteredUsers.map((user) => (
                                 <tr key={user.id}>
-                                    <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.studentID}</td>
+                                    <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {user.registrationFormNo && user.registrationFormNo.trim() !== ""
+                                            ? user.registrationFormNo
+                                            : user.studentID}
+                                    </td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{user.studentName}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{user.class}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">

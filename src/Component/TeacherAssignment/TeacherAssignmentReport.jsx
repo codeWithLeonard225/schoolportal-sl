@@ -2,12 +2,17 @@ import React, { useEffect, useState, useMemo } from "react";
 import { db } from "../../../firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
-import localforage from "localforage"; // ⬅️ Import localforage
+import localforage from "localforage";
 
-// Initialize localforage store
+// Initialize localforage stores
 const assignmentsStore = localforage.createInstance({
     name: "TeacherAssignmentsCache",
     storeName: "assignmentsData",
+});
+
+const teachersStore = localforage.createInstance({
+    name: "TeacherData",
+    storeName: "teachers",
 });
 
 const TeacherAssignmentReport = () => {
@@ -15,112 +20,141 @@ const TeacherAssignmentReport = () => {
     const schoolId = location.state?.schoolId || "N/A";
 
     const [assignments, setAssignments] = useState([]);
+    const [teachers, setTeachers] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [loading, setLoading] = useState(true); // ⬅️ Added loading state
+    const [loading, setLoading] = useState(true);
 
-    // --- Configuration ---
-    const LOCALFORAGE_KEY = `assignments_${schoolId}`;
-    // ---------------------
+    const LOCALFORAGE_ASSIGNMENTS_KEY = `assignments_${schoolId}`;
+    const LOCALFORAGE_TEACHERS_KEY = `teachers_${schoolId}`;
 
-    // --- Helper Function ---
-    // Function to sort the class list alphabetically
     const sortClassesAlphabetically = (classList) => {
         return [...classList].sort((a, b) => a.className.localeCompare(b.className));
     };
-    // -------------------------
 
-    // 1. Load from IndexDB Cache and Set up Real-Time onSnapshot
     useEffect(() => {
         if (schoolId === "N/A") {
             setLoading(false);
             return;
         }
 
+        let unsubAssignments;
+        let unsubTeachers;
+
         const loadAndListen = async () => {
             setLoading(true);
 
-            // 🚀 Step 1: Attempt to load from localforage cache (FAST initial load)
+            // Fetch Teachers Cache & Firestore Listener
             try {
-                const cachedItem = await assignmentsStore.getItem(LOCALFORAGE_KEY);
-                if (cachedItem && cachedItem.data && cachedItem.data.length > 0) {
-                    setAssignments(cachedItem.data);
-                    setLoading(false); // Initial load complete via cache
-                    console.log("Loaded initial assignments from IndexDB cache.");
+                const cachedTeachers = await teachersStore.getItem(LOCALFORAGE_TEACHERS_KEY);
+                if (cachedTeachers && cachedTeachers.data) {
+                    setTeachers(cachedTeachers.data);
                 }
             } catch (e) {
-                console.error("Failed to retrieve cached assignments:", e);
-                // Continue to Firebase fetch if cache fails
+                console.error("Failed to load cached teachers:", e);
             }
 
-            // 🚀 Step 2: Set up Firestore Listener (Starts immediately)
-            const q = query(collection(db, "TeacherAssignments"), where("schoolId", "==", schoolId));
+            const qTeachers = query(collection(db, "Teachers"), where("schoolId", "==", schoolId));
+            unsubTeachers = onSnapshot(qTeachers, (snapshot) => {
+                const teacherData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+                setTeachers(teacherData);
+                teachersStore.setItem(LOCALFORAGE_TEACHERS_KEY, { timestamp: Date.now(), data: teacherData });
+            });
 
-            const unsub = onSnapshot(
-                q,
-                (snapshot) => {
-                    const fetchedData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-                    
-                    // Update UI state with new data
-                    setAssignments(fetchedData);
-
-                    // 🚀 Step 3: Save fresh data to localforage
-                    const dataToStore = {
-                        timestamp: Date.now(),
-                        data: fetchedData,
-                    };
-                    assignmentsStore.setItem(LOCALFORAGE_KEY, dataToStore)
-                        .catch(e => console.error("Failed to save assignments to IndexDB:", e));
-
-                    setLoading(false); // Loading is done once the first snapshot arrives (or cache loaded)
-                    console.log("Assignments updated via real-time Firestore listener.");
-                },
-                (error) => {
-                    console.error("Failed to fetch assignments from Firestore:", error);
-                    setLoading(false);
+            // Fetch Assignments Cache & Firestore Listener
+            try {
+                const cachedAssignments = await assignmentsStore.getItem(LOCALFORAGE_ASSIGNMENTS_KEY);
+                if (cachedAssignments && cachedAssignments.data) {
+                    setAssignments(cachedAssignments.data);
                 }
-            );
+            } catch (e) {
+                console.error("Failed to load cached assignments:", e);
+            }
 
-            return () => unsub(); // Cleanup listener on unmount
+            const qAssignments = query(collection(db, "TeacherAssignments"), where("schoolId", "==", schoolId));
+            unsubAssignments = onSnapshot(qAssignments, (snapshot) => {
+                const assignmentData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+                setAssignments(assignmentData);
+                assignmentsStore.setItem(LOCALFORAGE_ASSIGNMENTS_KEY, { timestamp: Date.now(), data: assignmentData });
+                setLoading(false);
+            }, (err) => {
+                console.error(err);
+                setLoading(false);
+            });
         };
 
         loadAndListen();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
+        return () => {
+            if (unsubAssignments) unsubAssignments();
+            if (unsubTeachers) unsubTeachers();
+        };
     }, [schoolId]);
 
-    // Group by teacher name (unchanged)
+    // Map teacher names to their ID (checks teacherID, teacherId, id, staffId, or doc.id)
+    const teacherIdMap = useMemo(() => {
+        const map = {};
+        teachers.forEach((t) => {
+            // Check all common field variations for teacher name
+            const rawName = t.fullName || t.teacherName || t.name || t.teacher || "";
+            const nameKey = rawName.toString().toUpperCase().trim();
+
+            // Check all common field variations for teacher ID
+            const idVal = t.teacherID || t.teacherId || t.staffId || t.code || t.id || "";
+
+            if (nameKey && idVal) {
+                map[nameKey] = idVal;
+            }
+        });
+        return map;
+    }, [teachers]);
+
+    // Group assignments by teacher name and lookup ID
     const groupedAssignments = useMemo(() => {
         const grouped = {};
         assignments.forEach((assign) => {
-            const teacherName = assign.teacher || "Unknown Teacher";
+            const teacherName = assign.teacher || assign.teacherName || assign.fullName || "Unknown Teacher";
+            const nameKey = teacherName.toString().toUpperCase().trim();
+
+            // Check for ID directly on assignment doc or resolve via teacherIdMap
+            const resolvedId =
+                assign.teacherID ||
+                assign.teacherId ||
+                assign.staffId ||
+                teacherIdMap[nameKey] ||
+                "N/A";
+
             if (!grouped[teacherName]) {
-                grouped[teacherName] = [];
+                grouped[teacherName] = {
+                    teacherID: resolvedId,
+                    classes: []
+                };
             }
-            grouped[teacherName].push({
-                className: assign.className,
+
+            grouped[teacherName].classes.push({
+                className: assign.className || assign.class || "N/A",
                 subjects: assign.subjects || [],
             });
         });
         return grouped;
-    }, [assignments]);
+    }, [assignments, teacherIdMap]);
 
-    // Filter by teacher name or class name (unchanged)
+    // Filter list by Search Term
     const filteredTeachers = useMemo(() => {
-        return Object.entries(groupedAssignments).filter(([teacher, classes]) => {
-            const lowerSearch = searchTerm.toLowerCase();
+        const lowerSearch = searchTerm.toLowerCase();
+        return Object.entries(groupedAssignments).filter(([teacher, data]) => {
             return (
                 teacher.toLowerCase().includes(lowerSearch) ||
-                classes.some((cls) => cls.className.toLowerCase().includes(lowerSearch))
+                data.teacherID.toString().toLowerCase().includes(lowerSearch) ||
+                data.classes.some((cls) => cls.className.toLowerCase().includes(lowerSearch))
             );
         });
     }, [groupedAssignments, searchTerm]);
 
-    // 🖨️ Handle print - open a clean version (unchanged)
     const handlePrint = () => {
         const printWindow = window.open("", "_blank");
-        
-        // Sort the filtered data for printing
-        const sortedFilteredTeachers = filteredTeachers.map(([teacher, classList]) => {
-            return [teacher, sortClassesAlphabetically(classList)];
+
+        const sortedFilteredTeachers = filteredTeachers.map(([teacher, data]) => {
+            return [teacher, data.teacherID, sortClassesAlphabetically(data.classes)];
         });
 
         const htmlContent = `
@@ -129,20 +163,17 @@ const TeacherAssignmentReport = () => {
                 <title>Teacher Assignment Report - ${schoolId}</title>
                 <style>
                     body { font-family: Arial, sans-serif; padding: 30px; color: #333; }
-                    h1, h2, h3 { text-align: center; }
+                    h1 { text-align: center; }
                     .school-header { text-align: center; margin-bottom: 20px; }
                     .teacher-section { margin-bottom: 25px; } 
                     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
                     th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; }
                     th { background: #e2e8f0; text-align: left; }
-                    .teacher-title { color: #1e3a8a; font-size: 18px; margin-bottom: 5px; }
+                    .teacher-title { color: #1e3a8a; font-size: 18px; margin-bottom: 2px; }
+                    .teacher-id { color: #666; font-size: 13px; margin-bottom: 8px; font-weight: normal; }
                     @media print {
                         body { margin: 0; }
-                        .teacher-section:last-child { margin-bottom: 0; }
-                        * {
-                          -webkit-print-color-adjust: exact !important;
-                          color-adjust: exact !important;
-                        }
+                        * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
                     }
                 </style>
             </head>
@@ -151,9 +182,10 @@ const TeacherAssignmentReport = () => {
                     <h1>Teacher Assignment Report</h1>
                 </div>
 
-                ${sortedFilteredTeachers.map(([teacher, classList]) => `
+                ${sortedFilteredTeachers.map(([teacher, teacherID, classList]) => `
                     <div class="teacher-section">
                         <h3 class="teacher-title">Teacher: ${teacher}</h3>
+                        <div class="teacher-id">Teacher ID: <strong>${teacherID}</strong></div>
                         <table>
                             <thead>
                                 <tr>
@@ -162,15 +194,12 @@ const TeacherAssignmentReport = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${classList
-                                    .map(
-                                        (cls) => `
+                                ${classList.map((cls) => `
                                     <tr>
                                         <td>${cls.className}</td>
                                         <td>${cls.subjects.join(", ")}</td>
-                                    </tr>`
-                                    )
-                                    .join("")}
+                                    </tr>
+                                `).join("")}
                             </tbody>
                         </table>
                     </div>
@@ -190,11 +219,9 @@ const TeacherAssignmentReport = () => {
         return (
             <div className="p-6 text-center">
                 <p className="text-xl font-medium text-gray-700">Loading teacher assignments...</p>
-                <p className="text-sm text-gray-500 mt-2">Checking IndexDB cache or fetching live data.</p>
             </div>
         );
     }
-
 
     return (
         <div className="max-w-5xl mx-auto p-6 bg-white rounded-2xl shadow-md">
@@ -206,11 +233,10 @@ const TeacherAssignmentReport = () => {
                 School ID: <span className="font-semibold">{schoolId}</span>
             </div>
 
-            {/* Filter and Print Button */}
-            <div className="mb-4 flex justify-between items-center">
+            <div className="mb-4 flex justify-between items-center gap-2">
                 <input
                     type="text"
-                    placeholder="Filter by Teacher or Class..."
+                    placeholder="Filter by Teacher Name, ID, or Class..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-3/4 border rounded-md px-4 py-2 focus:ring focus:ring-indigo-300"
@@ -223,17 +249,21 @@ const TeacherAssignmentReport = () => {
                 </button>
             </div>
 
-            {/* Report Table Display */}
             {filteredTeachers.length === 0 ? (
                 <p className="text-center text-gray-500 py-6">
                     No assignments found matching your filter criteria.
                 </p>
             ) : (
-                filteredTeachers.map(([teacher, classList], index) => (
+                filteredTeachers.map(([teacher, data], index) => (
                     <div key={index} className="mb-6 border rounded-lg p-4 bg-gray-50">
-                        <h3 className="text-lg font-bold text-blue-700 mb-3">
-                            Teacher: {teacher}
-                        </h3>
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-lg font-bold text-blue-700">
+                                Teacher: {teacher}
+                            </h3>
+                            <span className="text-xs bg-blue-100 text-blue-800 font-semibold px-2.5 py-0.5 rounded">
+                                ID: {data.teacherID}
+                            </span>
+                        </div>
 
                         <table className="w-full text-sm border border-gray-300 rounded-md">
                             <thead className="bg-gray-200 text-gray-700">
@@ -243,8 +273,7 @@ const TeacherAssignmentReport = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {/* Sorting applied here for the main display */}
-                                {sortClassesAlphabetically(classList).map((cls, i) => (
+                                {sortClassesAlphabetically(data.classes).map((cls, i) => (
                                     <tr key={i} className="hover:bg-white">
                                         <td className="border px-3 py-2 font-medium">{cls.className}</td>
                                         <td className="border px-3 py-2">{cls.subjects.join(", ")}</td>

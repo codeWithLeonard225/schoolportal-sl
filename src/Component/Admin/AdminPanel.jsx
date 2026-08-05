@@ -57,7 +57,11 @@ import TimeTableTeacherReport from "../TeacherAssignment/TimeTableTeacherReport"
 import TermResult from "../TeacherAssignment/TermResult";
 import YearlyResult from "../TeacherAssignment/YearlyResult";
 import YearlyGeneralReportCard from "../TeacherAssignment/YearlyGeneralReportCard";
+import TeacherClassReport from "../TeacherAssignment/TeacherClassReport";
 import ClassPromotion from "../Voters/ClassPromotion";
+import BulkReg from "../Voters/BulkRegistration";
+import ClassDelete from "../Voters/ClassDelete";
+
 
 
 
@@ -74,6 +78,9 @@ const NAV_ITEMS = [
         // { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
         // { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
          { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
+         { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
+         { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+         { key: "TeacherClassReport", label: " TeacherClassReport", icon: <MdPerson /> },
 
     ],
   },
@@ -280,6 +287,9 @@ function AdminPanel() {
       case "YearlyGeneralReportCard": return <YearlyGeneralReportCard />;
       case "SchoolRegistration": return <SchoolRegistration />;
       case "ClassPromotion": return <ClassPromotion />;
+      case "BulkReg": return <BulkReg />;
+      case "ClassDelete": return <ClassDelete />;
+      case "TeacherClassReport": return <TeacherClassReport />;
       
 
       default: return <Placeholder title={activeTab} />;
