@@ -75,12 +75,12 @@ const NAV_ITEMS = [
       { key: "Form", label: " Pupils", icon: <MdPerson /> },
       { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
-        // { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
-        // { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
-         { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
-         { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
-         { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
-         { key: "TeacherClassReport", label: " TeacherClassReport", icon: <MdPerson /> },
+      // { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
+      // { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
+      { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
+      //  { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
+      //  { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+
 
     ],
   },
@@ -103,6 +103,7 @@ const NAV_ITEMS = [
       { key: "subjects", label: "Subjects", icon: <MdPerson /> },
       { key: "TeacherAssignment", label: "Teacher Assignment", icon: <MdPerson /> },
       { key: "TeacherAssignmentReport", label: "Teacher Assignment Report ", icon: <MdPerson /> },
+      { key: "TeacherClassReport", label: " TeacherClassReport", icon: <MdPerson /> },
       { key: "PastQuestions", label: "Upload Past Questions ", icon: <MdPerson /> },
       { key: "SchoolLibraryUpload", label: "SchoolLibrary Upload ", icon: <MdPerson /> },
 
@@ -122,8 +123,8 @@ const NAV_ITEMS = [
       { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },
       { key: "GeneralReportCard", label: "ReportCard Yearly", icon: <MdPerson /> },
       { key: "TermResult", label: "TermResult GradeSheet", icon: <MdPerson /> },
-       { key: "YearlyResult", label: "Yearly GradeSheet", icon: <MdPerson /> },
-             { key: "YearlyGeneralReportCard", label: "YearlyGeneralReportCard", icon: <MdPerson /> },
+      { key: "YearlyResult", label: "Yearly GradeSheet", icon: <MdPerson /> },
+      { key: "YearlyGeneralReportCard", label: "YearlyGeneralReportCard", icon: <MdPerson /> },
 
     ],
   },
@@ -150,29 +151,29 @@ const NAV_ITEMS = [
 
     ],
   },
-    {
+  {
     key: "pupilAttendance",
     label: "Pupil Attendance",
     icon: <MdWarning />, // 📖
   },
-    {
+  {
     key: "staffAttendance",
     label: "Staff Attendance",
     icon: <MdWarning />, // 📖
   },
-    {
-      key: "timetable",
-      label: "TimeTable",
-      icon: <MdBarChart />,
-      children: [
-        { key: "TimetableEntry", label: "TimetableEntry", icon: <MdPerson /> },
-        { key: "TimeTableTeacherAtt", label: "TimeTableTeacherAtt", icon: <MdPerson /> },
-        { key: "TimeTableDailyAttendanceReport", label: "DailyAttendanceReport", icon: <MdPerson /> },
-        { key: "TimeTableTeacherReport", label: "MonthlyAttendanceReport", icon: <MdPerson /> },
-  
-      ],
-    },
- 
+  {
+    key: "timetable",
+    label: "TimeTable",
+    icon: <MdBarChart />,
+    children: [
+      { key: "TimetableEntry", label: "TimetableEntry", icon: <MdPerson /> },
+      { key: "TimeTableTeacherAtt", label: "TimeTableTeacherAtt", icon: <MdPerson /> },
+      { key: "TimeTableDailyAttendanceReport", label: "DailyAttendanceReport", icon: <MdPerson /> },
+      { key: "TimeTableTeacherReport", label: "MonthlyAttendanceReport", icon: <MdPerson /> },
+
+    ],
+  },
+
   {
     key: "LogoutPage",
     label: "Logout",
@@ -290,7 +291,7 @@ function AdminPanel() {
       case "BulkReg": return <BulkReg />;
       case "ClassDelete": return <ClassDelete />;
       case "TeacherClassReport": return <TeacherClassReport />;
-      
+
 
       default: return <Placeholder title={activeTab} />;
     }

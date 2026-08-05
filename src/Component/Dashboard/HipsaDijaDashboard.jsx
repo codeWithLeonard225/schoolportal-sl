@@ -15,11 +15,13 @@ import LogoutPage from "../Admin/LogoutPage"
 import FeesDashboard from "./FeesDsahboard";
 import TeacherRegistration from "../Voters/TeacherRegistration";
 import Registration from "../Voters/Registration";
-import TeacherPupilsPageAdmin from "../TeacherAssignment/TeacherPupilsPageAdminJunior";
-import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPageJunior";
-import TermResult from "../TeacherAssignment/TermResultJunior";
-import GeneralReportCard from "../PupilsPage/GeneralReportCardJunior";
-import SubGradeMatrixGeneral from "../TeacherAssignment/SubGradeMatrixPage";
+// import TeacherPupilsPageAdmin from "../TeacherAssignment/TeacherPupilsPageAdminJunior";
+// import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPageJunior";
+// import TermResult from "../TeacherAssignment/TermResultJunior";
+// import GeneralReportCard from "../PupilsPage/GeneralReportCardJunior";
+import GradeSheetPage from "../TeacherAssignment/GradeSheetPage";
+import ReportCardTermly from "../PupilsPage/HammondReportCardTermly";
+// import GeneralReportCard from "../PupilsPage/HammondGeneralReportCard";
 
 
 // --- Navigation Items ---
@@ -44,20 +46,31 @@ const NAV_ITEMS = [
         icon: <MdWarning />, // 📖
     },
     {
-        key: "results",
-        label: "Pupils Results",
-        icon: <MdBarChart />,
-        children: [
-            { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
-            { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
-            { key: "SubGradeMatrixGeneral", label: "Sub Grade General", icon: <MdPerson /> },
-            { key: "TermResult", label: "Term Grade Sheet", icon: <MdPerson /> },
-            { key: "GeneralReportCard", label: "ReportCard", icon: <MdPerson /> },
-            // { key: "Testing", label: "Testing", icon: <MdPerson /> },
-
-        ],
- 
+        key: "GradeSheetPage",
+        label: "Submitted Grades",
+        icon: <MdWarning />, // 📖
     },
+    {
+        key: "GeneralReportCard",
+        label: "ReportCard",
+        icon: <MdWarning />, // 📖
+    },
+
+  
+    // {
+    //     key: "results",
+    //     label: "Pupils Results",
+    //     icon: <MdBarChart />,
+    //     children: [
+    //         { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
+    //         { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
+    //         { key: "TermResult", label: "Term Grade Sheet", icon: <MdPerson /> },
+    //         { key: "GeneralReportCard", label: "ReportCard", icon: <MdPerson /> },
+    //         { key: "Testing", label: "Testing", icon: <MdPerson /> },
+
+    //     ],
+ 
+    // },
 
     // {
     //     key: "timetable",
@@ -153,8 +166,8 @@ function HipsaDijaDashboard() {
             case "TimeTableDailyAttendanceReport": return <TimeTableDailyAttendanceReport />;
             case "TeacherPupilsPageAdmin": return <TeacherPupilsPageAdmin />;
             case "SubGradeMatrixPage": return <SubGradeMatrixPage />;
-            case "SubGradeMatrixGeneral": return <SubGradeMatrixPage />;
-            case "GeneralReportCard": return <GeneralReportCard />;
+            case "GradeSheetPage": return <GradeSheetPage />;
+            case "GeneralReportCard": return <ReportCardTermly />;
             case "TermResult": return <TermResult />;
             case "LogoutPage": return <LogoutPage />;
 
