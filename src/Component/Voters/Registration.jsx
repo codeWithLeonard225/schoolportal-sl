@@ -72,6 +72,9 @@ const Registration = () => {
         dob: "",
         age: "",
         gender: "",
+        // NEW
+        religion: "",
+        tribe: "",
         addressLine1: "",
         addressLine2: "",
         parentName: "",
@@ -425,6 +428,9 @@ const Registration = () => {
                 dob: formData.dob,
                 age: formData.age,
                 gender: formData.gender,
+                // NEW
+                religion: formData.religion,
+                tribe: formData.tribe,
                 addressLine1: formData.addressLine1,
                 addressLine2: formData.addressLine2,
                 parentName: formData.parentName,
@@ -489,6 +495,8 @@ const Registration = () => {
                 dob: "",
                 age: "",
                 gender: "",
+                religion: "",
+                tribe: "",
                 addressLine1: "",
                 addressLine2: "",
                 parentName: "",
@@ -553,6 +561,8 @@ const Registration = () => {
             previousSchool: user.previousSchool || "",
             dob: user.dob || "",
             age: user.age || "",
+            religion: user.religion || "",
+            tribe: user.tribe || "",
             gender: user.gender || "",
             addressLine1: user.addressLine1 || "",
             addressLine2: user.addressLine2 || "",
@@ -676,7 +686,60 @@ const Registration = () => {
                             <option value="Other">Other</option>
                         </select>
                     </div>
+                    
                 </div>
+
+                <div className="flex flex-col md:flex-row md:space-x-4">
+
+    <div className="flex-1">
+        <label className="block mb-2 font-medium text-sm">
+            Religion
+        </label>
+
+        <select
+            name="religion"
+            value={formData.religion}
+            onChange={handleInputChange}
+            className="w-full p-2 mb-4 border rounded-lg"
+        >
+            <option value="">Select Religion</option>
+            <option value="Christianity">Christianity</option>
+            <option value="Islam">Islam</option>
+            <option value="Traditional">Traditional</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+
+    <div className="flex-1">
+        <label className="block mb-2 font-medium text-sm">
+            Tribe
+        </label>
+
+        <select
+            name="tribe"
+            value={formData.tribe}
+            onChange={handleInputChange}
+            className="w-full p-2 mb-4 border rounded-lg"
+        >
+            <option value="">Select Tribe</option>
+            <option value="Mende">Mende</option>
+            <option value="Temne">Temne</option>
+            <option value="Limba">Limba</option>
+            <option value="Fullah">Fullah</option>
+            <option value="Loko">Loko</option>
+            <option value="Mandingo">Mandingo</option>
+            <option value="Kono">Kono</option>
+            <option value="Susu">Susu</option>
+            <option value="Sherbro">Sherbro</option>
+            <option value="Kissi">Kissi</option>
+            <option value="Yalunka">Yalunka</option>
+            <option value="Koranko">Koranko</option>
+            <option value="Krio">Krio</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+
+</div>
 
                 {/* --- ADDRESS INFORMATION --- */}
                 <h3 className="text-lg font-semibold mt-4 mb-2 border-t pt-4">Residential Address</h3>
@@ -732,57 +795,57 @@ const Registration = () => {
                 </div>
 
                 <h3 className="text-lg font-semibold mt-4 mb-2 border-t pt-4">
-    Medical & Previous School Information
-</h3>
+                    Medical & Previous School Information
+                </h3>
 
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-    <div>
-        <label className="block mb-2 font-medium text-sm">
-            Major Illness (if any)
-        </label>
+                    <div>
+                        <label className="block mb-2 font-medium text-sm">
+                            Major Illness (if any)
+                        </label>
 
-        <input
-            type="text"
-            name="majorIllness"
-            value={formData.majorIllness}
-            onChange={handleInputChange}
-            placeholder="e.g. Asthma, Diabetes"
-            className="w-full p-2 border rounded-lg"
-        />
-    </div>
+                        <input
+                            type="text"
+                            name="majorIllness"
+                            value={formData.majorIllness}
+                            onChange={handleInputChange}
+                            placeholder="e.g. Asthma, Diabetes"
+                            className="w-full p-2 border rounded-lg"
+                        />
+                    </div>
 
-    <div>
-        <label className="block mb-2 font-medium text-sm">
-            Minor Illness (if any)
-        </label>
+                    <div>
+                        <label className="block mb-2 font-medium text-sm">
+                            Minor Illness (if any)
+                        </label>
 
-        <input
-            type="text"
-            name="minorIllness"
-            value={formData.minorIllness}
-            onChange={handleInputChange}
-            placeholder="e.g. Frequent headaches"
-            className="w-full p-2 border rounded-lg"
-        />
-    </div>
+                        <input
+                            type="text"
+                            name="minorIllness"
+                            value={formData.minorIllness}
+                            onChange={handleInputChange}
+                            placeholder="e.g. Frequent headaches"
+                            className="w-full p-2 border rounded-lg"
+                        />
+                    </div>
 
-    <div className="md:col-span-2">
-        <label className="block mb-2 font-medium text-sm">
-            Previous School
-        </label>
+                    <div className="md:col-span-2">
+                        <label className="block mb-2 font-medium text-sm">
+                            Previous School
+                        </label>
 
-        <input
-            type="text"
-            name="previousSchool"
-            value={formData.previousSchool}
-            onChange={handleInputChange}
-            placeholder="Enter previous school name"
-            className="w-full p-2 border rounded-lg"
-        />
-    </div>
+                        <input
+                            type="text"
+                            name="previousSchool"
+                            value={formData.previousSchool}
+                            onChange={handleInputChange}
+                            placeholder="Enter previous school name"
+                            className="w-full p-2 border rounded-lg"
+                        />
+                    </div>
 
-</div>
+                </div>
 
                 {/* --- ACADEMIC & SYSTEM INFO --- */}
                 <h3 className="text-lg font-semibold mt-4 mb-2 border-t pt-4">Academic & System Info</h3>
