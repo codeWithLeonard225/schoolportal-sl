@@ -3,6 +3,9 @@ import CameraCapture from "../CaptureCamera/CameraCapture";
 import CloudinaryImageUploader from "../CaptureCamera/CloudinaryImageUploader";
 import { toast } from "react-toastify";
 import { db } from "../../../firebase";
+import { pupilLoginFetch } from "../Database/PupilLogin";
+import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
     collection,
     addDoc,
@@ -19,11 +22,11 @@ import {
 import { v4 as uuidv4 } from "uuid";
 
 // Cloudinary config (Kept from your template)
-const CLOUD_NAME = "doucdnzij";
-const UPLOAD_PRESET = "Nardone";
+const CLOUD_NAME = "dxcrlpike"; // Cloudinary Cloud Name
+const UPLOAD_PRESET = "LeoTechSl Projects"; // Cloudinary Upload Preset
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
-const FEE_TYPES = ["Admission Fee", "Tuition Fee", "Exam Fee", "Other"];
+const FEE_TYPES = ["Term 1", "Term 2", "Term 3"];
 const ADMIN_PASSWORD = "1234"; // Define your admin password
 
 // Helper function to generate a new unique receipt ID
@@ -33,7 +36,7 @@ const generateUniqueReceiptId = () => uuidv4().slice(0, 10).toUpperCase();
 const getCurrentAcademicYear = () => {
     const now = new Date();
     const currentMonth = now.getMonth(); // 0 = Jan, 8 = Sep, 11 = Dec
-    
+
     if (currentMonth >= 8) {
         const startYear = now.getFullYear();
         const endYear = startYear + 1;
@@ -46,6 +49,10 @@ const getCurrentAcademicYear = () => {
 };
 
 const FeesReceipt = () => {
+
+    const location = useLocation();
+    const schoolId = location.state?.schoolId || "N/A"; // fallback if missing
+
     // --- State Management ---
     const [searchTerm, setSearchTerm] = useState("");
     const [students, setStudents] = useState([]);
@@ -57,12 +64,17 @@ const FeesReceipt = () => {
     const [showCamera, setShowCamera] = useState(false);
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const [recentReceipts, setRecentReceipts] = useState([]);
-    
+
+    // ⭐ NEW: State for the Previous Fees Modal
+    const [showPreviousFeesModal, setShowPreviousFeesModal] = useState(false);
+    const [previousFeesData, setPreviousFeesData] = useState(null);
     // RE-ADDED STATE: To store fee structures
-    const [feesCost, setFeesCost] = useState([]); 
-    
+    const [feesCost, setFeesCost] = useState([]);
+
     // NEW STATE: To hold the total amount paid by the selected student
-    const [totalPaid, setTotalPaid] = useState(0); 
+    const [totalPaid, setTotalPaid] = useState(0);
+
+
 
     const defaultAcademicYear = getCurrentAcademicYear();
 
@@ -72,7 +84,7 @@ const FeesReceipt = () => {
         studentID: "",
         studentName: "",
         class: "",
-        academicYear: defaultAcademicYear, 
+        academicYear: defaultAcademicYear,
         feeType: FEE_TYPES[0],
         amount: "",
         suggestedAmount: "",
@@ -81,6 +93,7 @@ const FeesReceipt = () => {
         receiptPhotoUrl: null,
         receiptPublicId: null,
         recordedBy: "Current User ID",
+        schoolId: schoolId, // ✅ Add this
     }), [defaultAcademicYear]);
 
     const [receiptData, setReceiptData] = useState(initialReceiptState);
@@ -89,7 +102,7 @@ const FeesReceipt = () => {
     const latestAcademicYear = useMemo(() => {
         if (feesCost.length === 0) return defaultAcademicYear;
         const allYears = feesCost.map(fee => fee.academicYear);
-        return [...new Set(allYears)].sort().reverse()[0] || defaultAcademicYear; 
+        return [...new Set(allYears)].sort().reverse()[0] || defaultAcademicYear;
     }, [feesCost, defaultAcademicYear]);
 
     // Effect to update receiptData with the latest academic year when feesCost loads (if not editing)
@@ -107,8 +120,14 @@ const FeesReceipt = () => {
 
     // 1. REAL-TIME FEES COST LISTENER
     useEffect(() => {
+        if (!schoolId || schoolId === "N/A") return;
+
         const feesCollectionRef = collection(db, "FeesCost");
-        const q = query(feesCollectionRef);
+        const q = query(
+            feesCollectionRef,
+            where("schoolId", "==", schoolId),
+            // orderBy("className", "asc")
+        );
 
         const unsubscribeFees = onSnapshot(q, (snapshot) => {
             const feeList = snapshot.docs.map(doc => ({
@@ -122,7 +141,8 @@ const FeesReceipt = () => {
         });
 
         return () => unsubscribeFees();
-    }, []);
+    }, [schoolId]);
+
 
     // 2. REAL-TIME STUDENT LISTENER
     useEffect(() => {
@@ -130,36 +150,31 @@ const FeesReceipt = () => {
             setStudents([]);
             return;
         }
-        
-        const votersCollectionRef = collection(db, "Voters");
-        const q = query(
-            votersCollectionRef,
-            where("studentName", ">=", searchTerm),
-            where("studentName", "<=", searchTerm + "\uf8ff"),
-            limit(10)
-        );
 
+        const pupilsRef = collection(pupilLoginFetch, "PupilsReg");
+        const q = query(pupilsRef, where("schoolId", "==", schoolId));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const studentList = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setStudents(studentList);
-        }, (error) => {
-            console.error("Error fetching students:", error);
+            const allStudents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const filtered = allStudents
+                .filter(s => s.studentName.toLowerCase().includes(searchTerm.toLowerCase()))
+                .slice(0, 10);
+            setStudents(filtered);
         });
 
         return () => unsubscribe();
-    }, [searchTerm]);
+    }, [searchTerm, schoolId]);
+
 
     // 3. REAL-TIME RECEIPTS LISTENER (for the table)
     useEffect(() => {
         const receiptsCollectionRef = collection(db, "Receipts");
         const q = query(
             receiptsCollectionRef,
-            orderBy("createdAt", "desc"),
+            where("schoolId", "==", schoolId),
+            // orderBy("createdAt", "desc"),
             limit(15)
         );
+
 
         const unsubscribeReceipts = onSnapshot(q, (snapshot) => {
             const receiptsList = snapshot.docs.map(doc => ({
@@ -196,7 +211,7 @@ const FeesReceipt = () => {
             let sum = 0;
             snapshot.forEach(doc => {
                 // Ensure 'amount' is treated as a number
-                sum += parseFloat(doc.data().amount) || 0; 
+                sum += parseFloat(doc.data().amount) || 0;
             });
             setTotalPaid(sum);
         }, (error) => {
@@ -212,148 +227,96 @@ const FeesReceipt = () => {
 
     const handleReceiptChange = (e) => {
         const { name, value } = e.target;
-        setReceiptData(prev => ({ ...prev, [name]: value }));
-    };
 
- 
- 
-const handleStudentSelect = async (student) => {
-    setSelectedStudent(student);
-    setSearchTerm(student.studentName);
-    setStudents([]);
+        if (name === "amount") {
+            const inputAmount = parseFloat(value) || 0;
 
-    try {
-        // =========================
-        // PART 1: Console logging for previous academic year
-        // =========================
-
-        // 1️⃣ Determine previous academic year
-        const allYears = [...new Set(feesCost.map(fee => fee.academicYear))].sort(); // ascending
-        const latestIndex = allYears.indexOf(latestAcademicYear);
-        const previousAcademicYear = latestIndex > 0 ? allYears[latestIndex - 1] : latestAcademicYear;
-
-        // 2️⃣ Fetch all receipts for this student
-        const receiptsCollectionRef = collection(db, "Receipts");
-        const q = query(receiptsCollectionRef, where("studentID", "==", student.studentID));
-        const snapshot = await getDocs(q);
-
-        // 3️⃣ Process receipts to find previous year's total paid and class
-        let totalPaidPrevious = 0;
-        let previousClass = null;
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            if (data.academicYear === previousAcademicYear) {
-                totalPaidPrevious += parseFloat(data.amount) || 0;
-                if (!previousClass) {
-                    previousClass = data.class;
-                }
+            if (inputAmount > remainingBalance) {
+                toast.error("Payment exceeds remaining balance!");
+                return;
             }
-        });
-
-        // 4️⃣ Get total fee for previous year's class
-        const classToLookup = previousClass || student.class;
-        const classFeeRecord = feesCost.find(
-            fee => fee.className === classToLookup && fee.academicYear === previousAcademicYear
-        );
-        const totalFeePrevious = classFeeRecord ? parseFloat(classFeeRecord.totalAmount) : 0;
-
-        if (!classFeeRecord && classToLookup) {
-            toast.warn(`No default fee found for Class: ${classToLookup} in Academic Year: ${previousAcademicYear}.`);
         }
 
-        const balancePrevious = totalFeePrevious - totalPaidPrevious;
-
-        // ✅ Console logging (unchanged)
-        console.log(`\n====================================================================`);
-        console.log(`PREVIOUS YEAR FEE STATUS FOR ${student.studentName} (${student.studentID})`);
-        console.log(`Academic Year: ${previousAcademicYear}`);
-        console.log(`Class in that year: ${classToLookup}`);
-        console.log(`Total Fee (Expected): GHS ${totalFeePrevious.toFixed(2)}`);
-        console.log(`Total Paid: GHS ${totalPaidPrevious.toFixed(2)}`);
-        console.log(`Balance: GHS ${balancePrevious.toFixed(2)}`);
-        console.log(`====================================================================\n`);
-
-        // =========================
-        // PART 2: Grouping and updating UI for latest academic year
-        // =========================
-
-        // 1️⃣ Get total fee for student's class & latest academic year
-        const latestClassFee = feesCost.find(
-            fee => fee.className === student.class && fee.academicYear === latestAcademicYear
-        );
-        const totalFeeLatest = latestClassFee ? parseFloat(latestClassFee.totalAmount) : 0;
-
-        if (!latestClassFee && student.class) {
-            toast.warn(`No default fee found for Class: ${student.class} in Academic Year: ${latestAcademicYear}.`);
-        }
-
-        // 2️⃣ Group receipts by studentID, studentName, class, academicYear
-        const grouped = {};
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const key = `${data.studentID}-${data.studentName}-${data.class}-${data.academicYear}`;
-
-            if (!grouped[key]) {
-                grouped[key] = {
-                    studentID: data.studentID,
-                    studentName: data.studentName,
-                    class: data.class,
-                    academicYear: data.academicYear,
-                    totalPaid: 0,
-                    totalFee: 0,
-                    balance: 0
-                };
-            }
-
-            grouped[key].totalPaid += parseFloat(data.amount) || 0;
-
-            // Only set totalFee and balance for latest academic year
-            if (data.academicYear === latestAcademicYear) {
-                grouped[key].totalFee = totalFeeLatest;
-                grouped[key].balance = totalFeeLatest - grouped[key].totalPaid;
-            }
-        });
-
-        // If no receipts yet, include current student
-        const currentKey = `${student.studentID}-${student.studentName}-${student.class}-${latestAcademicYear}`;
-        if (!grouped[currentKey]) {
-            grouped[currentKey] = {
-                studentID: student.studentID,
-                studentName: student.studentName,
-                class: student.class || 'N/A',
-                academicYear: latestAcademicYear,
-                totalPaid: 0,
-                totalFee: totalFeeLatest,
-                balance: totalFeeLatest
-            };
-        }
-
-        const groupedArray = Object.values(grouped);
-        console.log("Grouped Receipts with Balance (Latest Academic Year):", groupedArray);
-
-        // 3️⃣ Update receiptData state for the form
         setReceiptData(prev => ({
             ...prev,
-            studentDocId: student.id,
-            studentID: student.studentID,
-            studentName: student.studentName,
-            class: student.class || 'N/A',
-            amount: "", // user input
-            suggestedAmount: totalFeeLatest,
-            academicYear: latestAcademicYear,
-            balance: totalFeeLatest // display in form
+            [name]: value,
         }));
-
-    } catch (err) {
-        console.error("Failed to compute balance:", err);
-        toast.error("Failed to calculate student balance.");
-    }
-};
+    };
 
 
 
-    
+    const handleStudentSelect = async (student) => {
+        setSelectedStudent(student);
+        setSearchTerm(student.studentName);
+        setStudents([]);
+
+        
+
+        try {
+            // --- Get class fees for this student's class ---
+            const classFees = feesCost.find(
+                fee =>
+                    fee.className === student.class &&
+                    fee.academicYear === latestAcademicYear
+            );
+
+            if (!classFees) throw new Error("No fees found for this class");
+
+            const newTotal = parseFloat(classFees.new_total) || 0;
+            const contTotal = parseFloat(classFees.cont_total) || 0;
+
+            // --- Check payments for this year ---
+            const receiptsRef = collection(db, "Receipts");
+            const q = query(
+                receiptsRef,
+                where("studentID", "==", student.studentID),
+                where("academicYear", "==", latestAcademicYear)
+            );
+
+            const snapshot = await getDocs(q);
+
+            let totalPaidSoFar = 0;
+            snapshot.forEach(doc => {
+                totalPaidSoFar += parseFloat(doc.data().amount) || 0;
+            });
+
+            // --- Use stored feesCategory ---
+            const feesCategory = student.feesCategory || "New";
+
+            // 🔥 IMPORTANT: Always show FULL CLASS TOTAL
+            const classTotal =
+                feesCategory === "New"
+                    ? newTotal
+                    : contTotal;
+
+            setReceiptData(prev => ({
+                ...prev,
+                studentID: student.studentID,
+                studentName: student.studentName,
+                class: student.class,
+                feesCategory: feesCategory,
+                classTotal: classTotal,     // ✅ full total only
+                totalPaid: totalPaidSoFar,  // ✅ paid so far
+                amount: "",
+                academicYear: latestAcademicYear,
+            }));
+
+        } catch (err) {
+            console.error("Error calculating fees:", err);
+            toast.error("Failed to determine student fees.");
+        }
+    };
+
+    const remainingBalance = useMemo(() => {
+        const total = receiptData.classTotal || 0;
+        const paid = receiptData.totalPaid || 0;
+        return total - paid;
+    }, [receiptData.classTotal, receiptData.totalPaid]);
+
+    const projectedBalance = useMemo(() => {
+        const currentAmount = parseFloat(receiptData.amount) || 0;
+        return remainingBalance - currentAmount;
+    }, [remainingBalance, receiptData.amount]);
 
 
     const handleUploadSuccess = (url, publicId) => {
@@ -364,7 +327,7 @@ const handleStudentSelect = async (student) => {
         }));
         toast.success("Receipt image uploaded successfully!");
     };
-    
+
     const handleUpdateReceipt = (receipt) => {
         setSelectedStudent({
             id: receipt.studentDocId,
@@ -375,7 +338,7 @@ const handleStudentSelect = async (student) => {
         setSearchTerm(receipt.studentName);
 
         setEditingReceiptId(receipt.id);
-        
+
         // Populate form with receipt data
         setReceiptData({
             receiptId: receipt.receiptId,
@@ -383,7 +346,7 @@ const handleStudentSelect = async (student) => {
             studentID: receipt.studentID,
             studentName: receipt.studentName,
             class: receipt.class,
-            academicYear: receipt.academicYear || latestAcademicYear, 
+            academicYear: receipt.academicYear || latestAcademicYear,
             feeType: receipt.feeType,
             amount: receipt.amount.toString(),
             suggestedAmount: "",
@@ -413,7 +376,7 @@ const handleStudentSelect = async (student) => {
             toast.error("Incorrect password.");
         }
     };
-    
+
     const resetForm = () => {
         setReceiptData(initialReceiptState);
         setSelectedStudent(null);
@@ -421,9 +384,10 @@ const handleStudentSelect = async (student) => {
         setEditingReceiptId(null);
         setShowSuccessMessage(false);
         setTotalPaid(0); // Reset total paid amount
+        setShowPreviousFeesModal(false); // Close the modal
     };
 
-    const handleCameraCapture = async (base64Data) => { 
+    const handleCameraCapture = async (base64Data) => {
         setIsUploading(true);
         setUploadProgress(0);
         try {
@@ -458,7 +422,8 @@ const handleStudentSelect = async (student) => {
             const formDataObj = new FormData();
             formDataObj.append("file", blob);
             formDataObj.append("upload_preset", UPLOAD_PRESET);
-            formDataObj.append("folder", "Receipt_Photos");
+            const folderName = `Receipt_Photos/${schoolId || "UnknownSchool"}`;
+            formData.append("folder", folderName);
 
             xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`);
             xhr.send(formDataObj);
@@ -476,19 +441,33 @@ const handleStudentSelect = async (student) => {
         setShowSuccessMessage(false);
 
         if (!selectedStudent) return toast.error("Please select a student first.");
-        if (parseFloat(receiptData.amount) <= 0 || isNaN(parseFloat(receiptData.amount))) {
+        const paidAmount = parseFloat(receiptData.amount);
+        if (paidAmount <= 0 || isNaN(paidAmount)) {
             return toast.error("Please enter a valid amount greater than zero.");
         }
-        
+
         setIsSubmitting(true);
 
         try {
-            const { suggestedAmount, ...finalReceiptData } = {
+            // --- Calculate total fee & balance dynamically ---
+            // Use receiptData.class instead of classToLookup
+            const classToLookup = receiptData.class; // ✅ added this
+            const classFeeRecord = feesCost.find(
+                fee => fee.className === classToLookup && fee.academicYear === receiptData.academicYear
+            );
+
+            const totalFee = classFeeRecord ? parseFloat(classFeeRecord.totalAmount) : 0;
+            const balance = totalFee - paidAmount;
+
+            const finalReceiptData = {
                 ...receiptData,
-                amount: parseFloat(receiptData.amount),
-                academicYear: receiptData.academicYear || defaultAcademicYear, 
+                amount: paidAmount,
+                totalFee,   // total fee field
+                balance,    // balance field
+                academicYear: receiptData.academicYear || defaultAcademicYear,
+                schoolId: schoolId, // ensure schoolId is saved
             };
-            
+
             if (editingReceiptId) {
                 const receiptRef = doc(db, "Receipts", editingReceiptId);
                 await updateDoc(receiptRef, finalReceiptData);
@@ -501,10 +480,8 @@ const handleStudentSelect = async (student) => {
                 toast.success(`Receipt ${finalReceiptData.receiptId} recorded successfully!`);
                 setShowSuccessMessage(true);
             }
-            
-            setTimeout(() => {
-                resetForm();
-            }, 3000);
+
+            setTimeout(() => resetForm(), 3000);
 
         } catch (err) {
             console.error("Receipt saving failed:", err);
@@ -515,14 +492,99 @@ const handleStudentSelect = async (student) => {
     };
 
 
+
+    useEffect(() => {
+        if (searchTerm === "") {
+            resetForm(); // reset all form fields and close modal
+        }
+    }, [searchTerm]);
+
+    // Add this component inside the same file, or in a separate file like PreviousFeesModal.js
+    const PreviousFeesModal = ({ data, onResetAndClose }) => {
+        // 💡 Must call the hook inside the functional component
+        const navigate = useNavigate();
+        if (!data) return null;
+
+        const isBalanced = data.balance <= 0;
+        const balanceColor = isBalanced ? 'text-green-600' : 'text-red-600';
+        const balanceText = isBalanced ? 'Cleared' : `GHS ${data.balance.toFixed(2)} DUE`;
+        const balanceClass = isBalanced ? 'bg-green-100 border-green-300' : 'bg-red-100 border-red-300';
+
+        const handleViewHistory = () => {
+            // 1. Navigate to the student history page
+            navigate(`/student-history/${data.studentID}`);
+            // 2. Reset the form state in the background
+            onResetAndClose();
+        };
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg transform transition-all duration-300 scale-100">
+                    <h3 className="text-2xl font-bold text-center mb-4 text-indigo-700">
+                        Previous Academic Year Status 🧾
+                    </h3>
+                    {/* ... (Data display) ... */}
+
+                    <div className="grid grid-cols-2 gap-4 text-lg font-medium text-gray-700 mb-6">
+                        <div>
+                            <p>Total Fee (Expected):</p>
+                            <p className="font-bold text-blue-600">GHS {data.totalFee.toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p>Total Paid:</p>
+                            <p className="font-bold text-green-700">GHS {data.totalPaid.toFixed(2)}</p>
+                        </div>
+                    </div>
+
+                    <div className={`p-4 text-center rounded-lg border-2 ${balanceClass}`}>
+                        <p className="text-lg font-semibold">Outstanding Balance</p>
+                        <p className={`text-4xl font-extrabold ${balanceColor} mt-1`}>{balanceText}</p>
+                    </div>
+
+                    {/* Ensure you are passing a 'message' prop from handleStudentSelect */}
+                    <p className="mt-4 text-sm text-center text-gray-500">
+                        This is the final status for the {data.academicYear} academic year.
+                    </p>
+
+                    <div className="mt-6 flex justify-end space-x-3">
+                        <button
+                            onClick={handleViewHistory}
+                            className="bg-indigo-500 text-white py-2 px-4 rounded-lg hover:bg-indigo-600 transition text-sm font-semibold"
+                            // Optional: Disabled if the balance is paid, encouraging collection
+                            disabled={isBalanced}
+                        >
+                            View Full History 🔗
+                        </button>
+                        <button
+                            // 💡 This now calls the resetForm function in the parent
+                            onClick={onResetAndClose}
+                            className="bg-gray-300 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-400 transition text-sm font-semibold"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+
     return (
         <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6 space-y-6">
-            
+            {showPreviousFeesModal && (
+                <PreviousFeesModal
+                    data={previousFeesData}
+                    // Pass resetForm to the modal. It handles both closing the modal 
+                    // and resetting the form state (searchTerm, selectedStudent, etc.)
+                    onResetAndClose={resetForm}
+                />
+            )}
+
             {showSuccessMessage && (
                 <div className="bg-green-500 text-white p-6 rounded-xl shadow-2xl text-center mb-6 max-w-sm w-full">
                     <h3 className="text-xl font-bold">Transaction Successful! 🎉</h3>
                     <p className="mt-2">Receipt Saved: {receiptData.receiptId}</p>
-                    
+
                 </div>
             )}
 
@@ -531,6 +593,12 @@ const handleStudentSelect = async (student) => {
                 <h2 className="text-2xl font-bold text-center mb-6 text-indigo-700">
                     {editingReceiptId ? "Update Fee Receipt" : "New Fee Payment Receipt"} 💰
                 </h2>
+                {selectedStudent && (
+                    <p className="mt-2 text-sm font-bold text-gray-700">
+                        Fees Category:
+                        <span className="ml-2 text-indigo-600">{receiptData.feesCategory}</span>
+                    </p>
+                )}
 
                 {/* Receipt ID, Academic Year, and Class (Read-Only) */}
                 <div className="flex justify-between flex-wrap mb-4 text-sm text-gray-600 border-b pb-2">
@@ -539,9 +607,20 @@ const handleStudentSelect = async (student) => {
                     <p><strong>Academic Year:</strong> <span className="font-bold text-purple-700">
                         {receiptData.academicYear}
                     </span></p>
+
                     <p><strong>Class:</strong> <span className="font-bold text-gray-800">{receiptData.class || 'N/A'}</span></p>
                 </div>
-                
+                {/* 🏫 School ID (read-only field) */}
+                <div className="mb-4">
+                    <label className="block mb-2 font-medium text-sm text-gray-700">School ID</label>
+                    <input
+                        type="text"
+                        value={schoolId}
+                        readOnly
+                        className="w-full p-2 border rounded-lg bg-gray-100 text-gray-600"
+                    />
+                </div>
+
                 {/* Student Search Section */}
                 <div className="mb-6 border p-4 rounded-lg bg-blue-50">
                     <label className="block mb-2 font-medium text-sm text-blue-700">Student Name / ID Search</label>
@@ -553,7 +632,7 @@ const handleStudentSelect = async (student) => {
                         className="w-full p-2 mb-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
                         disabled={!!editingReceiptId}
                     />
-                    
+
                     {selectedStudent ? (
                         <div className="p-3 mt-2 bg-green-100 border border-green-300 rounded-lg">
                             <p className="font-semibold text-green-800">Selected Student: {selectedStudent.studentName} (ID: {selectedStudent.studentID})</p>
@@ -561,8 +640,8 @@ const handleStudentSelect = async (student) => {
                     ) : (
                         <ul className="max-h-48 overflow-y-auto border-t border-gray-300 mt-2">
                             {students.map(student => (
-                                <li 
-                                    key={student.id} 
+                                <li
+                                    key={student.id}
                                     onClick={() => handleStudentSelect(student)}
                                     className="p-2 cursor-pointer hover:bg-blue-100 border-b text-sm"
                                 >
@@ -570,7 +649,7 @@ const handleStudentSelect = async (student) => {
                                 </li>
                             ))}
                             {searchTerm.length > 0 && students.length === 0 && (
-                                    <li className="p-2 text-gray-500 text-sm">No students found.</li>
+                                <li className="p-2 text-gray-500 text-sm">No students found.</li>
                             )}
                         </ul>
                     )}
@@ -578,7 +657,7 @@ const handleStudentSelect = async (student) => {
 
                 {/* Academic Year Input and Payment Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    
+
                     {/* Academic Year Select Input */}
                     <div>
                         <label className="block mb-2 font-medium text-sm">Academic Year</label>
@@ -589,7 +668,7 @@ const handleStudentSelect = async (student) => {
                             className="w-full p-2 border rounded-lg bg-purple-50"
                             required
                         >
-                             {[...new Set([...feesCost.map(fee => fee.academicYear), latestAcademicYear])].sort().reverse().map(year => (
+                            {[...new Set([...feesCost.map(fee => fee.academicYear), latestAcademicYear])].sort().reverse().map(year => (
                                 <option key={year} value={year}>{year}</option>
                             ))}
                         </select>
@@ -611,39 +690,68 @@ const handleStudentSelect = async (student) => {
                     </div>
 
                     {/* --- AMOUNT INPUT WITH SUGGESTED FEE & TOTAL PAID DISPLAY --- */}
-                    <div className="md:col-span-2">
-                        <div className="flex justify-between items-end mb-2">
-                             <label className="block font-medium text-sm">Amount Paid (GHS)</label>
 
-                            {/* Display Suggested Fee (if available and not editing) */}
-                            {receiptData.suggestedAmount && !editingReceiptId && (
+                    <div className="md:col-span-2">
+
+                        <div className="flex justify-between items-end mb-2">
+                            <label className="block font-medium text-sm">
+                                Amount Paid (NLE)
+                            </label>
+
+                            {receiptData.classTotal && !editingReceiptId && (
                                 <span className="text-sm text-blue-600 font-semibold bg-blue-100 px-2 py-1 rounded">
-                                    Class Fee: GHS {parseFloat(receiptData.suggestedAmount).toFixed(2)}
+                                    Total Class Fee ({receiptData.feesCategory}):
+                                    NLE {receiptData.classTotal.toFixed(2)}
                                 </span>
                             )}
                         </div>
 
-                        <input
-                            type="number"
-                            name="amount"
-                            value={receiptData.amount}
-                            onChange={handleReceiptChange}
-                            placeholder="e.g. 500.00" 
-                            step="0.01"
-                            min="0.01"
-                            className="w-full p-3 border rounded-lg font-bold text-xl text-red-600"
-                            required
-                        />
-                        
-                        {/* NEW: Display Total Paid So Far (if student is selected) */}
+                      <input
+    type="number"
+    name="amount"
+    value={receiptData.amount}
+    onChange={handleReceiptChange}
+    placeholder={
+        selectedStudent && remainingBalance <= 0
+            ? "Fully Paid"
+            : "e.g. 500.00"
+    }
+    step="0.01"
+    min="0.01"
+    max={remainingBalance}
+    disabled={
+        !selectedStudent || remainingBalance <= 0
+    }   // ✅ key logic here
+    className={`w-full p-3 border rounded-lg font-bold text-xl 
+        ${
+            !selectedStudent || remainingBalance <= 0
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "text-red-600"
+        }`}
+    required
+/>
+
+                        {/* 🟢 Total Paid */}
                         {selectedStudent && (
                             <p className="mt-2 text-sm font-bold text-green-700">
-                                Total Paid So Far ({receiptData.academicYear}): 
+                                Total Paid So Far ({receiptData.academicYear}):
                                 <span className="ml-2 bg-green-100 px-2 py-0.5 rounded">
-                                    GHS {totalPaid.toFixed(2)} 
+                                    NLE {receiptData.totalPaid?.toFixed(2) || "0.00"}
                                 </span>
                             </p>
                         )}
+
+                        {/* 🔴 Remaining Balance */}
+                        {selectedStudent && (
+                            <p className={`mt-1 text-sm font-bold ${remainingBalance <= 0 ? "text-green-600" : "text-red-600"}`}>
+                                Remaining Balance:
+                                <span className="ml-2 bg-red-100 px-2 py-0.5 rounded">
+                                    NLE {projectedBalance.toFixed(2)}
+                                </span>
+                            </p>
+                            
+                        )}
+                    
 
                     </div>
                     {/* --- END AMOUNT INPUT --- */}
@@ -659,7 +767,7 @@ const handleStudentSelect = async (student) => {
                             required
                         />
                     </div>
-                    
+
                     <div>
                         <label className="block mb-2 font-medium text-sm">Payment Method</label>
                         <select
@@ -688,7 +796,7 @@ const handleStudentSelect = async (student) => {
                             "Upload Proof"
                         }
                     </div>
-                    
+
                     <div className="flex space-x-2 w-full max-w-xs justify-center">
                         <CloudinaryImageUploader
                             onUploadSuccess={handleUploadSuccess}
@@ -701,7 +809,7 @@ const handleStudentSelect = async (student) => {
                             Use Camera
                         </button>
                     </div>
-                    
+
                     {isUploading && (
                         <div className="w-full max-w-xs bg-gray-200 rounded-full h-2 mt-2">
                             <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
@@ -719,9 +827,9 @@ const handleStudentSelect = async (student) => {
                             ? (isUploading ? "Uploading & Saving..." : "Saving...")
                             : editingReceiptId ? "Update Receipt" : "Generate & Save Receipt"}
                     </button>
-                    
+
                     {editingReceiptId && (
-                        <button 
+                        <button
                             type="button"
                             onClick={resetForm}
                             className="w-1/3 bg-gray-500 text-white p-3 rounded-lg hover:bg-gray-600 transition disabled:bg-gray-400 font-semibold"
@@ -745,8 +853,8 @@ const handleStudentSelect = async (student) => {
                             <tr>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Acad. Year</th> 
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (GHS)</th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Acad. Year</th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (NLE)</th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Type</th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Date</th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Method</th>
@@ -759,20 +867,20 @@ const handleStudentSelect = async (student) => {
                                     <td className="px-3 py-4 whitespace-nowrap text-xs font-medium text-gray-900">{receipt.receiptId}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{receipt.studentName}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-xs text-purple-700 font-medium hidden sm:table-cell">{receipt.academicYear || 'N/A'}</td>
-                                    <td className="px-3 py-4 whitespace-nowrap text-sm font-bold text-green-600">GHS {receipt.amount?.toFixed(2) || '0.00'}</td>
+                                    <td className="px-3 py-4 whitespace-nowrap text-sm font-bold text-green-600">NLE {receipt.amount?.toFixed(2) || '0.00'}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">{receipt.feeType}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-xs text-gray-500 hidden md:table-cell">{receipt.paymentDate}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">{receipt.paymentMethod}</td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button 
-                                            onClick={() => handleUpdateReceipt(receipt)} 
+                                        <button
+                                            onClick={() => handleUpdateReceipt(receipt)}
                                             className="text-orange-600 hover:text-orange-800 mr-3 text-sm"
                                             disabled={isSubmitting}
                                         >
                                             Edit
                                         </button>
-                                        <button 
-                                            onClick={() => handleDeleteReceipt(receipt.id, receipt.receiptId, receipt.studentName)} 
+                                        <button
+                                            onClick={() => handleDeleteReceipt(receipt.id, receipt.receiptId, receipt.studentName)}
                                             className="text-red-600 hover:text-red-800 text-sm"
                                             disabled={isSubmitting}
                                         >

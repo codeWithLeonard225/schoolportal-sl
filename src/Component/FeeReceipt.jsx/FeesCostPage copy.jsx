@@ -5,19 +5,6 @@ import { v4 as uuidv4 } from "uuid";
 import { toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
 
-// Pre-defined structural ancillary charge types
-const ANCILLARY_CHARGE_TYPES = [
-    "Field Trip",
-    "Field Trip T-Shirt",
-    "School T-Shirt",
-    "School ID Card",
-    "Medication (Minor)",
-    "Development Fees",
-    "School Hijab",
-    "School Necktie",
-    "Computer"
-];
-
 const FeesCostPage = () => {
     const location = useLocation();
     const schoolId = location.state?.schoolId || "N/A";
@@ -27,14 +14,7 @@ const FeesCostPage = () => {
     const [classes, setClasses] = useState([]);
     const [searchClass, setSearchClass] = useState("");
     const [selectedClass, setSelectedClass] = useState(null);
-    const [formError, setFormError] = useState("");
-
-    // NEW: State to hold an array of added custom charges for the form
-    const [ancillaryCharges, setAncillaryCharges] = useState([]);
-    
-    // States for adding a single charge row
-    const [selectedChargeType, setSelectedChargeType] = useState(ANCILLARY_CHARGE_TYPES[0]);
-    const [chargeAmount, setChargeAmount] = useState("");
+    const [formError, setFormError] = useState(""); // State for on-screen error
 
     const initialFeeState = useMemo(() => ({
         feeId: uuidv4().slice(0, 10).toUpperCase(),
@@ -53,53 +33,23 @@ const FeesCostPage = () => {
         setEditingFeeId(null);
         setSearchClass("");
         setFormError("");
-        setAncillaryCharges([]);
-        setChargeAmount("");
     }, [initialFeeState]);
 
-    // Add row to tracking charge list
-    const handleAddAncillaryCharge = () => {
-        const amt = parseFloat(chargeAmount);
-        if (!amt || amt <= 0 || isNaN(amt)) {
-            toast.error("Please provide a valid item charge amount.");
-            return;
-        }
-        
-        // Prevent adding exact item names twice in a single class setup block
-        if (ancillaryCharges.some(c => c.type === selectedChargeType)) {
-            toast.error("This item type charge is already added!");
-            return;
-        }
-
-        setAncillaryCharges(prev => [...prev, { type: selectedChargeType, amount: amt }]);
-        setChargeAmount("");
-    };
-
-    const handleRemoveAncillaryCharge = (index) => {
-        setAncillaryCharges(prev => prev.filter((_, i) => i !== index));
-    };
-
-    // Calculate total sums including terms + global ancillary rows
     const totals = useMemo(() => {
-        const termSum = (t1, t2, t3) => parseFloat(t1 || 0) + parseFloat(t2 || 0) + parseFloat(t3 || 0);
-        const ancillarySum = ancillaryCharges.reduce((acc, current) => acc + (current.amount || 0), 0);
-
-        const rawNewTotal = termSum(feeData.new_term1, feeData.new_term2, feeData.new_term3) + ancillarySum;
-        const rawContTotal = termSum(feeData.cont_term1, feeData.cont_term2, feeData.cont_term3) + ancillarySum;
-
+        const sum = (t1, t2, t3) => (parseFloat(t1 || 0) + parseFloat(t2 || 0) + parseFloat(t3 || 0)).toFixed(2);
         return {
-            ancillaryTotal: ancillarySum.toFixed(2),
-            newTotal: rawNewTotal.toFixed(2),
-            contTotal: rawContTotal.toFixed(2)
+            newTotal: sum(feeData.new_term1, feeData.new_term2, feeData.new_term3),
+            contTotal: sum(feeData.cont_term1, feeData.cont_term2, feeData.cont_term3)
         };
-    }, [feeData, ancillaryCharges]);
+    }, [feeData]);
 
     useEffect(() => {
         if (!schoolId || schoolId === "N/A") return;
         const q = query(collection(db, "FeesCost"), where("schoolId", "==", schoolId), limit(50));
-        return onSnapshot(q, (snapshot) => {
+        const unsubscribe = onSnapshot(q, (snapshot) => {
             setFeesList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
+        return () => unsubscribe();
     }, [schoolId]);
 
     useEffect(() => {
@@ -123,13 +73,13 @@ const FeesCostPage = () => {
         setSearchClass(cls.className);
         setFeeData(prev => ({ ...prev, className: cls.className }));
         setClasses([]);
-        setFormError("");
+        setFormError(""); // Clear error when user fixes selection
     };
 
     const handleFeeChange = (e) => {
         const { name, value } = e.target;
         setFeeData(prev => ({ ...prev, [name]: value }));
-        if (formError) setFormError("");
+        if (formError) setFormError(""); // Clear error on typing
     };
 
     const handleEdit = (fee) => {
@@ -137,7 +87,6 @@ const FeesCostPage = () => {
         setFeeData({ ...fee });
         setSelectedClass({ className: fee.className });
         setSearchClass(fee.className);
-        setAncillaryCharges(fee.ancillaryCharges || []);
         setFormError("");
     };
 
@@ -174,7 +123,6 @@ const FeesCostPage = () => {
                 cont_term1: parseFloat(feeData.cont_term1) || 0,
                 cont_term2: parseFloat(feeData.cont_term2) || 0,
                 cont_term3: parseFloat(feeData.cont_term3) || 0,
-                ancillaryCharges: ancillaryCharges, // Save structural breakdown array
                 new_total: parseFloat(totals.newTotal),
                 cont_total: parseFloat(totals.contTotal),
                 schoolId
@@ -183,14 +131,14 @@ const FeesCostPage = () => {
 
             if (editingFeeId) {
                 await updateDoc(doc(db, "FeesCost", editingFeeId), dataToSave);
-                toast.success("Structure & Addons Updated!");
+                toast.success("Structure Updated!");
             } else {
                 await addDoc(collection(db, "FeesCost"), dataToSave);
-                toast.success("Structure & Addons Added!");
+                toast.success("Structure Added!");
             }
             resetForm();
         } catch (err) {
-            toast.error("Error saving structure data");
+            toast.error("Error saving data");
         }
     };
 
@@ -198,17 +146,18 @@ const FeesCostPage = () => {
         if (!window.confirm("Are you sure?")) return;
         try {
             await deleteDoc(doc(db, "FeesCost", id));
-            toast.success("Deleted successfully!");
+            toast.success("Deleted!");
         } catch (err) {
-            toast.error("Error deleting item");
+            toast.error("Error deleting");
         }
     };
 
     return (
         <div className="p-6 bg-gray-100 min-h-screen">
-            <h2 className="text-2xl font-bold mb-6 text-indigo-700">Fees & Ancillary Charges Manager</h2>
+            <h2 className="text-2xl font-bold mb-6 text-indigo-700">Fees Cost Management</h2>
 
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md mb-8 max-w-4xl mx-auto border-t-4 border-indigo-600">
+                {/* On-Screen Error Message */}
                 {formError && (
                     <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 text-sm font-bold">
                         {formError}
@@ -250,10 +199,10 @@ const FeesCostPage = () => {
                     </div>
                 </div>
 
-                {/* --- TERM BASE TUITION VALUES --- */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* NEW STUDENTS SECTION */}
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <h3 className="font-bold text-blue-700 mb-3 border-b border-blue-200">New Students Base Tuition</h3>
+                        <h3 className="font-bold text-blue-700 mb-3 border-b border-blue-200">New Students</h3>
                         {["1", "2", "3"].map(num => (
                             <div key={num} className="mb-2">
                                 <label className="text-xs font-semibold">Term {num} (NLE)</label>
@@ -264,14 +213,15 @@ const FeesCostPage = () => {
                                     onChange={handleFeeChange}
                                     className="w-full p-2 border rounded"
                                     placeholder="0.00"
-                                    step="0.01"
                                 />
                             </div>
                         ))}
+                        <p className="mt-2 font-bold text-blue-800">Total: NLE {totals.newTotal}</p>
                     </div>
 
+                    {/* CONTINUING STUDENTS SECTION */}
                     <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                        <h3 className="font-bold text-green-700 mb-3 border-b border-green-200">Continuing Students Base Tuition</h3>
+                        <h3 className="font-bold text-green-700 mb-3 border-b border-green-200">Continuing Students</h3>
                         {["1", "2", "3"].map(num => (
                             <div key={num} className="mb-2">
                                 <label className="text-xs font-semibold">Term {num} (NLE)</label>
@@ -282,96 +232,26 @@ const FeesCostPage = () => {
                                     onChange={handleFeeChange}
                                     className="w-full p-2 border rounded"
                                     placeholder="0.00"
-                                    step="0.01"
                                 />
                             </div>
                         ))}
-                    </div>
-                </div>
-
-                {/* --- DYNAMIC ANCILLARY ADDONS PANEL --- */}
-                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 mb-6">
-                    <h3 className="font-bold text-purple-700 mb-3 border-b border-purple-200">Ancillary Charges & Mandatory School Addons</h3>
-                    
-                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mb-4">
-                        <select
-                            value={selectedChargeType}
-                            onChange={(e) => setSelectedChargeType(e.target.value)}
-                            className="p-2 border rounded bg-white flex-1 text-sm"
-                        >
-                            {ANCILLARY_CHARGE_TYPES.map(type => (
-                                <option key={type} value={type}>{type}</option>
-                            ))}
-                        </select>
-                        <input
-                            type="number"
-                            value={chargeAmount}
-                            onChange={(e) => setChargeAmount(e.target.value)}
-                            placeholder="Amount (NLE)"
-                            className="p-2 border rounded bg-white w-full sm:w-32 text-sm font-semibold"
-                            step="0.01"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleAddAncillaryCharge}
-                            className="bg-purple-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-purple-700 transition"
-                        >
-                            + Add Charge Item
-                        </button>
-                    </div>
-
-                    {/* Active Added Items Tracking Matrix */}
-                    {ancillaryCharges.length > 0 ? (
-                        <div className="bg-white border rounded divide-y max-h-40 overflow-y-auto mb-2 shadow-inner">
-                            {ancillaryCharges.map((item, idx) => (
-                                <div key={idx} className="p-2 flex justify-between items-center text-sm">
-                                    <span className="text-gray-700 font-medium">{item.type}</span>
-                                    <div className="flex items-center space-x-3">
-                                        <span className="font-bold text-purple-600">NLE {item.amount.toFixed(2)}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveAncillaryCharge(idx)}
-                                            className="text-red-500 hover:text-red-700 font-bold"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-xs text-gray-500 italic mb-2">No extra ancillary items configured for this setup yet.</p>
-                    )}
-                    <p className="text-sm font-bold text-purple-800 text-right">Ancillary Aggregated Total: NLE {totals.ancillaryTotal}</p>
-                </div>
-
-                {/* Aggregation Combined Metrics Footer */}
-                <div className="grid grid-cols-2 gap-4 border-t pt-4 text-center text-sm">
-                    <div>
-                        <p className="text-gray-600">Combined New Total:</p>
-                        <p className="text-xl font-black text-blue-600">NLE {totals.newTotal}</p>
-                    </div>
-                    <div>
-                        <p className="text-gray-600">Combined Continuing Total:</p>
-                        <p className="text-xl font-black text-green-600">NLE {totals.contTotal}</p>
+                        <p className="mt-2 font-bold text-green-800">Total: NLE {totals.contTotal}</p>
                     </div>
                 </div>
 
                 <button type="submit" className="w-full mt-6 bg-indigo-600 text-white p-3 rounded-lg font-bold hover:bg-indigo-700 transition">
-                    {editingFeeId ? "Update Complete Fee Matrix" : "Save Complete Fee Matrix"}
+                    {editingFeeId ? "Update Structure" : "Save Structure"}
                 </button>
             </form>
 
-            {/* --- LISTING LOG TABLE MATRIX --- */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden max-w-5xl mx-auto">
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
                 <table className="w-full text-left">
                     <thead className="bg-gray-100 border-b">
                         <tr>
                             <th className="p-4 text-sm font-bold">Class</th>
-                            <th className="p-4 text-sm font-bold">Year</th>
-                            <th className="p-4 text-sm font-bold text-purple-600">Addons Count</th>
-                            <th className="p-4 text-sm font-bold text-blue-600 text-center">New Total Gross</th>
-                            <th className="p-4 text-sm font-bold text-green-600 text-center">Cont. Total Gross</th>
+                            <th className="p-4 text-sm font-bold">Year</th> {/* New Column */}
+                            <th className="p-4 text-sm font-bold text-blue-600 text-center">New Total</th>
+                            <th className="p-4 text-sm font-bold text-green-600 text-center">Continue Total</th>
                             <th className="p-4 text-sm font-bold">Actions</th>
                         </tr>
                     </thead>
@@ -379,12 +259,9 @@ const FeesCostPage = () => {
                         {feesList.map(fee => (
                             <tr key={fee.id} className="border-b hover:bg-gray-50 transition">
                                 <td className="p-4 text-sm font-medium">{fee.className}</td>
-                                <td className="p-4 text-sm text-gray-600">{fee.academicYear}</td>
-                                <td className="p-4 text-sm text-purple-600 font-semibold">
-                                    {fee.ancillaryCharges?.length || 0} items
-                                </td>
-                                <td className="p-4 text-sm text-center font-bold text-blue-600">NLE {fee.new_total?.toFixed(2)}</td>
-                                <td className="p-4 text-sm text-center font-bold text-green-600">NLE {fee.cont_total?.toFixed(2)}</td>
+                                <td className="p-4 text-sm text-gray-600">{fee.academicYear}</td> {/* Data for column */}
+                                <td className="p-4 text-sm text-center font-bold">NLE {fee.new_total?.toFixed(2)}</td>
+                                <td className="p-4 text-sm text-center font-bold">NLE {fee.cont_total?.toFixed(2)}</td>
                                 <td className="p-4 text-sm space-x-4">
                                     <button onClick={() => handleEdit(fee)} className="text-orange-500 hover:underline font-semibold">Edit</button>
                                     <button onClick={() => handleDelete(fee.id)} className="text-red-500 hover:underline font-semibold">Delete</button>
