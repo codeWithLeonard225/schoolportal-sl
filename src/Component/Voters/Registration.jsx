@@ -635,7 +635,7 @@ const Registration = () => {
                             onChange={handleInputChange}
                             placeholder="Enter Registration Form No"
                             className="w-full p-2 mb-4 border rounded-lg"
-                            required
+                            
                         />
                     </div>
 
