@@ -49,11 +49,11 @@ const NAV_ITEMS = [
     label: "Assignment",
     icon: <MdLibraryBooks />, // 📚
   },
-  // {
-  //   key: "LogoutPage",
-  //   label: "Logout",
-  //   icon: <MdMenuBook />, // 📖
-  // },
+  {
+    key: "LogoutPage",
+    label: "Logout",
+    icon: <MdMenuBook />, // 📖
+  },
 ];
 
 // Button component

@@ -37,6 +37,7 @@ import NationalResultPage from "./NationalResultPage";
 import BECEStatementOfResult from "./BECEStatementOfResult";
 import SubjectData from "./SubjectData";
 import AdminDsahboard from "./AdminDashboard";
+import FeesOverviewPage from "./FeesOverviewPage";
 
 
 // --- Navigation Items ---
@@ -57,6 +58,7 @@ const NAV_ITEMS = [
     children: [
       { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
       { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
+      { key: "FeesOverviewPage", label: " FeesOverviewPage", icon: <MdPerson /> },
     ],
   },
   {
@@ -158,6 +160,7 @@ function CeoPanel() {
       case "Form": return <Registration />;
       case "class": return <ClassRegistration />;
       case "fees": return <FeeReceipt />;
+      case "FeesOverviewPage": return <FeesOverviewPage />;
       case "feesCost": return <FeesCostPage />;
       case "TeacherRegistration": return <TeacherRegistration />;
       case "subjects": return <SubjectPage />;

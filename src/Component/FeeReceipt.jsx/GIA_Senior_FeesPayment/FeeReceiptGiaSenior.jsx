@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import CameraCapture from "../CaptureCamera/CameraCapture";
-import CloudinaryImageUploader from "../CaptureCamera/CloudinaryImageUploader";
+import CameraCapture from "../../CaptureCamera/CameraCapture";
+import CloudinaryImageUploader from "../../CaptureCamera/CloudinaryImageUploader";
 import { toast } from "react-toastify";
-import { db } from "../../../firebase";
+import { db } from "../../../../firebase";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import { useAuth } from "../Security/AuthContext";
+import { useAuth } from "../../Security/AuthContext";
 import {
     collection,
     addDoc,
@@ -29,6 +29,26 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const FEE_TYPES = ["Term 1", "Term 2", "Term 3"];
 const ADMIN_PASSWORD = "1234"; // Define your admin password
 
+const prepNurseryRegex = /^(JSS|J\.S\.S|SSS|S\.S\.S)/i;
+
+// Flexible class matching:
+// "Nursery 1" ↔ "Nursery"
+// "Nur 2" ↔ "Nursery 2"
+// "Prep 1" ↔ "Pre 1"
+const isClassMatch = (feeClassName, studentClass) => {
+    if (!feeClassName || !studentClass) return false;
+
+    const normalizedFee = feeClassName.trim().toLowerCase();
+    const normalizedStudent = studentClass.trim().toLowerCase();
+
+    if (normalizedFee === normalizedStudent) return true;
+
+    return (
+        prepNurseryRegex.test(normalizedFee) &&
+        prepNurseryRegex.test(normalizedStudent)
+    );
+};
+
 // Helper function to generate a new unique receipt ID
 const generateUniqueReceiptId = () => uuidv4().slice(0, 10).toUpperCase();
 
@@ -48,20 +68,19 @@ const getCurrentAcademicYear = () => {
     }
 };
 
-const FeesReceipt = () => {
+const FeeReceiptGiaSenior = () => {
 
     const location = useLocation();
-    const navigate = useNavigate();
+    const schoolId = location.state?.schoolId || "N/A"; // fallback if missing
 
-    const { user } = useAuth();
+    // ✅ FIX 1: Destructure user (and role) from your auth context
+    const { user, currentUserRole } = useAuth();
 
-    const schoolId = location.state?.schoolId || "N/A";
-
-    // 🔍 Fallback to localStorage if AuthContext is not ready
+    // 🔍 1. Fallback to localStorage if user is not in AuthContext state yet
     const savedUser = JSON.parse(localStorage.getItem("schoolUser") || "{}");
     const activeUser = user || savedUser;
 
-    // 👤 Logged-in user's identity
+    // 🔐 2. Dynamic identity extractions with multi-role support
     const currentUserId =
         activeUser?.data?.adminID ||
         activeUser?.data?.ceoID ||
@@ -77,7 +96,9 @@ const FeesReceipt = () => {
         activeUser?.email ||
         "Unknown User";
 
-    const currentUserRole = activeUser?.role || "unknown";
+    // ✅ FIX 2: Ensure currentUserRole has a fallback if not provided by useAuth()
+    const userRole = currentUserRole || activeUser?.data?.role || activeUser?.role || "USER";
+
     // --- State Management ---
     const [searchTerm, setSearchTerm] = useState("");
     const [students, setStudents] = useState([]);
@@ -117,8 +138,7 @@ const FeesReceipt = () => {
         paymentDate: new Date().toISOString().slice(0, 10),
         receiptPhotoUrl: null,
         receiptPublicId: null,
-        recordedBy: currentUserName,   // Passes logged-in user's full name
-        recordedById: currentUserId,   // Passes logged-in user's system ID
+        recordedBy: "Current User ID",
         schoolId: schoolId, // ✅ Add this
     }), [defaultAcademicYear]);
 
@@ -172,24 +192,61 @@ const FeesReceipt = () => {
 
     // 2. REAL-TIME STUDENT LISTENER
     useEffect(() => {
-        if (!searchTerm.trim()) {
+        if (!searchTerm.trim() || !schoolId || schoolId === "N/A") {
             setStudents([]);
             return;
         }
 
         const pupilsRef = collection(db, "PupilsReg");
-        const q = query(pupilsRef, where("schoolId", "==", schoolId));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const allStudents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const filtered = allStudents
-                .filter(s => s.studentName.toLowerCase().includes(searchTerm.toLowerCase()))
-                .slice(0, 10);
-            setStudents(filtered);
-        });
+
+        const q = query(
+            pupilsRef,
+            where("schoolId", "==", schoolId)
+        );
+
+        const unsubscribe = onSnapshot(
+            q,
+            (snapshot) => {
+                const search = searchTerm.toLowerCase().trim();
+
+                const filtered = snapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+
+                    // ONLY Prep / Nursery students
+                    .filter(student =>
+                        prepNurseryRegex.test(
+                            (student.class || student.className || "").trim()
+                        )
+                    )
+
+                    // Search by Student Name OR Student ID
+                    .filter(student =>
+                        (student.studentName || "")
+                            .toLowerCase()
+                            .includes(search) ||
+
+                        (student.studentID || "")
+                            .toLowerCase()
+                            .includes(search)
+                    )
+
+                    // Show only first 10 matching students
+                    .slice(0, 10);
+
+                setStudents(filtered);
+            },
+            (error) => {
+                console.error("Student search error:", error);
+                toast.error("Failed to search students.");
+                setStudents([]);
+            }
+        );
 
         return () => unsubscribe();
     }, [searchTerm, schoolId]);
-
 
     // 3. REAL-TIME RECEIPTS LISTENER (for the table)
     // 3. REAL-TIME RECEIPTS LISTENER (for the table)
@@ -405,126 +462,85 @@ const FeesReceipt = () => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setShowSuccessMessage(false);
-
-        if (!selectedStudent) return toast.error("Please select a student first.");
-        const paidAmount = parseFloat(receiptData.amount);
-        if (paidAmount <= 0 || isNaN(paidAmount)) {
-            return toast.error("Please enter a valid amount greater than zero.");
-        }
-
-        setIsSubmitting(true);
-
-        try {
-            const classToLookup = receiptData.class;
-            const classFeeRecord = feesCost.find(
-                fee => fee.className?.trim().toLowerCase() === classToLookup?.trim().toLowerCase() &&
-                    fee.academicYear === receiptData.academicYear
-            );
-
-            const totalFee = calculateClassTotalFee(classFeeRecord, selectedStudent?.status);
-            const balance = totalFee - paidAmount;
-
-            const finalReceiptData = {
-                ...receiptData,
-
-                amount: paidAmount,
-                totalFee,
-                balance,
-
-                academicYear: receiptData.academicYear || defaultAcademicYear,
-                schoolId: schoolId,
-
-                // 👤 AUDIT INFORMATION
-                recordedBy: currentUserName,
-                recordedById: currentUserId,
-                recordedByRole: currentUserRole,
-
-                updatedAt: new Date(),
-            };
-
-            if (editingReceiptId) {
-                const receiptRef = doc(db, "Receipts", editingReceiptId);
-
-                // 1. Fetch current document state BEFORE updating (to preserve trace history)
-                const currentReceipt = recentReceipts.find(r => r.id === editingReceiptId);
-
-                // 2. Log update history to "ReceiptsHistory" collection
-                await addDoc(collection(db, "ReceiptsHistory"), {
-                    receiptDocId: editingReceiptId,
-                    receiptId: currentReceipt?.receiptId || finalReceiptData.receiptId,
-                    action: "UPDATE",
-                    previousData: currentReceipt || null,
-                    newData: finalReceiptData,
-                    timestamp: new Date(),
-                    recordedBy: currentUserName,   // Passes logged-in user's full name
-                    recordedById: currentUserId,   // Passes logged-in user's system ID
-                    schoolId: schoolId,
-                });
-
-                // 3. Update the main document
-                await updateDoc(receiptRef, finalReceiptData);
-                toast.success(`Receipt ${finalReceiptData.receiptId} updated successfully!`);
-            } else {
-                await addDoc(collection(db, "Receipts"), {
-                    ...finalReceiptData,
-                    createdAt: new Date(),
-                });
-                toast.success(`Receipt ${finalReceiptData.receiptId} recorded successfully!`);
-                setShowSuccessMessage(true);
-            }
-
-            setTimeout(() => resetForm(), 3000);
-
-        } catch (err) {
-            console.error("Receipt saving failed:", err);
-            toast.error(`Failed to ${editingReceiptId ? 'update' : 'record'} fee receipt.`);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleDeleteReceipt = async (id, receiptId, studentName) => {
-        const password = window.prompt("Enter the password to delete this receipt:");
-        if (password === ADMIN_PASSWORD) {
-            if (window.confirm(`Are you sure you want to delete receipt ${receiptId} for ${studentName}?`)) {
-                try {
-                    // 1. Find the target receipt record
-                    const receiptToDelete = recentReceipts.find(r => r.id === id);
-
-                    // 2. Store in "DeletedReceipts" with full identity properties
-                    await addDoc(collection(db, "DeletedReceipts"), {
-                        originalDocId: id,
-                        receiptData: receiptToDelete || null,
-                        deletedAt: new Date(),
-
-                        // Explicit Actor Information (Person who performed the delete)
-                        deletedBy: currentUserName,      // Full name
-                        deletedById: currentUserId,      // User ID
-                        deletedByRole: currentUserRole,  // Role
-
-                        // Also preserve original creator details explicitly
-                        recordedBy: receiptToDelete?.recordedBy || "Unknown",
-                        recordedById: receiptToDelete?.recordedById || "",
-
-                        receiptId: receiptId,
-                        studentName: studentName,
-                        schoolId: schoolId,
-                    });
-
-                    // 3. Remove from active "Receipts" collection
-                    await deleteDoc(doc(db, "Receipts", id));
-                    toast.success(`Receipt ${receiptId} moved to archive and deleted successfully!`);
-                } catch (err) {
-                    console.error("Failed to delete receipt:", err);
-                    toast.error("Failed to delete receipt.");
-                }
-            }
-        } else if (password !== null) {
-            toast.error("Incorrect password.");
-        }
-    };
+              e.preventDefault();
+              setShowSuccessMessage(false);
+      
+              if (!selectedStudent) return toast.error("Please select a student first.");
+              const paidAmount = parseFloat(receiptData.amount);
+              if (paidAmount <= 0 || isNaN(paidAmount)) {
+                  return toast.error("Please enter a valid amount greater than zero.");
+              }
+      
+              setIsSubmitting(true);
+      
+              try {
+                  const classToLookup = receiptData.class;
+                  const classFeeRecord = feesCost.find(
+                      fee => fee.className?.trim().toLowerCase() === classToLookup?.trim().toLowerCase() &&
+                          fee.academicYear === receiptData.academicYear
+                  );
+      
+                  const totalFee = calculateClassTotalFee(classFeeRecord, selectedStudent?.status);
+                  const balance = totalFee - paidAmount;
+      
+                  const finalReceiptData = {
+       ...receiptData,
+   
+       amount: paidAmount,
+       totalFee,
+       balance,
+   
+       academicYear: receiptData.academicYear || defaultAcademicYear,
+       schoolId: schoolId,
+   
+       // 👤 AUDIT INFORMATION (Ensured no undefined values)
+       recordedBy: currentUserName || "Unknown User",
+       recordedById: currentUserId || "UNKNOWN_USER_ID",
+       recordedByRole: userRole || "USER", // <-- Updated fallback to guarantee a string
+   
+       updatedAt: new Date(),
+   };
+      
+                  if (editingReceiptId) {
+                      const receiptRef = doc(db, "Receipts", editingReceiptId);
+      
+                      // 1. Fetch current document state BEFORE updating (to preserve trace history)
+                      const currentReceipt = recentReceipts.find(r => r.id === editingReceiptId);
+      
+                      // 2. Log update history to "ReceiptsHistory" collection
+                      await addDoc(collection(db, "ReceiptsHistory"), {
+                          receiptDocId: editingReceiptId,
+                          receiptId: currentReceipt?.receiptId || finalReceiptData.receiptId,
+                          action: "UPDATE",
+                          previousData: currentReceipt || null,
+                          newData: finalReceiptData,
+                          timestamp: new Date(),
+                          recordedBy: currentUserName,   // Passes logged-in user's full name
+                          recordedById: currentUserId,   // Passes logged-in user's system ID
+                          schoolId: schoolId,
+                      });
+      
+                      // 3. Update the main document
+                      await updateDoc(receiptRef, finalReceiptData);
+                      toast.success(`Receipt ${finalReceiptData.receiptId} updated successfully!`);
+                  } else {
+                      await addDoc(collection(db, "Receipts"), {
+                          ...finalReceiptData,
+                          createdAt: new Date(),
+                      });
+                      toast.success(`Receipt ${finalReceiptData.receiptId} recorded successfully!`);
+                      setShowSuccessMessage(true);
+                  }
+      
+                  setTimeout(() => resetForm(), 3000);
+      
+              } catch (err) {
+                  console.error("Receipt saving failed:", err);
+                  toast.error(`Failed to ${editingReceiptId ? 'update' : 'record'} fee receipt.`);
+              } finally {
+                  setIsSubmitting(false);
+              }
+          };
 
 
     const handleUploadSuccess = (url, publicId) => {
@@ -568,7 +584,46 @@ const FeesReceipt = () => {
         toast.info(`Editing receipt: ${receipt.receiptId}`);
     };
 
+   const handleDeleteReceipt = async (id, receiptId, studentName) => {
+    const password = window.prompt("Enter the password to delete this receipt:");
+    if (password === ADMIN_PASSWORD) {
+        if (window.confirm(`Are you sure you want to delete receipt ${receiptId} for ${studentName}?`)) {
+            try {
+                // 1. Find the target receipt record
+                const receiptToDelete = recentReceipts.find(r => r.id === id);
 
+                // 2. Store in "DeletedReceipts" with full identity properties
+                await addDoc(collection(db, "DeletedReceipts"), {
+                    originalDocId: id,
+                    receiptData: receiptToDelete || null,
+                    deletedAt: new Date(),
+
+                    // Explicit Actor Information (Person who performed the delete)
+                    deletedBy: currentUserName || "Unknown User",
+                    deletedById: currentUserId || "UNKNOWN_USER_ID",
+                    deletedByRole: userRole || "USER", // <-- ✅ FIXED: Changed currentUserRole to userRole
+
+                    // Also preserve original creator details explicitly
+                    recordedBy: receiptToDelete?.recordedBy || "Unknown",
+                    recordedById: receiptToDelete?.recordedById || "",
+
+                    receiptId: receiptId,
+                    studentName: studentName,
+                    schoolId: schoolId,
+                });
+
+                // 3. Remove from active "Receipts" collection
+                await deleteDoc(doc(db, "Receipts", id));
+                toast.success(`Receipt ${receiptId} moved to archive and deleted successfully!`);
+            } catch (err) {
+                console.error("Failed to delete receipt:", err);
+                toast.error("Failed to delete receipt.");
+            }
+        }
+    } else if (password !== null) {
+        toast.error("Incorrect password.");
+    }
+};
 
     const resetForm = () => {
         setReceiptData(initialReceiptState);
@@ -1016,4 +1071,4 @@ const FeesReceipt = () => {
     );
 };
 
-export default FeesReceipt;
+export default FeeReceiptGiaSenior;

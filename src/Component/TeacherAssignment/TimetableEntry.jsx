@@ -35,7 +35,7 @@ const TimetableManager = () => {
         teacher: "",
     });
 
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const periods = ["1", "2", "3", "4", "Lunch", "5", "6", "7", "8"];
 
     // 1. FETCH DATA (Teachers & Classes)

@@ -20,8 +20,15 @@ import StaffAttDashboard from "./Component/Dashboard/StaffAttDashboard";
 import SupervisorOneDashboard from "./Component/Dashboard/SupervisorOneDashboard";
 import SupervisorThreeDashboard from "./Component/Dashboard/SupervisorThreeDashboard";
 import SupervisorTwoDashboard from "./Component/Dashboard/SupervisorTwoDashboard";
-import HipsaIndianDashboard  from "./Component/Dashboard/HipsaIndianDashboard";
+import HipsaIndianDashboard from "./Component/Dashboard/HipsaIndianDashboard";
 import HipsaDijaDashboard from "./Component/Dashboard/HipsaDijaDashboard";
+import RegisteraPannel from "./Component/Admin/RegisteraPannel";
+import FinancePannel from "./Component/Admin/FinancePannel";
+import FinanceJuniorPannel from "./Component/Admin/FinanceJuniorPannel";
+import FinanceSeniorPannel from "./Component/Admin/FinanceSeniorPannel";
+import ExamsPannel from "./Component/Admin/ExamsDashboard";
+import HODPannel from "./Component/Admin/HODPannel";
+import PreviousFees from "./Component/FeeReceipt.jsx/PreviousFees";
 
 
 
@@ -68,7 +75,7 @@ function App() {
             path="/gov"
             element={
               <ProtectedRoute role="admin">
-                <Gov/>
+                <Gov />
               </ProtectedRoute>
             }
           />
@@ -76,15 +83,15 @@ function App() {
             path="/PupilAttendance"
             element={
               <ProtectedRoute role="admin">
-                <AttendancePage/>
+                <AttendancePage />
               </ProtectedRoute>
             }
           />
-            <Route
+          <Route
             path="/StaffAttDashboard"
             element={
               <ProtectedRoute role="admin">
-                <StaffAttDashboard/>
+                <StaffAttDashboard />
               </ProtectedRoute>
             }
           />
@@ -92,7 +99,7 @@ function App() {
             path="/SupervisorTwoDashboard"
             element={
               <ProtectedRoute role="admin">
-                <SupervisorTwoDashboard/>
+                <SupervisorTwoDashboard />
               </ProtectedRoute>
             }
           />
@@ -100,7 +107,7 @@ function App() {
             path="/SupervisorOneDashboard"
             element={
               <ProtectedRoute role="admin">
-                <SupervisorOneDashboard/>
+                <SupervisorOneDashboard />
               </ProtectedRoute>
             }
           />
@@ -108,7 +115,7 @@ function App() {
             path="/SupervisorThreeDashboard"
             element={
               <ProtectedRoute role="admin">
-                <SupervisorThreeDashboard/>
+                <SupervisorThreeDashboard />
               </ProtectedRoute>
             }
           />
@@ -116,7 +123,7 @@ function App() {
             path="/HipsaIndianDashboard"
             element={
               <ProtectedRoute role="admin">
-                <HipsaIndianDashboard/>
+                <HipsaIndianDashboard />
               </ProtectedRoute>
             }
           />
@@ -124,7 +131,55 @@ function App() {
             path="/HipsaDijaDashboard"
             element={
               <ProtectedRoute role="admin">
-                <HipsaDijaDashboard/>
+                <HipsaDijaDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/RegisteraPannel"
+            element={
+              <ProtectedRoute role="admin">
+                <RegisteraPannel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/FinancePannel"
+            element={
+              <ProtectedRoute role="admin">
+                <FinancePannel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/FinanceJuniorPannel"
+            element={
+              <ProtectedRoute role="admin">
+                <FinanceJuniorPannel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/FinanceSeniorPannel"
+            element={
+              <ProtectedRoute role="admin">
+                <FinanceSeniorPannel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ExamsPannel"
+            element={
+              <ProtectedRoute role="admin">
+                <ExamsPannel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HODPannel"
+            element={
+              <ProtectedRoute role="admin">
+                <HODPannel />
               </ProtectedRoute>
             }
           />
@@ -132,7 +187,7 @@ function App() {
             path="/class"
             element={
               <ProtectedRoute role="teacher">
-                <ClassMasterDashboard/>
+                <ClassMasterDashboard />
               </ProtectedRoute>
             }
           />
@@ -163,8 +218,12 @@ function App() {
           <Route
             path="/developer"
             element={
-                <CeoPanel />
+              <CeoPanel />
             }
+          />
+          <Route
+            path="/previous-fees/:studentID"
+            element={<PreviousFees />}
           />
         </Routes>
       </Router>

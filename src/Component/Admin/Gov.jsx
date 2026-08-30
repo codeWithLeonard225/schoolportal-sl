@@ -9,6 +9,7 @@ import {
   MdKeyboardArrowDown,
   MdPerson,
   MdAttachMoney,
+  MdMenuBook,
   MdAssignmentTurnedIn,
   MdBarChart,
   MdFormatListBulleted,
@@ -20,37 +21,56 @@ import {
 } from "react-icons/md";
 import Registration from "../Voters/Registration";
 import ClassRegistration from "./ClassRegistration";
-import Testing from "./Testing";
 import FeeReceipt from "../FeeReceipt.jsx/FeeReceipt";
 import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
 import FeesDashboard from "../Dashboard/FeesDsahboard";
 import SubjectPage from "../SubjectPage/SubjectPage";
 import TeacherAssignmentPage from "../TeacherAssignment/TeacherAssignmentPage";
 import TeacherRegistration from "../Voters/TeacherRegistration";
-import TeacherPupilsPageAdmin from "../TeacherAssignment/TeacherPupilsPageAdmin";
+import TeacherPupilsPage from "../TeacherAssignment/TeacherPupilsPage";
 import GradeSheetPage from "../TeacherAssignment/GradeSheetPage";
 import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPage";
 import ClassFullTermMatrixPage from "../TeacherAssignment/ClassFullTermMatrixPage";
-import GeneralReportCard from "../PupilsPage/GeneralReportCard";
 import ReportCardTermly from "../PupilsPage/ReportCardTermly";
+import GeneralReportCard from "../PupilsPage/GeneralReportCard";
 import SchoolRegistration from "../CeoPanel/SchoolRegistration"
 import AdminForm from "../CeoPanel/AdminForm"
 import RegDashboard from "../Dashboard/RegDashboard"
 import StudentFilterPage from "../Voters/StudentFilterPage";
+import StudentIDCards from "../Voters/StudentIDCards";
+import NationalResultPage from "../CeoPanel/NationalResultPage";
+import BECEStatementOfResult from "../CeoPanel/BECEStatementOfResult";
 import TeacherAssignmentReport from "../TeacherAssignment/TeacherAssignmentReport";
-import PastQuestions from "../Admin/PastQuestionUpload";
+import TeacherPupilsPageAdmin from "../TeacherAssignment/TeacherPupilsPageAdmin";
+import ExamUploader from "../Admin/PastQuestionUpload";
+import SchoolLibraryUpload from "../Admin/SchoolLibraryUpload";
 import PupilIDCard from "../Voters/PupilIDCard";
 import IDCardPage from "../Voters/IDCardPage";
 import LogoutPage from "../Admin/LogoutPage"
-import AttendancePage from "../Voters/AttendancePage";
-import AttendancePageClass from "../TeacherAssignment/AttendancePageClass";
-import StaffAttendanceSimple from "../TeacherAssignment/StaffAttendance";
-import GeneralStaffAttendanceReport from "../TeacherAssignment/GeneralStaffAttendanceReport";
+import AttendancePage from "../Voters/AttendancePage"
+import StaffAttendance from "../TeacherAssignment/StaffAttendance";
+import StaffClocking from "../TeacherAssignment/StaffClocking";
 import TimetableEntry from "../TeacherAssignment/TimetableEntry";
-import WeeklyTimetableReport from "../TeacherAssignment/WeeklyTimetableReport";
 import TimeTableTeacherAtt from "../TeacherAssignment/TimeTableTeacherAtt";
 import TimeTableDailyAttendanceReport from "../TeacherAssignment/TimeTableDailyAttendanceReport";
 import TimeTableTeacherReport from "../TeacherAssignment/TimeTableTeacherReport";
+import TermResult from "../TeacherAssignment/TermResult";
+import YearlyResult from "../TeacherAssignment/YearlyResult";
+import YearlyGeneralReportCard from "../TeacherAssignment/YearlyGeneralReportCard";
+import TeacherClassReport from "../TeacherAssignment/TeacherClassReport";
+import ClassPromotion from "../Voters/ClassPromotion";
+import BulkReg from "../Voters/BulkRegistration";
+import ClassDelete from "../Voters/ClassDelete";
+import AncillaryReceiptForm from "../FeeReceipt.jsx/AncillaryReceiptForm";
+import PreviousFees from "../FeeReceipt.jsx/PreviousFees";
+import WASCEForm from "../Voters/WASCEForm";
+import TeacherIDCards from "../Staff/TeacherIDCards";
+import TeacherIDCards2 from "../Staff/TeacherIDCards2";
+import StaffAttendanceScanner from "../Staff/StaffAttendanceScanner";
+import StaffAttendanceScanner2 from "../Staff/StaffAttendanceScanner2";
+import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
+import StaffAttendanceRecords2 from "../Staff/StaffAttendanceRecords2";
+
 
 
 
@@ -62,11 +82,29 @@ const NAV_ITEMS = [
     icon: <MdEdit />,
     children: [
       { key: "Form", label: " Pupils", icon: <MdPerson /> },
-      { key: "class", label: " Class", icon: <MdPerson /> },
+      { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
+      // { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
+      // { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
+      { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
+       { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
+       { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+
+
     ],
   },
+  {
+    key: "fees",
+    label: "Fees",
+    icon: <MdEdit />,
+    children: [
+      { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
+      { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
+      { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
+      { key: "AncillaryReceiptForm", label: " Other Chargers Receipt", icon: <MdPerson /> },
 
+    ],
+  },
   {
     key: "Staff",
     label: "staff",
@@ -76,7 +114,9 @@ const NAV_ITEMS = [
       { key: "subjects", label: "Subjects", icon: <MdPerson /> },
       { key: "TeacherAssignment", label: "Teacher Assignment", icon: <MdPerson /> },
       { key: "TeacherAssignmentReport", label: "Teacher Assignment Report ", icon: <MdPerson /> },
+      { key: "TeacherClassReport", label: " TeacherClassReport", icon: <MdPerson /> },
       { key: "PastQuestions", label: "Upload Past Questions ", icon: <MdPerson /> },
+      { key: "SchoolLibraryUpload", label: "SchoolLibrary Upload ", icon: <MdPerson /> },
 
 
 
@@ -87,16 +127,27 @@ const NAV_ITEMS = [
     label: "Pupils Results",
     icon: <MdBarChart />,
     children: [
-      // { key: "GradeSheetPage", label: "Test Grade Sheet", icon: <MdPerson /> },
+      { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
       { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
       { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
-      { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
-          { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },
+      // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
+      { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },
       { key: "GeneralReportCard", label: "ReportCard Yearly", icon: <MdPerson /> },
       { key: "TermResult", label: "TermResult GradeSheet", icon: <MdPerson /> },
-       { key: "YearlyResult", label: "Yearly GradeSheet", icon: <MdPerson /> },
-             { key: "YearlyGeneralReportCard", label: "YearlyGeneralReportCard", icon: <MdPerson /> },
-      // { key: "Testing", label: "Testing", icon: <MdPerson /> },
+      { key: "YearlyResult", label: "Yearly GradeSheet", icon: <MdPerson /> },
+      { key: "YearlyGeneralReportCard", label: "YearlyGeneralReportCard", icon: <MdPerson /> },
+
+    ],
+  },
+  {
+    key: "NationalResults",
+    label: "National Results",
+    icon: <MdBarChart />,
+    children: [
+      { key: "beceResult", label: "Bece Result Entering", icon: <MdPerson /> },
+      { key: "beceReport", label: "Bece Result Report", icon: <MdPerson /> },
+       { key: "WASCEForm", label: "Wasce Entering", icon: <MdPerson /> },
+
 
     ],
   },
@@ -105,8 +156,14 @@ const NAV_ITEMS = [
     label: "Pupils ID Cards",
     icon: <MdBarChart />,
     children: [
+      { key: "PupilIDCard", label: "PupilIDCard", icon: <MdPerson /> },
       { key: "IDCardPage", label: "IDCardPage", icon: <MdPerson /> },
-   
+      { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
+      { key: "TeacherIDCards2", label: "Teacher IDCards 2", icon: <MdPerson /> },
+      { key: "StaffAttendanceScanner", label: "Staff Attendance Scanner", icon: <MdPerson /> },
+      { key: "StaffAttendanceScanner2", label: "Staff Attendance Scanner 2", icon: <MdPerson /> },
+      { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
+      { key: "StaffAttendanceRecords2", label: "Staff Attendance Records 2", icon: <MdPerson /> },
 
       // { key: "Testing", label: "Testing", icon: <MdPerson /> },
 
@@ -117,26 +174,17 @@ const NAV_ITEMS = [
     label: "Pupil Attendance",
     icon: <MdWarning />, // 📖
   },
- 
-   {
+  {
     key: "staffAttendance",
-    label: "Staff  Record",
-    icon: <MdBarChart />,
-    children: [
-      { key: "staffAttendance", label: "Staff Attendance", icon: <MdPerson /> },
-      { key: "GeneralStaffAttendanceReport", label: "Staff Attendance Report", icon: <MdPerson /> },
-  
-
-    ],
+    label: "Staff Attendance",
+    icon: <MdWarning />, // 📖
   },
-
   {
     key: "timetable",
     label: "TimeTable",
     icon: <MdBarChart />,
     children: [
       { key: "TimetableEntry", label: "TimetableEntry", icon: <MdPerson /> },
-      { key: "WeeklyTimetableReport", label: "WeeklyTimetableReport", icon: <MdPerson /> },
       { key: "TimeTableTeacherAtt", label: "TimeTableTeacherAtt", icon: <MdPerson /> },
       { key: "TimeTableDailyAttendanceReport", label: "DailyAttendanceReport", icon: <MdPerson /> },
       { key: "TimeTableTeacherReport", label: "MonthlyAttendanceReport", icon: <MdPerson /> },
@@ -177,7 +225,7 @@ const Dashboard = () => (
 );
 
 // --- Main Admin Panel ---
-function Gov() {
+function AdminPanel() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [openDropdown, setOpenDropdown] = useState(null);
   const [openNestedDropdowns, setOpenNestedDropdowns] = useState({});
@@ -223,38 +271,54 @@ function Gov() {
       case "Form": return <Registration />;
       case "class": return <ClassRegistration />;
       case "classList": return <StudentFilterPage />;
+      case "StudentIDCards": return <StudentIDCards />;
       case "fees": return <FeeReceipt />;
       case "feesCost": return <FeesCostPage />;
       case "TeacherRegistration": return <TeacherRegistration />;
       case "subjects": return <SubjectPage />;
       case "TeacherAssignment": return <TeacherAssignmentPage />;
-      case "GradeSheetPage": return <GradeSheetPage />;
-      case "GeneralReportCard": return <GeneralReportCard />;
-       case "ReportCardTermly": return <ReportCardTermly />;
+      case "TeacherPupilsPage": return <TeacherPupilsPage />;
       case "SubGradeMatrixPage": return <SubGradeMatrixPage />;
       case "ClassFullTermMatrixPage": return <ClassFullTermMatrixPage />;
-      case "Testing": return <Testing />;
+      case "TermResult": return <TermResult />;
+      case "YearlyResult": return <YearlyResult />;
+      case "GradeSheetPage": return <GradeSheetPage />;
+      case "ReportCardTermly": return <ReportCardTermly />;
+      case "GeneralReportCard": return <GeneralReportCard />;
       case "AdminForm": return <AdminForm />;
+      case "beceResult": return <NationalResultPage />;
+      case "beceReport": return <BECEStatementOfResult />;
+      case "WASCEForm": return <WASCEForm />;
       case "TeacherAssignmentReport": return <TeacherAssignmentReport />;
       case "TeacherPupilsPageAdmin": return <TeacherPupilsPageAdmin />;
-      case "PastQuestions": return <PastQuestions />;
+      case "PastQuestions": return <ExamUploader />;
+      case "SchoolLibraryUpload": return <SchoolLibraryUpload />;
+      case "PupilIDCard": return <PupilIDCard />;
       case "IDCardPage": return <IDCardPage />;
-     
-      case "LogoutPage": return <LogoutPage />;
-      case "staffAttendance": return <StaffAttendanceSimple />;
-      case "GeneralStaffAttendanceReport": return <GeneralStaffAttendanceReport />;
+      case "schoolreg": return <SchoolRegistration />;
+      case "staffAttendance": return <StaffAttendance />;
+      case "pupilAttendance": return <AttendancePage />;
+      case "staffClockin": return <StaffClocking />;
       case "TimetableEntry": return <TimetableEntry />;
-      case "WeeklyTimetableReport": return <WeeklyTimetableReport />;
       case "TimeTableTeacherAtt": return <TimeTableTeacherAtt />;
       case "TimeTableDailyAttendanceReport": return <TimeTableDailyAttendanceReport />;
       case "TimeTableTeacherReport": return <TimeTableTeacherReport />;
-      case "pupilAttendance": return <AttendancePage />;
+      case "LogoutPage": return <LogoutPage />;
+      case "YearlyGeneralReportCard": return <YearlyGeneralReportCard />;
+      case "SchoolRegistration": return <SchoolRegistration />;
+      case "ClassPromotion": return <ClassPromotion />;
+      case "BulkReg": return <BulkReg />;
+      case "ClassDelete": return <ClassDelete />;
+      case "TeacherClassReport": return <TeacherClassReport />;
+      case "AncillaryReceiptForm": return <AncillaryReceiptForm />;
+      case "PreviousFees": return <PreviousFees />;
+      case "TeacherIDCards": return <TeacherIDCards />;
+      case "TeacherIDCards2": return <TeacherIDCards2 />;
+      case "StaffAttendanceScanner2": return <StaffAttendanceScanner2 />;
+      case "StaffAttendanceScanner": return <StaffAttendanceScanner />;
+      case "StaffAttendanceRecords": return <StaffAttendanceRecords />;
+      case "StaffAttendanceRecords2": return <StaffAttendanceRecords2 />;
 
-
-
-
-
-      case "schoolreg": return <SchoolRegistration />;
 
       default: return <Placeholder title={activeTab} />;
     }
@@ -303,4 +367,4 @@ function Gov() {
   );
 }
 
-export default Gov;
+export default AdminPanel;

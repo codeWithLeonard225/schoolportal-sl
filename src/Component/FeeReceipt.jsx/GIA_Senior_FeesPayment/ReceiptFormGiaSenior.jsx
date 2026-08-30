@@ -1,7 +1,7 @@
 import React from "react";
-import CloudinaryImageUploader from "../CaptureCamera/CloudinaryImageUploader";
+import CloudinaryImageUploader from "../../CaptureCamera/CloudinaryImageUploader";
 
-const ReceiptForm = ({
+const ReceiptFormGiaSenior = ({
     onSubmit,
     editingReceiptId,
     receiptData,
@@ -31,7 +31,7 @@ const ReceiptForm = ({
             <h2 className="text-2xl font-bold text-center mb-6 text-indigo-700">
                 {editingReceiptId ? "Update Fee Receipt" : "New Fee Payment Receipt"} 💰
             </h2>
-            
+
             {selectedStudent && (
                 <p className="mt-2 text-sm font-bold text-gray-700">
                     Fees Category:
@@ -264,4 +264,4 @@ const ReceiptForm = ({
     );
 };
 
-export default ReceiptForm;
+export default ReceiptFormGiaSenior;

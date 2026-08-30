@@ -15,10 +15,7 @@ const ANCILLARY_CHARGE_TYPES = [
     "Development Fees",
     "School Hijab",
     "School Necktie",
-    "BECE Exam Fee",
-    "WASSCE Exam Fee",
-    "Science Laboratory Fee",
-    "Computer Practical Fee",
+    "Computer",
     "School Uniform",
     "School Beret",
     "Sport T- Shirt",
@@ -37,7 +34,10 @@ const ACADEMIC_YEARS = [
     "2027/2028"
 ];
 
-const FeesCostPage = () => {
+// Prefix regex rule for Nursery & Prep
+const NURSERY_PREP_REGEX = /^(Nursery|Prep)/i;
+
+const FeesCostPageJuniorGIA = () => {
     const location = useLocation();
     const schoolId = location.state?.schoolId || "N/A";
 
@@ -55,7 +55,7 @@ const FeesCostPage = () => {
     const initialFeeState = useMemo(() => ({
         feeId: uuidv4().slice(0, 10).toUpperCase(),
         className: "",
-        academicYear: ACADEMIC_YEARS[0], // Defaults to first year option
+        academicYear: ACADEMIC_YEARS[0],
         schoolId: schoolId,
         new_term1: "", new_term2: "", new_term3: "",
         cont_term1: "", cont_term2: "", cont_term3: "",
@@ -108,15 +108,19 @@ const FeesCostPage = () => {
         };
     }, [feeData, ancillaryCharges]);
 
+    // Fetch and filter fee records strictly for Nursery & Prep classes
     useEffect(() => {
         if (!schoolId || schoolId === "N/A") return;
         const q = query(collection(db, "FeesCost"), where("schoolId", "==", schoolId), limit(50));
         return onSnapshot(q, (snapshot) => {
-            setFeesList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Strictly filter fee structures for Nursery and Prep
+            const filteredRecords = records.filter(fee => NURSERY_PREP_REGEX.test((fee.className || "").trim()));
+            setFeesList(filteredRecords);
         });
     }, [schoolId]);
 
-    // Query-filtered class search effect with direct schoolId scoping
+    // Filter class search dropdown strictly for classes starting with Nursery or Prep
     useEffect(() => {
         const fetchClasses = async () => {
             const searchTerm = searchClass.trim();
@@ -130,13 +134,19 @@ const FeesCostPage = () => {
                 const q = query(
                     classesRef,
                     where("schoolId", "==", schoolId),
-                    limit(20)
+                    limit(50)
                 );
                 
                 const snapshot = await getDocs(q);
+                
                 const filtered = snapshot.docs
                     .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter(cls => cls.className?.toLowerCase().includes(searchTerm.toLowerCase()));
+                    .filter(cls => {
+                        const name = cls.className || "";
+                        const startsWithNurseryOrPrep = NURSERY_PREP_REGEX.test(name.trim());
+                        const matchesSearchTerm = name.toLowerCase().includes(searchTerm.toLowerCase());
+                        return startsWithNurseryOrPrep && matchesSearchTerm;
+                    });
                 
                 setClasses(filtered.slice(0, 5));
             } catch (err) {
@@ -144,7 +154,7 @@ const FeesCostPage = () => {
             }
         };
 
-        const timeoutId = setTimeout(fetchClasses, 200); // 200ms debounce
+        const timeoutId = setTimeout(fetchClasses, 200);
         return () => clearTimeout(timeoutId);
     }, [searchClass, schoolId, selectedClass]);
 
@@ -249,7 +259,7 @@ const FeesCostPage = () => {
     return (
         <div className="p-3 sm:p-6 bg-gray-100 min-h-screen">
             <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-indigo-700 text-center sm:text-left">
-                Fees & Ancillary Charges Manager
+                Fees & Ancillary Charges Manager (Nursery & Prep)
             </h2>
 
             <form onSubmit={handleSubmit} className="bg-white p-4 sm:p-6 rounded-xl shadow-md mb-8 max-w-4xl mx-auto border-t-4 border-indigo-600">
@@ -261,13 +271,13 @@ const FeesCostPage = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div className="relative">
-                        <label className="block text-sm font-medium mb-1">Search Class</label>
+                        <label className="block text-sm font-medium mb-1">Search Nursery / Prep Class</label>
                         <input
                             type="text"
                             value={searchClass}
                             onChange={handleClassInputChange}
                             className="w-full p-2.5 border rounded shadow-sm focus:ring-2 focus:ring-indigo-300 outline-none text-sm"
-                            placeholder="Type class name..."
+                            placeholder="Type Nursery 1, Prep 2..."
                             required
                         />
                         {classes.length > 0 && (
@@ -427,7 +437,7 @@ const FeesCostPage = () => {
 
             {/* --- LISTING LOG ARCHITECTURE BLOCK --- */}
             <div className="max-w-5xl mx-auto">
-                <h3 className="text-lg font-bold mb-3 text-gray-700 px-1">Configured Fee Matrices</h3>
+                <h3 className="text-lg font-bold mb-3 text-gray-700 px-1">Configured Fee Matrices (Nursery & Prep Only)</h3>
                 
                 {/* Mobile Card Layout View */}
                 <div className="grid grid-cols-1 gap-3 md:hidden">
@@ -469,7 +479,7 @@ const FeesCostPage = () => {
                         </div>
                     ))}
                     {feesList.length === 0 && (
-                        <p className="text-center text-sm text-gray-500 bg-white p-6 rounded-xl border border-dashed">No configuration logs discovered.</p>
+                        <p className="text-center text-sm text-gray-500 bg-white p-6 rounded-xl border border-dashed">No Nursery or Prep configurations found.</p>
                     )}
                 </div>
 
@@ -508,7 +518,7 @@ const FeesCostPage = () => {
                             ))}
                             {feesList.length === 0 && (
                                 <tr>
-                                    <td colSpan="6" className="p-6 text-center text-sm text-gray-500 italic">No configuration logs discovered.</td>
+                                    <td colSpan="6" className="p-6 text-center text-sm text-gray-500 italic">No Nursery or Prep configurations found.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -519,4 +529,4 @@ const FeesCostPage = () => {
     );
 };
 
-export default FeesCostPage;
+export default FeesCostPageJuniorGIA;

@@ -258,7 +258,8 @@ const Registration = () => {
     const TODAY_DATE = useMemo(() => new Date().toISOString().slice(0, 10), []);
     const [currentFilter, setCurrentFilter] = useState({
         date: TODAY_DATE,
-        class: "All"
+        class: "All",
+        academicYear: "All"
     });
 
     const handleDateFilterChange = (date) => {
@@ -268,12 +269,19 @@ const Registration = () => {
     const handleClassFilterChange = (className) => {
         setCurrentFilter(prev => ({ ...prev, class: className }));
     };
+    const handleAcademicYearFilterChange = (academicYear) => {
+        setCurrentFilter(prev => ({
+            ...prev,
+            academicYear
+        }));
+    };
 
     const handleResetFilters = () => {
         setSearchTerm("");
         setCurrentFilter({
-            date: TODAY_DATE, // Reset to today
-            class: "All"
+            date: TODAY_DATE,
+            class: "All",
+            academicYear: "All"
         });
         toast.info("Filters reset to show today's registrations.");
     };
@@ -290,6 +298,12 @@ const Registration = () => {
         // 2. Filter by Class
         if (currentFilter.class !== "All") {
             filtered = filtered.filter(user => user.class === currentFilter.class);
+        }
+        // 3. Filter by Academic Year
+        if (currentFilter.academicYear !== "All") {
+            filtered = filtered.filter(
+                user => user.academicYear === currentFilter.academicYear
+            );
         }
         // 3. Filter by Search Term
         if (lowerCaseSearchTerm.trim() !== "") {
@@ -635,7 +649,7 @@ const Registration = () => {
                             onChange={handleInputChange}
                             placeholder="Enter Registration Form No"
                             className="w-full p-2 mb-4 border rounded-lg"
-                            
+
                         />
                     </div>
 
@@ -686,60 +700,60 @@ const Registration = () => {
                             <option value="Other">Other</option>
                         </select>
                     </div>
-                    
+
                 </div>
 
                 <div className="flex flex-col md:flex-row md:space-x-4">
 
-    <div className="flex-1">
-        <label className="block mb-2 font-medium text-sm">
-            Religion
-        </label>
+                    <div className="flex-1">
+                        <label className="block mb-2 font-medium text-sm">
+                            Religion
+                        </label>
 
-        <select
-            name="religion"
-            value={formData.religion}
-            onChange={handleInputChange}
-            className="w-full p-2 mb-4 border rounded-lg"
-        >
-            <option value="">Select Religion</option>
-            <option value="Christianity">Christianity</option>
-            <option value="Islam">Islam</option>
-            <option value="Traditional">Traditional</option>
-            <option value="Other">Other</option>
-        </select>
-    </div>
+                        <select
+                            name="religion"
+                            value={formData.religion}
+                            onChange={handleInputChange}
+                            className="w-full p-2 mb-4 border rounded-lg"
+                        >
+                            <option value="">Select Religion</option>
+                            <option value="Christianity">Christianity</option>
+                            <option value="Islam">Islam</option>
+                            <option value="Traditional">Traditional</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
 
-    <div className="flex-1">
-        <label className="block mb-2 font-medium text-sm">
-            Tribe
-        </label>
+                    <div className="flex-1">
+                        <label className="block mb-2 font-medium text-sm">
+                            Tribe
+                        </label>
 
-        <select
-            name="tribe"
-            value={formData.tribe}
-            onChange={handleInputChange}
-            className="w-full p-2 mb-4 border rounded-lg"
-        >
-            <option value="">Select Tribe</option>
-            <option value="Mende">Mende</option>
-            <option value="Temne">Temne</option>
-            <option value="Limba">Limba</option>
-            <option value="Fullah">Fullah</option>
-            <option value="Loko">Loko</option>
-            <option value="Mandingo">Mandingo</option>
-            <option value="Kono">Kono</option>
-            <option value="Susu">Susu</option>
-            <option value="Sherbro">Sherbro</option>
-            <option value="Kissi">Kissi</option>
-            <option value="Yalunka">Yalunka</option>
-            <option value="Koranko">Koranko</option>
-            <option value="Krio">Krio</option>
-            <option value="Other">Other</option>
-        </select>
-    </div>
+                        <select
+                            name="tribe"
+                            value={formData.tribe}
+                            onChange={handleInputChange}
+                            className="w-full p-2 mb-4 border rounded-lg"
+                        >
+                            <option value="">Select Tribe</option>
+                            <option value="Mende">Mende</option>
+                            <option value="Temne">Temne</option>
+                            <option value="Limba">Limba</option>
+                            <option value="Fullah">Fullah</option>
+                            <option value="Loko">Loko</option>
+                            <option value="Mandingo">Mandingo</option>
+                            <option value="Kono">Kono</option>
+                            <option value="Susu">Susu</option>
+                            <option value="Sherbro">Sherbro</option>
+                            <option value="Kissi">Kissi</option>
+                            <option value="Yalunka">Yalunka</option>
+                            <option value="Koranko">Koranko</option>
+                            <option value="Krio">Krio</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
 
-</div>
+                </div>
 
                 {/* --- ADDRESS INFORMATION --- */}
                 <h3 className="text-lg font-semibold mt-4 mb-2 border-t pt-4">Residential Address</h3>
@@ -890,6 +904,7 @@ const Registration = () => {
                             <option value="">Select Year</option>
                             <option value="2025/2026">2025/2026</option>
                             <option value="2026/2027">2026/2027</option>
+                            <option value="2027/2028">2027/2028</option>
                         </select>
                         {/* Display Previous Year */}
                         {formData.id && originalAcademicInfo && (
@@ -986,6 +1001,7 @@ const Registration = () => {
 
                     {/* Date and Class Filters */}
                     <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+
                         <div className="flex-1">
                             <label className="block mb-1 text-xs font-medium text-gray-700">Filter by Date</label>
                             <select
@@ -1008,6 +1024,24 @@ const Registration = () => {
                                 {classOptions.map(c => (
                                     <option key={c} value={c}>{c}</option>
                                 ))}
+                            </select>
+                        </div>
+                        <div className="flex-1">
+                            <label className="block mb-1 text-xs font-medium text-gray-700">
+                                Filter by Academic Year
+                            </label>
+
+                            <select
+                                value={currentFilter.academicYear}
+                                onChange={(e) =>
+                                    handleAcademicYearFilterChange(e.target.value)
+                                }
+                                className="w-full p-2 border border-gray-300 rounded-lg"
+                            >
+                                <option value="All">All Academic Years</option>
+                                <option value="2025/2026">2025/2026</option>
+                                <option value="2026/2027">2026/2027</option>
+                                <option value="2027/2028">2027/2028</option>
                             </select>
                         </div>
                         <button

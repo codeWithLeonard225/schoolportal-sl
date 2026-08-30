@@ -1,6 +1,6 @@
 import React from "react";
 
-const ReceiptsTable = ({ receipts, editingReceiptId, onEdit, onDelete, isSubmitting }) => {
+const ReceiptsTableGiaSenior = ({ receipts, editingReceiptId, onEdit, onDelete, isSubmitting }) => {
     return (
         <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-6xl">
             <h2 className="text-xl font-bold text-center mb-4 text-gray-700">Recent Fee Receipts (Last 15)</h2>
@@ -60,4 +60,4 @@ const ReceiptsTable = ({ receipts, editingReceiptId, onEdit, onDelete, isSubmitt
     );
 };
 
-export default ReceiptsTable;
+export default ReceiptsTableGiaSenior;

@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-const PreviousFeesModal = ({ data, onResetAndClose }) => {
+const PreviousFeesModalGiaSenior = ({ data, onResetAndClose }) => {
     const navigate = useNavigate();
     if (!data) return null;
 
@@ -62,4 +62,4 @@ const PreviousFeesModal = ({ data, onResetAndClose }) => {
     );
 };
 
-export default PreviousFeesModal;
+export default PreviousFeesModalGiaSenior;

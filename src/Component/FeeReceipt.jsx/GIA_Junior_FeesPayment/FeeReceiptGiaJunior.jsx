@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import CameraCapture from "../CaptureCamera/CameraCapture";
-import CloudinaryImageUploader from "../CaptureCamera/CloudinaryImageUploader";
+import CameraCapture from "../../CaptureCamera/CameraCapture";
+import CloudinaryImageUploader from "../../CaptureCamera/CloudinaryImageUploader";
 import { toast } from "react-toastify";
-import { db } from "../../../firebase";
-import { pupilLoginFetch } from "../Database/PupilLogin";
+import { db } from "../../../../firebase";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "../../Security/AuthContext";
 import {
     collection,
     addDoc,
@@ -22,12 +22,32 @@ import {
 import { v4 as uuidv4 } from "uuid";
 
 // Cloudinary config (Kept from your template)
-const CLOUD_NAME = "dxcrlpike"; // Cloudinary Cloud Name
-const UPLOAD_PRESET = "LeoTechSl Projects"; // Cloudinary Upload Preset
+const CLOUD_NAME = "doucdnzij"; // Cloudinary Cloud Name
+const UPLOAD_PRESET = "Nardone"; // Cloudinary Upload Preset
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 const FEE_TYPES = ["Term 1", "Term 2", "Term 3"];
 const ADMIN_PASSWORD = "1234"; // Define your admin password
+
+const prepNurseryRegex = /^(Prep|Nursery|Nur|Pre)/i;
+
+// Flexible class matching:
+// "Nursery 1" ↔ "Nursery"
+// "Nur 2" ↔ "Nursery 2"
+// "Prep 1" ↔ "Pre 1"
+const isClassMatch = (feeClassName, studentClass) => {
+    if (!feeClassName || !studentClass) return false;
+
+    const normalizedFee = feeClassName.trim().toLowerCase();
+    const normalizedStudent = studentClass.trim().toLowerCase();
+
+    if (normalizedFee === normalizedStudent) return true;
+
+    return (
+        prepNurseryRegex.test(normalizedFee) &&
+        prepNurseryRegex.test(normalizedStudent)
+    );
+};
 
 // Helper function to generate a new unique receipt ID
 const generateUniqueReceiptId = () => uuidv4().slice(0, 10).toUpperCase();
@@ -48,11 +68,38 @@ const getCurrentAcademicYear = () => {
     }
 };
 
-const FeesReceipt = () => {
+const FeeReceiptGiaJunior = () => {
 
     const location = useLocation();
     const schoolId = location.state?.schoolId || "N/A"; // fallback if missing
 
+    // ✅ FIX 1: Destructure user (and role) from your auth context
+    const { user, currentUserRole } = useAuth();
+
+    // 🔍 1. Fallback to localStorage if user is not in AuthContext state yet
+    const savedUser = JSON.parse(localStorage.getItem("schoolUser") || "{}");
+    const activeUser = user || savedUser;
+
+    // 🔐 2. Dynamic identity extractions with multi-role support
+    const currentUserId =
+        activeUser?.data?.adminID ||
+        activeUser?.data?.ceoID ||
+        activeUser?.data?.teacherID ||
+        activeUser?.uid ||
+        "UNKNOWN_USER_ID";
+
+    const currentUserName =
+        activeUser?.data?.adminName ||
+        activeUser?.data?.ceoName ||
+        activeUser?.data?.teacherName ||
+        activeUser?.displayName ||
+        activeUser?.email ||
+        "Unknown User";
+
+
+
+    // ✅ FIX 2: Ensure currentUserRole has a fallback if not provided by useAuth()
+    const userRole = currentUserRole || activeUser?.data?.role || activeUser?.role || "USER";
     // --- State Management ---
     const [searchTerm, setSearchTerm] = useState("");
     const [students, setStudents] = useState([]);
@@ -146,41 +193,81 @@ const FeesReceipt = () => {
 
     // 2. REAL-TIME STUDENT LISTENER
     useEffect(() => {
-        if (!searchTerm.trim()) {
+        if (!searchTerm.trim() || !schoolId || schoolId === "N/A") {
             setStudents([]);
             return;
         }
 
-        const pupilsRef = collection(pupilLoginFetch, "PupilsReg");
-        const q = query(pupilsRef, where("schoolId", "==", schoolId));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const allStudents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const filtered = allStudents
-                .filter(s => s.studentName.toLowerCase().includes(searchTerm.toLowerCase()))
-                .slice(0, 10);
-            setStudents(filtered);
-        });
+        const pupilsRef = collection(db, "PupilsReg");
+
+        const q = query(
+            pupilsRef,
+            where("schoolId", "==", schoolId)
+        );
+
+        const unsubscribe = onSnapshot(
+            q,
+            (snapshot) => {
+                const search = searchTerm.toLowerCase().trim();
+
+                const filtered = snapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+
+                    // ONLY Prep / Nursery students
+                    .filter(student =>
+                        prepNurseryRegex.test(
+                            (student.class || student.className || "").trim()
+                        )
+                    )
+
+                    // Search by Student Name OR Student ID
+                    .filter(student =>
+                        (student.studentName || "")
+                            .toLowerCase()
+                            .includes(search) ||
+
+                        (student.studentID || "")
+                            .toLowerCase()
+                            .includes(search)
+                    )
+
+                    // Show only first 10 matching students
+                    .slice(0, 10);
+
+                setStudents(filtered);
+            },
+            (error) => {
+                console.error("Student search error:", error);
+                toast.error("Failed to search students.");
+                setStudents([]);
+            }
+        );
 
         return () => unsubscribe();
     }, [searchTerm, schoolId]);
 
-
+    // 3. REAL-TIME RECEIPTS LISTENER (for the table)
     // 3. REAL-TIME RECEIPTS LISTENER (for the table)
     useEffect(() => {
+        if (!schoolId || schoolId === "N/A") return;
+
         const receiptsCollectionRef = collection(db, "Receipts");
         const q = query(
             receiptsCollectionRef,
             where("schoolId", "==", schoolId),
-            // orderBy("createdAt", "desc"),
             limit(15)
         );
-
 
         const unsubscribeReceipts = onSnapshot(q, (snapshot) => {
             const receiptsList = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate().toLocaleTimeString('en-US') || 'N/A',
+                createdAt: doc.data().createdAt?.toDate
+                    ? doc.data().createdAt.toDate().toLocaleTimeString('en-US')
+                    : 'N/A',
                 paymentDate: doc.data().paymentDate,
             }));
             setRecentReceipts(receiptsList);
@@ -190,7 +277,7 @@ const FeesReceipt = () => {
         });
 
         return () => unsubscribeReceipts();
-    }, []);
+    }, [schoolId]); // ✅ Added schoolId to dependency array
 
     // 4. NEW: REAL-TIME TOTAL PAID LISTENER FOR SELECTED STUDENT
     useEffect(() => {
@@ -227,96 +314,275 @@ const FeesReceipt = () => {
 
     const handleReceiptChange = (e) => {
         const { name, value } = e.target;
-
-        if (name === "amount") {
-            const inputAmount = parseFloat(value) || 0;
-
-            if (inputAmount > remainingBalance) {
-                toast.error("Payment exceeds remaining balance!");
-                return;
-            }
-        }
-
-        setReceiptData(prev => ({
-            ...prev,
-            [name]: value,
-        }));
+        setReceiptData(prev => ({ ...prev, [name]: value }));
     };
 
 
+
+    // Helper function to calculate total fee for a class record
+    const calculateClassTotalFee = (classFeeRecord, studentStatus = "Continuing") => {
+        if (!classFeeRecord) return 0;
+
+        const ancillary = parseFloat(classFeeRecord.ancillary_total) || 0;
+
+        // Determine whether to use New or Continuing student tuition total
+        const tuition = studentStatus === "New"
+            ? parseFloat(classFeeRecord.new_tuition_total ?? classFeeRecord.new_total) || 0
+            : parseFloat(classFeeRecord.cont_tuition_total ?? classFeeRecord.cont_total) || 0;
+
+        return ancillary + tuition;
+    };
 
     const handleStudentSelect = async (student) => {
         setSelectedStudent(student);
         setSearchTerm(student.studentName);
         setStudents([]);
 
-        
-
         try {
-            // --- Get class fees for this student's class ---
-            const classFees = feesCost.find(
-                fee =>
-                    fee.className === student.class &&
+            // =========================
+            // PART 1: Previous Academic Year
+            // =========================
+            const allYears = [...new Set(feesCost.map(fee => fee.academicYear))].sort(); // ascending
+            const latestIndex = allYears.indexOf(latestAcademicYear);
+            const previousAcademicYear = latestIndex > 0 ? allYears[latestIndex - 1] : null;
+
+            if (previousAcademicYear) {
+                const receiptsCollectionRef = collection(db, "Receipts");
+                const q = query(receiptsCollectionRef, where("studentID", "==", student.studentID));
+                const snapshot = await getDocs(q);
+
+                let totalPaidPrevious = 0;
+                let previousClass = null;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.academicYear === previousAcademicYear) {
+                        totalPaidPrevious += parseFloat(data.amount) || 0;
+                        if (!previousClass) previousClass = data.class;
+                    }
+                });
+
+                const classToLookup = previousClass || student.className || student.class;
+                const classFeeRecord = feesCost.find(
+                    fee => fee.className?.trim().toLowerCase() === classToLookup?.trim().toLowerCase() &&
+                        fee.academicYear === previousAcademicYear
+                );
+
+                if (classFeeRecord) {
+                    // Use helper to sum ancillary + tuition total
+                    const totalFeePrevious = calculateClassTotalFee(classFeeRecord, student.status);
+                    const balancePrevious = totalFeePrevious - totalPaidPrevious;
+
+                    if (balancePrevious > 0) {
+                        setPreviousFeesData({
+                            studentName: student.studentName,
+                            studentID: student.studentID,
+                            academicYear: previousAcademicYear,
+                            class: classToLookup,
+                            totalFee: totalFeePrevious,
+                            totalPaid: totalPaidPrevious,
+                            balance: balancePrevious,
+                            message: totalPaidPrevious > 0
+                                ? "This is the final status for the previous academic year."
+                                : "No payments were made in the previous academic year."
+                        });
+
+                        setShowPreviousFeesModal(true);
+                    } else {
+                        toast.success(`${student.studentName} has no outstanding balance from ${previousAcademicYear} 🎉`);
+                        setPreviousFeesData(null);
+                        setShowPreviousFeesModal(false);
+                    }
+                }
+            }
+
+            // =========================
+            // PART 2: Latest Academic Year
+            // =========================
+            const currentStudentClass = student.className || student.class;
+
+            const latestClassFee = feesCost.find(
+                fee => fee.className?.trim().toLowerCase() === currentStudentClass?.trim().toLowerCase() &&
                     fee.academicYear === latestAcademicYear
             );
 
-            if (!classFees) throw new Error("No fees found for this class");
+            // Compute total fee (Ancillary + Tuition)
+            const totalFeeLatest = calculateClassTotalFee(latestClassFee, student.status);
 
-            const newTotal = parseFloat(classFees.new_total) || 0;
-            const contTotal = parseFloat(classFees.cont_total) || 0;
+            if (!latestClassFee && currentStudentClass) {
+                toast.warn(`No fee structure found for Class: "${currentStudentClass}" in Academic Year: ${latestAcademicYear}.`);
+            }
 
-            // --- Check payments for this year ---
-            const receiptsRef = collection(db, "Receipts");
-            const q = query(
-                receiptsRef,
-                where("studentID", "==", student.studentID),
-                where("academicYear", "==", latestAcademicYear)
-            );
+            // Fetch all receipts for this student
+            const receiptsCollectionRef = collection(db, "Receipts");
+            const qLatest = query(receiptsCollectionRef, where("studentID", "==", student.studentID));
+            const snapshotLatest = await getDocs(qLatest);
 
-            const snapshot = await getDocs(q);
+            const grouped = {};
+            snapshotLatest.forEach(doc => {
+                const data = doc.data();
+                const key = `${data.studentID}-${data.studentName}-${data.class}-${data.academicYear}`;
 
-            let totalPaidSoFar = 0;
-            snapshot.forEach(doc => {
-                totalPaidSoFar += parseFloat(doc.data().amount) || 0;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        studentID: data.studentID,
+                        studentName: data.studentName,
+                        class: data.class,
+                        academicYear: data.academicYear,
+                        totalPaid: 0,
+                        totalFee: 0,
+                        balance: 0
+                    };
+                }
+
+                grouped[key].totalPaid += parseFloat(data.amount) || 0;
+
+                if (data.academicYear === latestAcademicYear) {
+                    grouped[key].totalFee = totalFeeLatest;
+                    grouped[key].balance = totalFeeLatest - grouped[key].totalPaid;
+                }
             });
 
-            // --- Use stored feesCategory ---
-            const feesCategory = student.feesCategory || "New";
-
-            // 🔥 IMPORTANT: Always show FULL CLASS TOTAL
-            const classTotal =
-                feesCategory === "New"
-                    ? newTotal
-                    : contTotal;
-
+            // Update receiptData state
             setReceiptData(prev => ({
                 ...prev,
+                studentDocId: student.id,
                 studentID: student.studentID,
                 studentName: student.studentName,
-                class: student.class,
-                feesCategory: feesCategory,
-                classTotal: classTotal,     // ✅ full total only
-                totalPaid: totalPaidSoFar,  // ✅ paid so far
+                class: currentStudentClass || 'N/A',
                 amount: "",
+                suggestedAmount: totalFeeLatest,
                 academicYear: latestAcademicYear,
+                balance: totalFeeLatest
             }));
 
         } catch (err) {
-            console.error("Error calculating fees:", err);
-            toast.error("Failed to determine student fees.");
+            console.error("Failed to compute balance:", err);
+            toast.error("Failed to calculate student balance.");
         }
     };
 
-    const remainingBalance = useMemo(() => {
-        const total = receiptData.classTotal || 0;
-        const paid = receiptData.totalPaid || 0;
-        return total - paid;
-    }, [receiptData.classTotal, receiptData.totalPaid]);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setShowSuccessMessage(false);
 
-    const projectedBalance = useMemo(() => {
-        const currentAmount = parseFloat(receiptData.amount) || 0;
-        return remainingBalance - currentAmount;
-    }, [remainingBalance, receiptData.amount]);
+        if (!selectedStudent) return toast.error("Please select a student first.");
+        const paidAmount = parseFloat(receiptData.amount);
+        if (paidAmount <= 0 || isNaN(paidAmount)) {
+            return toast.error("Please enter a valid amount greater than zero.");
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const classToLookup = receiptData.class;
+            const classFeeRecord = feesCost.find(
+                fee => fee.className?.trim().toLowerCase() === classToLookup?.trim().toLowerCase() &&
+                    fee.academicYear === receiptData.academicYear
+            );
+
+            const totalFee = calculateClassTotalFee(classFeeRecord, selectedStudent?.status);
+            const balance = totalFee - paidAmount;
+
+            const finalReceiptData = {
+                ...receiptData,
+
+                amount: paidAmount,
+                totalFee,
+                balance,
+
+                academicYear: receiptData.academicYear || defaultAcademicYear,
+                schoolId: schoolId,
+
+                // 👤 AUDIT INFORMATION (Ensured no undefined values)
+                recordedBy: currentUserName || "Unknown User",
+                recordedById: currentUserId || "UNKNOWN_USER_ID",
+                recordedByRole: userRole || "USER", // <-- Updated fallback to guarantee a string
+
+                updatedAt: new Date(),
+            };
+
+            if (editingReceiptId) {
+                const receiptRef = doc(db, "Receipts", editingReceiptId);
+
+                // 1. Fetch current document state BEFORE updating (to preserve trace history)
+                const currentReceipt = recentReceipts.find(r => r.id === editingReceiptId);
+
+                // 2. Log update history to "ReceiptsHistory" collection
+                await addDoc(collection(db, "ReceiptsHistory"), {
+                    receiptDocId: editingReceiptId,
+                    receiptId: currentReceipt?.receiptId || finalReceiptData.receiptId,
+                    action: "UPDATE",
+                    previousData: currentReceipt || null,
+                    newData: finalReceiptData,
+                    timestamp: new Date(),
+                    recordedBy: currentUserName,   // Passes logged-in user's full name
+                    recordedById: currentUserId,   // Passes logged-in user's system ID
+                    schoolId: schoolId,
+                });
+
+                // 3. Update the main document
+                await updateDoc(receiptRef, finalReceiptData);
+                toast.success(`Receipt ${finalReceiptData.receiptId} updated successfully!`);
+            } else {
+                await addDoc(collection(db, "Receipts"), {
+                    ...finalReceiptData,
+                    createdAt: new Date(),
+                });
+                toast.success(`Receipt ${finalReceiptData.receiptId} recorded successfully!`);
+                setShowSuccessMessage(true);
+            }
+
+            setTimeout(() => resetForm(), 3000);
+
+        } catch (err) {
+            console.error("Receipt saving failed:", err);
+            toast.error(`Failed to ${editingReceiptId ? 'update' : 'record'} fee receipt.`);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+   const handleDeleteReceipt = async (id, receiptId, studentName) => {
+    const password = window.prompt("Enter the password to delete this receipt:");
+    if (password === ADMIN_PASSWORD) {
+        if (window.confirm(`Are you sure you want to delete receipt ${receiptId} for ${studentName}?`)) {
+            try {
+                // 1. Find the target receipt record
+                const receiptToDelete = recentReceipts.find(r => r.id === id);
+
+                // 2. Store in "DeletedReceipts" with full identity properties
+                await addDoc(collection(db, "DeletedReceipts"), {
+                    originalDocId: id,
+                    receiptData: receiptToDelete || null,
+                    deletedAt: new Date(),
+
+                    // Explicit Actor Information (Person who performed the delete)
+                    deletedBy: currentUserName || "Unknown User",
+                    deletedById: currentUserId || "UNKNOWN_USER_ID",
+                    deletedByRole: userRole || "USER", // <-- ✅ FIXED: Changed currentUserRole to userRole
+
+                    // Also preserve original creator details explicitly
+                    recordedBy: receiptToDelete?.recordedBy || "Unknown",
+                    recordedById: receiptToDelete?.recordedById || "",
+
+                    receiptId: receiptId,
+                    studentName: studentName,
+                    schoolId: schoolId,
+                });
+
+                // 3. Remove from active "Receipts" collection
+                await deleteDoc(doc(db, "Receipts", id));
+                toast.success(`Receipt ${receiptId} moved to archive and deleted successfully!`);
+            } catch (err) {
+                console.error("Failed to delete receipt:", err);
+                toast.error("Failed to delete receipt.");
+            }
+        }
+    } else if (password !== null) {
+        toast.error("Incorrect password.");
+    }
+};
 
 
     const handleUploadSuccess = (url, publicId) => {
@@ -360,22 +626,7 @@ const FeesReceipt = () => {
         toast.info(`Editing receipt: ${receipt.receiptId}`);
     };
 
-    const handleDeleteReceipt = async (id, receiptId, studentName) => {
-        const password = window.prompt("Enter the password to delete this receipt:");
-        if (password === ADMIN_PASSWORD) {
-            if (window.confirm(`Are you sure you want to delete receipt ${receiptId} for ${studentName}?`)) {
-                try {
-                    await deleteDoc(doc(db, "Receipts", id));
-                    toast.success(`Receipt ${receiptId} deleted successfully!`);
-                } catch (err) {
-                    console.error("Failed to delete receipt:", err);
-                    toast.error("Failed to delete receipt.");
-                }
-            }
-        } else if (password !== null) {
-            toast.error("Incorrect password.");
-        }
-    };
+
 
     const resetForm = () => {
         setReceiptData(initialReceiptState);
@@ -422,8 +673,7 @@ const FeesReceipt = () => {
             const formDataObj = new FormData();
             formDataObj.append("file", blob);
             formDataObj.append("upload_preset", UPLOAD_PRESET);
-            const folderName = `Receipt_Photos/${schoolId || "UnknownSchool"}`;
-            formData.append("folder", folderName);
+            formDataObj.append("folder", "ChristStandard_Photos");
 
             xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`);
             xhr.send(formDataObj);
@@ -436,60 +686,7 @@ const FeesReceipt = () => {
     };
 
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setShowSuccessMessage(false);
 
-        if (!selectedStudent) return toast.error("Please select a student first.");
-        const paidAmount = parseFloat(receiptData.amount);
-        if (paidAmount <= 0 || isNaN(paidAmount)) {
-            return toast.error("Please enter a valid amount greater than zero.");
-        }
-
-        setIsSubmitting(true);
-
-        try {
-            // --- Calculate total fee & balance dynamically ---
-            // Use receiptData.class instead of classToLookup
-            const classToLookup = receiptData.class; // ✅ added this
-            const classFeeRecord = feesCost.find(
-                fee => fee.className === classToLookup && fee.academicYear === receiptData.academicYear
-            );
-
-            const totalFee = classFeeRecord ? parseFloat(classFeeRecord.totalAmount) : 0;
-            const balance = totalFee - paidAmount;
-
-            const finalReceiptData = {
-                ...receiptData,
-                amount: paidAmount,
-                totalFee,   // total fee field
-                balance,    // balance field
-                academicYear: receiptData.academicYear || defaultAcademicYear,
-                schoolId: schoolId, // ensure schoolId is saved
-            };
-
-            if (editingReceiptId) {
-                const receiptRef = doc(db, "Receipts", editingReceiptId);
-                await updateDoc(receiptRef, finalReceiptData);
-                toast.success(`Receipt ${finalReceiptData.receiptId} updated successfully!`);
-            } else {
-                await addDoc(collection(db, "Receipts"), {
-                    ...finalReceiptData,
-                    createdAt: new Date(),
-                });
-                toast.success(`Receipt ${finalReceiptData.receiptId} recorded successfully!`);
-                setShowSuccessMessage(true);
-            }
-
-            setTimeout(() => resetForm(), 3000);
-
-        } catch (err) {
-            console.error("Receipt saving failed:", err);
-            toast.error(`Failed to ${editingReceiptId ? 'update' : 'record'} fee receipt.`);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
 
 
 
@@ -510,10 +707,20 @@ const FeesReceipt = () => {
         const balanceText = isBalanced ? 'Cleared' : `GHS ${data.balance.toFixed(2)} DUE`;
         const balanceClass = isBalanced ? 'bg-green-100 border-green-300' : 'bg-red-100 border-red-300';
 
-        const handleViewHistory = () => {
-            // 1. Navigate to the student history page
-            navigate(`/student-history/${data.studentID}`);
-            // 2. Reset the form state in the background
+        const handleViewPreviousFees = () => {
+            navigate(`/previous-fees/${data.studentID}`, {
+                state: {
+                    studentID: data.studentID,
+                    studentName: data.studentName,
+                    academicYear: data.academicYear,
+                    className: data.class,
+                    totalFee: data.totalFee,
+                    totalPaid: data.totalPaid,
+                    balance: data.balance,
+                    schoolId: schoolId,
+                }
+            });
+
             onResetAndClose();
         };
 
@@ -528,11 +735,11 @@ const FeesReceipt = () => {
                     <div className="grid grid-cols-2 gap-4 text-lg font-medium text-gray-700 mb-6">
                         <div>
                             <p>Total Fee (Expected):</p>
-                            <p className="font-bold text-blue-600">GHS {data.totalFee.toFixed(2)}</p>
+                            <p className="font-bold text-blue-600">NLE {data.totalFee.toFixed(2)}</p>
                         </div>
                         <div>
                             <p>Total Paid:</p>
-                            <p className="font-bold text-green-700">GHS {data.totalPaid.toFixed(2)}</p>
+                            <p className="font-bold text-green-700">NLE {data.totalPaid.toFixed(2)}</p>
                         </div>
                     </div>
 
@@ -548,12 +755,11 @@ const FeesReceipt = () => {
 
                     <div className="mt-6 flex justify-end space-x-3">
                         <button
-                            onClick={handleViewHistory}
-                            className="bg-indigo-500 text-white py-2 px-4 rounded-lg hover:bg-indigo-600 transition text-sm font-semibold"
-                            // Optional: Disabled if the balance is paid, encouraging collection
+                            onClick={handleViewPreviousFees}
+                            className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition text-sm font-semibold"
                             disabled={isBalanced}
                         >
-                            View Full History 🔗
+                            View Previous Fees 💰
                         </button>
                         <button
                             // 💡 This now calls the resetForm function in the parent
@@ -593,12 +799,6 @@ const FeesReceipt = () => {
                 <h2 className="text-2xl font-bold text-center mb-6 text-indigo-700">
                     {editingReceiptId ? "Update Fee Receipt" : "New Fee Payment Receipt"} 💰
                 </h2>
-                {selectedStudent && (
-                    <p className="mt-2 text-sm font-bold text-gray-700">
-                        Fees Category:
-                        <span className="ml-2 text-indigo-600">{receiptData.feesCategory}</span>
-                    </p>
-                )}
 
                 {/* Receipt ID, Academic Year, and Class (Read-Only) */}
                 <div className="flex justify-between flex-wrap mb-4 text-sm text-gray-600 border-b pb-2">
@@ -607,7 +807,6 @@ const FeesReceipt = () => {
                     <p><strong>Academic Year:</strong> <span className="font-bold text-purple-700">
                         {receiptData.academicYear}
                     </span></p>
-
                     <p><strong>Class:</strong> <span className="font-bold text-gray-800">{receiptData.class || 'N/A'}</span></p>
                 </div>
                 {/* 🏫 School ID (read-only field) */}
@@ -690,68 +889,39 @@ const FeesReceipt = () => {
                     </div>
 
                     {/* --- AMOUNT INPUT WITH SUGGESTED FEE & TOTAL PAID DISPLAY --- */}
-
                     <div className="md:col-span-2">
-
                         <div className="flex justify-between items-end mb-2">
-                            <label className="block font-medium text-sm">
-                                Amount Paid (NLE)
-                            </label>
+                            <label className="block font-medium text-sm">Amount Paid (GHS)</label>
 
-                            {receiptData.classTotal && !editingReceiptId && (
+                            {/* Display Suggested Fee (if available and not editing) */}
+                            {receiptData.suggestedAmount && !editingReceiptId && (
                                 <span className="text-sm text-blue-600 font-semibold bg-blue-100 px-2 py-1 rounded">
-                                    Total Class Fee ({receiptData.feesCategory}):
-                                    NLE {receiptData.classTotal.toFixed(2)}
+                                    Class Fee: NLE {parseFloat(receiptData.suggestedAmount).toFixed(2)}
                                 </span>
                             )}
                         </div>
 
-                      <input
-    type="number"
-    name="amount"
-    value={receiptData.amount}
-    onChange={handleReceiptChange}
-    placeholder={
-        selectedStudent && remainingBalance <= 0
-            ? "Fully Paid"
-            : "e.g. 500.00"
-    }
-    step="0.01"
-    min="0.01"
-    max={remainingBalance}
-    disabled={
-        !selectedStudent || remainingBalance <= 0
-    }   // ✅ key logic here
-    className={`w-full p-3 border rounded-lg font-bold text-xl 
-        ${
-            !selectedStudent || remainingBalance <= 0
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "text-red-600"
-        }`}
-    required
-/>
+                        <input
+                            type="number"
+                            name="amount"
+                            value={receiptData.amount}
+                            onChange={handleReceiptChange}
+                            placeholder="e.g. 500.00"
+                            step="0.01"
+                            min="0.01"
+                            className="w-full p-3 border rounded-lg font-bold text-xl text-red-600"
+                            required
+                        />
 
-                        {/* 🟢 Total Paid */}
+                        {/* NEW: Display Total Paid So Far (if student is selected) */}
                         {selectedStudent && (
                             <p className="mt-2 text-sm font-bold text-green-700">
                                 Total Paid So Far ({receiptData.academicYear}):
                                 <span className="ml-2 bg-green-100 px-2 py-0.5 rounded">
-                                    NLE {receiptData.totalPaid?.toFixed(2) || "0.00"}
+                                    NLE {totalPaid.toFixed(2)}
                                 </span>
                             </p>
                         )}
-
-                        {/* 🔴 Remaining Balance */}
-                        {selectedStudent && (
-                            <p className={`mt-1 text-sm font-bold ${remainingBalance <= 0 ? "text-green-600" : "text-red-600"}`}>
-                                Remaining Balance:
-                                <span className="ml-2 bg-red-100 px-2 py-0.5 rounded">
-                                    NLE {projectedBalance.toFixed(2)}
-                                </span>
-                            </p>
-                            
-                        )}
-                    
 
                     </div>
                     {/* --- END AMOUNT INPUT --- */}
@@ -904,4 +1074,4 @@ const FeesReceipt = () => {
     );
 };
 
-export default FeesReceipt;
+export default FeeReceiptGiaJunior;
