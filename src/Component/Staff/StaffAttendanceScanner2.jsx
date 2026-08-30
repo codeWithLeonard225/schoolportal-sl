@@ -59,7 +59,7 @@ const AttendanceScanner = () => {
 
                 await handleAttendanceLogging(parsedData.teacherID, scanModeRef.current);
 
-                // Resume camera stream after 1-second delay
+                // Resume camera stream after -second delay
                 setTimeout(() => {
                     setProcessing(false);
                     scanner.resume();
