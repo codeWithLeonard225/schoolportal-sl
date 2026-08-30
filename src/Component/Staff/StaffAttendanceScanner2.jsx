@@ -12,14 +12,17 @@ import {
     serverTimestamp,
 } from "firebase/firestore";
 import { toast } from "react-toastify";
+import { useLocation } from "react-router-dom"; // 1. Import useLocation
 
 const AttendanceScanner = () => {
-    // Active mode selector: "clockIn" or "clockOut"
+    const location = useLocation();
+    // Retrieve passed schoolId from navigation state
+    const currentSchoolId = location.state?.schoolId || null;
+
     const [scanMode, setScanMode] = useState("clockIn");
     const [scanResult, setScanResult] = useState(null);
     const [processing, setProcessing] = useState(false);
 
-    // Keep active scanMode accessible inside static scanner callbacks
     const scanModeRef = useRef(scanMode);
     useEffect(() => {
         scanModeRef.current = scanMode;
@@ -29,7 +32,7 @@ const AttendanceScanner = () => {
         const scanner = new Html5QrcodeScanner(
             "reader",
             { fps: 10, qrbox: { width: 250, height: 250 } },
-            /* verbose= */ false
+            false
         );
 
         scanner.render(onScanSuccess, onScanFailure);
@@ -55,15 +58,14 @@ const AttendanceScanner = () => {
                 }
 
                 setProcessing(true);
-                scanner.pause(true); // Pause camera feed while evaluating
+                scanner.pause(true);
 
                 await handleAttendanceLogging(parsedData.teacherID, scanModeRef.current);
 
-                // Resume camera stream after -second delay
                 setTimeout(() => {
                     setProcessing(false);
                     scanner.resume();
-                }, 1000);
+                }, 3000);
             } catch (err) {
                 console.error("Scanning process error:", err);
                 toast.error("Failed to process QR Code.");
@@ -81,7 +83,7 @@ const AttendanceScanner = () => {
         const todayStr = new Date().toISOString().slice(0, 10);
         const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        // 1. Fetch Teacher Record
+        // Fetch Teacher Record
         const teacherQ = query(collection(db, "Teachers"), where("teacherID", "==", teacherID));
         const teacherSnap = await getDocs(teacherQ);
 
@@ -93,7 +95,10 @@ const AttendanceScanner = () => {
         const teacherDoc = teacherSnap.docs[0];
         const teacherData = teacherDoc.data();
 
-        // 2. Query today's attendance record for this teacher
+        // Priority resolution for schoolId
+        const activeSchoolId = currentSchoolId || teacherData.schoolId || "N/A";
+
+        // Query today's attendance record for this teacher
         const attQ = query(
             collection(db, "StaffAttendance"),
             where("teacherID", "==", teacherID),
@@ -101,11 +106,8 @@ const AttendanceScanner = () => {
         );
         const attSnap = await getDocs(attQ);
 
-        // -------------------------------------------------------------
         // MODE 1: CLOCK IN
-        // -------------------------------------------------------------
         if (mode === "clockIn") {
-            // STRICT RULE: Reject repeat Clock In if record already exists today
             if (!attSnap.empty) {
                 const existingLog = attSnap.docs[0].data();
                 toast.warning(`⚠️ Action Blocked: ${teacherData.teacherName} already Clocked IN today at ${existingLog.clockIn}.`);
@@ -121,11 +123,11 @@ const AttendanceScanner = () => {
                 return;
             }
 
-            // Create primary Clock In document for today
+            // Create document with exact schoolId matching AttendanceLogs query
             await addDoc(collection(db, "StaffAttendance"), {
                 teacherID: teacherData.teacherID,
                 teacherName: teacherData.teacherName,
-                schoolId: teacherData.schoolId || "N/A",
+                schoolId: activeSchoolId, 
                 date: todayStr,
                 clockIn: nowTime,
                 clockOut: null,
@@ -144,11 +146,8 @@ const AttendanceScanner = () => {
             toast.success(`✅ Clocked IN: ${teacherData.teacherName} at ${nowTime}`);
         }
 
-        // -------------------------------------------------------------
         // MODE 2: CLOCK OUT
-        // -------------------------------------------------------------
         else if (mode === "clockOut") {
-            // RULE: Requires an active Clock In record first
             if (attSnap.empty) {
                 toast.error(`⚠️ Action Blocked: ${teacherData.teacherName} has NOT Clocked IN today.`);
                 setScanResult({
@@ -165,7 +164,6 @@ const AttendanceScanner = () => {
             const existingLogDoc = attSnap.docs[0];
             const existingLogData = existingLogDoc.data();
 
-            // STRICT RULE: Reject repeat Clock Out if already filled today
             if (existingLogData.clockOut) {
                 toast.warning(`⚠️ Action Blocked: ${teacherData.teacherName} already Clocked OUT today at ${existingLogData.clockOut}.`);
                 
@@ -180,7 +178,6 @@ const AttendanceScanner = () => {
                 return;
             }
 
-            // Update record with single Clock Out time
             const attRef = doc(db, "StaffAttendance", existingLogDoc.id);
             await updateDoc(attRef, {
                 clockOut: nowTime,
@@ -205,7 +202,6 @@ const AttendanceScanner = () => {
                 <h2 className="text-2xl font-bold text-gray-800 mb-1">Staff Attendance Scanner 📷</h2>
                 <p className="text-sm text-gray-500 mb-4">Select mode, then scan ID QR code</p>
 
-                {/* Mode Selector Toggle */}
                 <div className="flex justify-center space-x-4 mb-6 bg-gray-100 p-2 rounded-xl border border-gray-200">
                     <label
                         className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-lg font-bold text-sm cursor-pointer transition ${
@@ -244,10 +240,8 @@ const AttendanceScanner = () => {
                     </label>
                 </div>
 
-                {/* QR Scanner Container */}
                 <div id="reader" className="w-full rounded-lg overflow-hidden mb-6"></div>
 
-                {/* Real-time Result Feedback Overlay */}
                 {scanResult && (
                     <div
                         className={`p-4 rounded-xl text-left space-y-2 border ${

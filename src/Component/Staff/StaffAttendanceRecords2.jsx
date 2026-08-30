@@ -1,299 +1,159 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import React, { useState, useEffect, useMemo } from "react";
+import { collection, query, where, onSnapshot, doc, deleteDoc } from "firebase/firestore";
 import { db } from "../../../firebase";
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    addDoc,
-    updateDoc,
-    doc,
-    serverTimestamp,
-} from "firebase/firestore";
+import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useLocation } from "react-router-dom"; // 1. Import useLocation
 
-const AttendanceScanner = () => {
+const AttendanceLogs = () => {
     const location = useLocation();
-    // Retrieve passed schoolId from navigation state
-    const currentSchoolId = location.state?.schoolId || null;
+    const schoolId = location.state?.schoolId || "N/A";
 
-    const [scanMode, setScanMode] = useState("clockIn");
-    const [scanResult, setScanResult] = useState(null);
-    const [processing, setProcessing] = useState(false);
-
-    const scanModeRef = useRef(scanMode);
-    useEffect(() => {
-        scanModeRef.current = scanMode;
-    }, [scanMode]);
+    const [logs, setLogs] = useState([]);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+    const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-        const scanner = new Html5QrcodeScanner(
-            "reader",
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            false
-        );
+        if (schoolId === "N/A") return;
 
-        scanner.render(onScanSuccess, onScanFailure);
-
-        function onScanFailure(error) {
-            // Ignore ongoing camera scan errors
-        }
-
-        async function onScanSuccess(decodedText) {
-            if (processing) return;
-
-            try {
-                let parsedData;
-                try {
-                    parsedData = JSON.parse(decodedText);
-                } catch {
-                    parsedData = { teacherID: decodedText };
-                }
-
-                if (!parsedData.teacherID) {
-                    toast.error("Invalid QR Code payload format.");
-                    return;
-                }
-
-                setProcessing(true);
-                scanner.pause(true);
-
-                await handleAttendanceLogging(parsedData.teacherID, scanModeRef.current);
-
-                setTimeout(() => {
-                    setProcessing(false);
-                    scanner.resume();
-                }, 3000);
-            } catch (err) {
-                console.error("Scanning process error:", err);
-                toast.error("Failed to process QR Code.");
-                setProcessing(false);
-                scanner.resume();
-            }
-        }
-
-        return () => {
-            scanner.clear().catch((error) => console.error("Scanner clear failed", error));
-        };
-    }, []);
-
-    const handleAttendanceLogging = async (teacherID, mode) => {
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        // Fetch Teacher Record
-        const teacherQ = query(collection(db, "Teachers"), where("teacherID", "==", teacherID));
-        const teacherSnap = await getDocs(teacherQ);
-
-        if (teacherSnap.empty) {
-            toast.error(`Teacher ID ${teacherID} not found in database.`);
-            return;
-        }
-
-        const teacherDoc = teacherSnap.docs[0];
-        const teacherData = teacherDoc.data();
-
-        // Priority resolution for schoolId
-        const activeSchoolId = currentSchoolId || teacherData.schoolId || "N/A";
-
-        // Query today's attendance record for this teacher
-        const attQ = query(
+        const q = query(
             collection(db, "StaffAttendance"),
-            where("teacherID", "==", teacherID),
-            where("date", "==", todayStr)
+            where("schoolId", "==", schoolId),
+            where("date", "==", selectedDate)
         );
-        const attSnap = await getDocs(attQ);
 
-        // MODE 1: CLOCK IN
-        if (mode === "clockIn") {
-            if (!attSnap.empty) {
-                const existingLog = attSnap.docs[0].data();
-                toast.warning(`⚠️ Action Blocked: ${teacherData.teacherName} already Clocked IN today at ${existingLog.clockIn}.`);
-                
-                setScanResult({
-                    name: teacherData.teacherName,
-                    action: "Clock In Blocked (Already Logged)",
-                    time: existingLog.clockIn,
-                    clockOutTime: existingLog.clockOut || "--",
-                    teacherID: teacherData.teacherID,
-                    isError: true,
-                });
-                return;
-            }
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setLogs(data);
+        });
 
-            // Create document with exact schoolId matching AttendanceLogs query
-            await addDoc(collection(db, "StaffAttendance"), {
-                teacherID: teacherData.teacherID,
-                teacherName: teacherData.teacherName,
-                schoolId: activeSchoolId, 
-                date: todayStr,
-                clockIn: nowTime,
-                clockOut: null,
-                status: "Present",
-                timestamp: serverTimestamp(),
-            });
+        return () => unsubscribe();
+    }, [schoolId, selectedDate]);
 
-            setScanResult({
-                name: teacherData.teacherName,
-                action: "Clocked IN Successfully",
-                time: nowTime,
-                clockOutTime: "--",
-                teacherID: teacherData.teacherID,
-                isError: false,
-            });
-            toast.success(`✅ Clocked IN: ${teacherData.teacherName} at ${nowTime}`);
-        }
+    // Handle document deletion for testing reset
+    const handleDeleteLog = async (id, teacherName) => {
+        const confirmDelete = window.confirm(
+            `Are you sure you want to delete the attendance log for ${teacherName}?`
+        );
 
-        // MODE 2: CLOCK OUT
-        else if (mode === "clockOut") {
-            if (attSnap.empty) {
-                toast.error(`⚠️ Action Blocked: ${teacherData.teacherName} has NOT Clocked IN today.`);
-                setScanResult({
-                    name: teacherData.teacherName,
-                    action: "Clock Out Blocked (No Clock In Found)",
-                    time: "--",
-                    clockOutTime: "--",
-                    teacherID: teacherData.teacherID,
-                    isError: true,
-                });
-                return;
-            }
+        if (!confirmDelete) return;
 
-            const existingLogDoc = attSnap.docs[0];
-            const existingLogData = existingLogDoc.data();
-
-            if (existingLogData.clockOut) {
-                toast.warning(`⚠️ Action Blocked: ${teacherData.teacherName} already Clocked OUT today at ${existingLogData.clockOut}.`);
-                
-                setScanResult({
-                    name: teacherData.teacherName,
-                    action: "Clock Out Blocked (Already Logged)",
-                    time: existingLogData.clockIn,
-                    clockOutTime: existingLogData.clockOut,
-                    teacherID: teacherData.teacherID,
-                    isError: true,
-                });
-                return;
-            }
-
-            const attRef = doc(db, "StaffAttendance", existingLogDoc.id);
-            await updateDoc(attRef, {
-                clockOut: nowTime,
-                updatedAt: serverTimestamp(),
-            });
-
-            setScanResult({
-                name: teacherData.teacherName,
-                action: "Clocked OUT Successfully",
-                time: existingLogData.clockIn,
-                clockOutTime: nowTime,
-                teacherID: teacherData.teacherID,
-                isError: false,
-            });
-            toast.info(`🚪 Clocked OUT: ${teacherData.teacherName} at ${nowTime}`);
+        try {
+            await deleteDoc(doc(db, "StaffAttendance", id));
+            toast.success(`Deleted attendance log for ${teacherName}`);
+        } catch (error) {
+            console.error("Error deleting document: ", error);
+            toast.error("Failed to delete attendance log.");
         }
     };
 
+    const filteredLogs = useMemo(() => {
+        if (!searchTerm.trim()) return logs;
+        const lower = searchTerm.toLowerCase();
+        return logs.filter(
+            (log) =>
+                log.teacherName?.toLowerCase().includes(lower) ||
+                log.teacherID?.toLowerCase().includes(lower)
+        );
+    }, [logs, searchTerm]);
+
     return (
-        <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
-            <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-1">Staff Attendance Scanner 📷</h2>
-                <p className="text-sm text-gray-500 mb-4">Select mode, then scan ID QR code</p>
-
-                <div className="flex justify-center space-x-4 mb-6 bg-gray-100 p-2 rounded-xl border border-gray-200">
-                    <label
-                        className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-lg font-bold text-sm cursor-pointer transition ${
-                            scanMode === "clockIn"
-                                ? "bg-green-600 text-white shadow-md"
-                                : "text-gray-600 hover:bg-gray-200"
-                        }`}
-                    >
+        <div className="p-6 bg-gray-100 min-h-screen">
+            <div className="max-w-6xl mx-auto space-y-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                    <h1 className="text-2xl font-bold text-gray-800">Daily Staff Attendance Logs 📋</h1>
+                    <div className="flex space-x-4 items-center">
+                        <label className="text-sm font-semibold text-gray-600">Select Date:</label>
                         <input
-                            type="radio"
-                            name="scanMode"
-                            value="clockIn"
-                            checked={scanMode === "clockIn"}
-                            onChange={() => setScanMode("clockIn")}
-                            className="hidden"
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="p-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
                         />
-                        <span>📥 Clock IN</span>
-                    </label>
-
-                    <label
-                        className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-lg font-bold text-sm cursor-pointer transition ${
-                            scanMode === "clockOut"
-                                ? "bg-blue-600 text-white shadow-md"
-                                : "text-gray-600 hover:bg-gray-200"
-                        }`}
-                    >
-                        <input
-                            type="radio"
-                            name="scanMode"
-                            value="clockOut"
-                            checked={scanMode === "clockOut"}
-                            onChange={() => setScanMode("clockOut")}
-                            className="hidden"
-                        />
-                        <span>📤 Clock OUT</span>
-                    </label>
+                    </div>
                 </div>
 
-                <div id="reader" className="w-full rounded-lg overflow-hidden mb-6"></div>
+                {/* Filter and Search Bar */}
+                <div className="bg-white p-4 rounded-xl shadow-sm">
+                    <input
+                        type="text"
+                        placeholder="Search logs by staff name or ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg"
+                    />
+                </div>
 
-                {scanResult && (
-                    <div
-                        className={`p-4 rounded-xl text-left space-y-2 border ${
-                            scanResult.isError
-                                ? "bg-amber-50 border-amber-300"
-                                : "bg-indigo-50 border-indigo-200"
-                        }`}
-                    >
-                        <div className="flex justify-between items-center border-b pb-2">
-                            <span
-                                className={`text-xs font-bold uppercase tracking-wider ${
-                                    scanResult.isError ? "text-amber-700" : "text-indigo-600"
-                                }`}
-                            >
-                                {scanResult.isError ? "Scan Warning" : "Scan Result"}
-                            </span>
-                            <span className="text-xs font-mono bg-white px-2 py-0.5 rounded border text-gray-600">
-                                ID: {scanResult.teacherID}
-                            </span>
-                        </div>
-
-                        <h3 className="text-lg font-bold text-gray-800">{scanResult.name}</h3>
-
-                        <div className="text-sm space-y-1 text-gray-700">
-                            <p>
-                                Status:{" "}
-                                <span
-                                    className={`font-semibold ${
-                                        scanResult.isError ? "text-amber-800" : "text-indigo-900"
-                                    }`}
-                                >
-                                    {scanResult.action}
-                                </span>
-                            </p>
-                            <p>
-                                Clock In:{" "}
-                                <span className="font-semibold text-green-700">
-                                    {scanResult.time}
-                                </span>
-                            </p>
-                            <p>
-                                Clock Out:{" "}
-                                <span className="font-semibold text-blue-700">
-                                    {scanResult.clockOutTime}
-                                </span>
-                            </p>
-                        </div>
-                    </div>
-                )}
+                {/* Log Table */}
+                <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                                    Teacher ID
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                                    Name
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                                    Clock In
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                                    Clock Out
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                                    Status
+                                </th>
+                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 bg-white text-sm">
+                            {filteredLogs.map((log) => (
+                                <tr key={log.id}>
+                                    <td className="px-6 py-4 font-mono font-medium text-gray-900">
+                                        {log.teacherID}
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-gray-800">
+                                        {log.teacherName}
+                                    </td>
+                                    <td className="px-6 py-4 text-green-600 font-semibold">
+                                        {log.clockIn || "--"}
+                                    </td>
+                                    <td className="px-6 py-4 text-blue-600 font-semibold">
+                                        {log.clockOut || "Active"}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="px-3 py-1 text-xs rounded-full font-semibold bg-green-100 text-green-700">
+                                            {log.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button
+                                            onClick={() => handleDeleteLog(log.id, log.teacherName)}
+                                            className="bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs px-3 py-1 rounded-lg border border-red-200 transition"
+                                        >
+                                            🗑️ Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredLogs.length === 0 && (
+                                <tr>
+                                    <td colSpan="6" className="text-center py-6 text-gray-400">
+                                        No attendance logs found for {selectedDate}.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
 };
 
-export default AttendanceScanner;
+export default AttendanceLogs;
