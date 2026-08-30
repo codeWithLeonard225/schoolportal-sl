@@ -59,11 +59,11 @@ const AttendanceScanner = () => {
 
                 await handleAttendanceLogging(parsedData.teacherID, scanModeRef.current);
 
-                // Resume camera stream after 3-second delay
+                // Resume camera stream after 1-second delay
                 setTimeout(() => {
                     setProcessing(false);
                     scanner.resume();
-                }, 3000);
+                }, 1000);
             } catch (err) {
                 console.error("Scanning process error:", err);
                 toast.error("Failed to process QR Code.");

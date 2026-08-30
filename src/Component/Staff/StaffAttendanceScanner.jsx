@@ -14,6 +14,13 @@ const StaffAttendanceScanner = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     
     const html5QrCodeRef = useRef(null);
+    // 1. Ref to prevent stale closures inside the camera scanner callback
+    const attendanceTypeRef = useRef(attendanceType);
+
+    // Keep the ref updated whenever state changes
+    useEffect(() => {
+        attendanceTypeRef.current = attendanceType;
+    }, [attendanceType]);
 
     useEffect(() => {
         const html5QrCode = new Html5Qrcode("reader-viewfinder");
@@ -46,7 +53,7 @@ const StaffAttendanceScanner = () => {
         if (isProcessing) return;
         setIsProcessing(true);
 
-        // ⏸️ 1. Freeze video feed while evaluating and saving
+        // ⏸️ Pause video feed while evaluating and saving
         if (html5QrCodeRef.current) {
             try {
                 html5QrCodeRef.current.pause(true);
@@ -94,9 +101,11 @@ const StaffAttendanceScanner = () => {
             );
             const logSnap = await getDocs(qLog);
 
+            // Read latest mode from ref to avoid stale state bugs
+            const currentMode = attendanceTypeRef.current;
+
             // ------------------ CLOCK-IN LOGIC ------------------
-            if (attendanceType === "clock-in") {
-                // 🛑 BLOCK: Clock-in already exists for today
+            if (currentMode === "clock-in") {
                 if (!logSnap.empty) {
                     const existing = logSnap.docs[0].data();
                     toast.warning(`🚫 ${teacherDoc.teacherName} has ALREADY clocked in today at ${existing.clockInTime}.`);
@@ -109,7 +118,6 @@ const StaffAttendanceScanner = () => {
                     return;
                 }
 
-                // CREATE: First clock-in of the day
                 const timeStr = new Date().toLocaleTimeString();
                 await addDoc(collection(db, "StaffAttendance"), {
                     teacherID,
@@ -131,7 +139,6 @@ const StaffAttendanceScanner = () => {
 
             // ------------------ CLOCK-OUT LOGIC ------------------
             } else {
-                // 🛑 BLOCK 1: Must clock in before clocking out
                 if (logSnap.empty) {
                     toast.error(`🚫 ${teacherDoc.teacherName} cannot clock out without clocking in first today!`);
                     setScannedResult({
@@ -146,7 +153,6 @@ const StaffAttendanceScanner = () => {
                 const logDocRef = logSnap.docs[0].ref;
                 const existing = logSnap.docs[0].data();
 
-                // 🛑 BLOCK 2: Clock-out already completed for today
                 if (existing.clockOutTime) {
                     toast.warning(`🚫 ${teacherDoc.teacherName} has ALREADY clocked out today at ${existing.clockOutTime}.`);
                     setScannedResult({
@@ -158,7 +164,6 @@ const StaffAttendanceScanner = () => {
                     return;
                 }
 
-                // UPDATE: First clock-out of the day
                 const timeStr = new Date().toLocaleTimeString();
                 await updateDoc(logDocRef, { clockOutTime: timeStr });
 
@@ -175,7 +180,7 @@ const StaffAttendanceScanner = () => {
             console.error("Scan processing error:", err);
             toast.error("Error logging attendance.");
         } finally {
-            // ▶️ 2. Resume scanner after 2-second pause delay
+            // ▶️ Resume scanner after 2-second delay
             setTimeout(() => {
                 if (html5QrCodeRef.current) {
                     try {
@@ -185,7 +190,7 @@ const StaffAttendanceScanner = () => {
                     }
                 }
                 setIsProcessing(false);
-            }, 2000);
+            }, 1000);
         }
     };
 
