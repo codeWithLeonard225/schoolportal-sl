@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { db } from "../../../firebase";
 import {
@@ -9,13 +9,21 @@ import {
     addDoc,
     updateDoc,
     doc,
-    serverTimestamp, // 👈 Removed unused 'timestamp' export
+    serverTimestamp,
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 
 const AttendanceScanner = () => {
+    // Active mode selector: "clockIn" or "clockOut"
+    const [scanMode, setScanMode] = useState("clockIn");
     const [scanResult, setScanResult] = useState(null);
     const [processing, setProcessing] = useState(false);
+
+    // Keep active scanMode accessible inside static scanner callbacks
+    const scanModeRef = useRef(scanMode);
+    useEffect(() => {
+        scanModeRef.current = scanMode;
+    }, [scanMode]);
 
     useEffect(() => {
         const scanner = new Html5QrcodeScanner(
@@ -27,7 +35,7 @@ const AttendanceScanner = () => {
         scanner.render(onScanSuccess, onScanFailure);
 
         function onScanFailure(error) {
-            // Silence scan loop error warnings
+            // Ignore ongoing camera scan errors
         }
 
         async function onScanSuccess(decodedText) {
@@ -47,11 +55,11 @@ const AttendanceScanner = () => {
                 }
 
                 setProcessing(true);
-                scanner.pause(true); // Temporarily pause scanner during update
+                scanner.pause(true); // Pause camera feed while evaluating
 
-                await handleAttendanceLogging(parsedData.teacherID);
+                await handleAttendanceLogging(parsedData.teacherID, scanModeRef.current);
 
-                // Resume scanning after 3 seconds timeout
+                // Resume camera stream after 3-second delay
                 setTimeout(() => {
                     setProcessing(false);
                     scanner.resume();
@@ -69,22 +77,23 @@ const AttendanceScanner = () => {
         };
     }, []);
 
-    const handleAttendanceLogging = async (teacherID) => {
+    const handleAttendanceLogging = async (teacherID, mode) => {
         const todayStr = new Date().toISOString().slice(0, 10);
+        const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        // Fetch teacher details
+        // 1. Fetch Teacher Record
         const teacherQ = query(collection(db, "Teachers"), where("teacherID", "==", teacherID));
         const teacherSnap = await getDocs(teacherQ);
 
         if (teacherSnap.empty) {
-            toast.error(`Teacher ID ${teacherID} not found in system.`);
+            toast.error(`Teacher ID ${teacherID} not found in database.`);
             return;
         }
 
         const teacherDoc = teacherSnap.docs[0];
         const teacherData = teacherDoc.data();
 
-        // Check if today's attendance log exists for this teacher
+        // 2. Query today's attendance record for this teacher
         const attQ = query(
             collection(db, "StaffAttendance"),
             where("teacherID", "==", teacherID),
@@ -92,14 +101,31 @@ const AttendanceScanner = () => {
         );
         const attSnap = await getDocs(attQ);
 
-        const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // -------------------------------------------------------------
+        // MODE 1: CLOCK IN
+        // -------------------------------------------------------------
+        if (mode === "clockIn") {
+            // STRICT RULE: Reject repeat Clock In if record already exists today
+            if (!attSnap.empty) {
+                const existingLog = attSnap.docs[0].data();
+                toast.warning(`⚠️ Action Blocked: ${teacherData.teacherName} already Clocked IN today at ${existingLog.clockIn}.`);
+                
+                setScanResult({
+                    name: teacherData.teacherName,
+                    action: "Clock In Blocked (Already Logged)",
+                    time: existingLog.clockIn,
+                    clockOutTime: existingLog.clockOut || "--",
+                    teacherID: teacherData.teacherID,
+                    isError: true,
+                });
+                return;
+            }
 
-        if (attSnap.empty) {
-            // CLOCK IN: First scan of the day
+            // Create primary Clock In document for today
             await addDoc(collection(db, "StaffAttendance"), {
                 teacherID: teacherData.teacherID,
                 teacherName: teacherData.teacherName,
-                schoolId: teacherData.schoolId,
+                schoolId: teacherData.schoolId || "N/A",
                 date: todayStr,
                 clockIn: nowTime,
                 clockOut: null,
@@ -109,21 +135,53 @@ const AttendanceScanner = () => {
 
             setScanResult({
                 name: teacherData.teacherName,
-                action: "Clocked IN",
+                action: "Clocked IN Successfully",
                 time: nowTime,
+                clockOutTime: "--",
+                teacherID: teacherData.teacherID,
+                isError: false,
             });
             toast.success(`✅ Clocked IN: ${teacherData.teacherName} at ${nowTime}`);
-        } else {
-            // CLOCK OUT: Second scan of the day
-            const existingLog = attSnap.docs[0];
-            const existingLogData = existingLog.data();
+        }
 
-            if (existingLogData.clockOut) {
-                toast.warn(`${teacherData.teacherName} has already Clocked OUT today.`);
+        // -------------------------------------------------------------
+        // MODE 2: CLOCK OUT
+        // -------------------------------------------------------------
+        else if (mode === "clockOut") {
+            // RULE: Requires an active Clock In record first
+            if (attSnap.empty) {
+                toast.error(`⚠️ Action Blocked: ${teacherData.teacherName} has NOT Clocked IN today.`);
+                setScanResult({
+                    name: teacherData.teacherName,
+                    action: "Clock Out Blocked (No Clock In Found)",
+                    time: "--",
+                    clockOutTime: "--",
+                    teacherID: teacherData.teacherID,
+                    isError: true,
+                });
                 return;
             }
 
-            const attRef = doc(db, "StaffAttendance", existingLog.id);
+            const existingLogDoc = attSnap.docs[0];
+            const existingLogData = existingLogDoc.data();
+
+            // STRICT RULE: Reject repeat Clock Out if already filled today
+            if (existingLogData.clockOut) {
+                toast.warning(`⚠️ Action Blocked: ${teacherData.teacherName} already Clocked OUT today at ${existingLogData.clockOut}.`);
+                
+                setScanResult({
+                    name: teacherData.teacherName,
+                    action: "Clock Out Blocked (Already Logged)",
+                    time: existingLogData.clockIn,
+                    clockOutTime: existingLogData.clockOut,
+                    teacherID: teacherData.teacherID,
+                    isError: true,
+                });
+                return;
+            }
+
+            // Update record with single Clock Out time
+            const attRef = doc(db, "StaffAttendance", existingLogDoc.id);
             await updateDoc(attRef, {
                 clockOut: nowTime,
                 updatedAt: serverTimestamp(),
@@ -131,8 +189,11 @@ const AttendanceScanner = () => {
 
             setScanResult({
                 name: teacherData.teacherName,
-                action: "Clocked OUT",
-                time: nowTime,
+                action: "Clocked OUT Successfully",
+                time: existingLogData.clockIn,
+                clockOutTime: nowTime,
+                teacherID: teacherData.teacherID,
+                isError: false,
             });
             toast.info(`🚪 Clocked OUT: ${teacherData.teacherName} at ${nowTime}`);
         }
@@ -141,23 +202,99 @@ const AttendanceScanner = () => {
     return (
         <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
             <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Staff Attendance Scanner 📷</h2>
-                <p className="text-sm text-gray-500 mb-6">Hold staff ID card QR code in front of camera</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-1">Staff Attendance Scanner 📷</h2>
+                <p className="text-sm text-gray-500 mb-4">Select mode, then scan ID QR code</p>
 
-                {/* QR Scanner Target Box */}
+                {/* Mode Selector Toggle */}
+                <div className="flex justify-center space-x-4 mb-6 bg-gray-100 p-2 rounded-xl border border-gray-200">
+                    <label
+                        className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-lg font-bold text-sm cursor-pointer transition ${
+                            scanMode === "clockIn"
+                                ? "bg-green-600 text-white shadow-md"
+                                : "text-gray-600 hover:bg-gray-200"
+                        }`}
+                    >
+                        <input
+                            type="radio"
+                            name="scanMode"
+                            value="clockIn"
+                            checked={scanMode === "clockIn"}
+                            onChange={() => setScanMode("clockIn")}
+                            className="hidden"
+                        />
+                        <span>📥 Clock IN</span>
+                    </label>
+
+                    <label
+                        className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-lg font-bold text-sm cursor-pointer transition ${
+                            scanMode === "clockOut"
+                                ? "bg-blue-600 text-white shadow-md"
+                                : "text-gray-600 hover:bg-gray-200"
+                        }`}
+                    >
+                        <input
+                            type="radio"
+                            name="scanMode"
+                            value="clockOut"
+                            checked={scanMode === "clockOut"}
+                            onChange={() => setScanMode("clockOut")}
+                            className="hidden"
+                        />
+                        <span>📤 Clock OUT</span>
+                    </label>
+                </div>
+
+                {/* QR Scanner Container */}
                 <div id="reader" className="w-full rounded-lg overflow-hidden mb-6"></div>
 
-                {/* Real-time Result Overlay */}
+                {/* Real-time Result Feedback Overlay */}
                 {scanResult && (
-                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-left">
-                        <span className="text-xs font-bold uppercase text-blue-600 tracking-wider">
-                            Latest Log Event
-                        </span>
+                    <div
+                        className={`p-4 rounded-xl text-left space-y-2 border ${
+                            scanResult.isError
+                                ? "bg-amber-50 border-amber-300"
+                                : "bg-indigo-50 border-indigo-200"
+                        }`}
+                    >
+                        <div className="flex justify-between items-center border-b pb-2">
+                            <span
+                                className={`text-xs font-bold uppercase tracking-wider ${
+                                    scanResult.isError ? "text-amber-700" : "text-indigo-600"
+                                }`}
+                            >
+                                {scanResult.isError ? "Scan Warning" : "Scan Result"}
+                            </span>
+                            <span className="text-xs font-mono bg-white px-2 py-0.5 rounded border text-gray-600">
+                                ID: {scanResult.teacherID}
+                            </span>
+                        </div>
+
                         <h3 className="text-lg font-bold text-gray-800">{scanResult.name}</h3>
-                        <p className="text-sm text-gray-600">
-                            Action: <span className="font-semibold text-gray-900">{scanResult.action}</span>
-                        </p>
-                        <p className="text-xs text-gray-500">Time: {scanResult.time}</p>
+
+                        <div className="text-sm space-y-1 text-gray-700">
+                            <p>
+                                Status:{" "}
+                                <span
+                                    className={`font-semibold ${
+                                        scanResult.isError ? "text-amber-800" : "text-indigo-900"
+                                    }`}
+                                >
+                                    {scanResult.action}
+                                </span>
+                            </p>
+                            <p>
+                                Clock In:{" "}
+                                <span className="font-semibold text-green-700">
+                                    {scanResult.time}
+                                </span>
+                            </p>
+                            <p>
+                                Clock Out:{" "}
+                                <span className="font-semibold text-blue-700">
+                                    {scanResult.clockOutTime}
+                                </span>
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>

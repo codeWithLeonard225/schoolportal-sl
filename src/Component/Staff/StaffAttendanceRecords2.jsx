@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, deleteDoc } from "firebase/firestore";
 import { db } from "../../../firebase";
 import { useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const AttendanceLogs = () => {
     const location = useLocation();
@@ -30,6 +31,23 @@ const AttendanceLogs = () => {
 
         return () => unsubscribe();
     }, [schoolId, selectedDate]);
+
+    // Handle document deletion for testing reset
+    const handleDeleteLog = async (id, teacherName) => {
+        const confirmDelete = window.confirm(
+            `Are you sure you want to delete the attendance log for ${teacherName}?`
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+            await deleteDoc(doc(db, "StaffAttendance", id));
+            toast.success(`Deleted attendance log for ${teacherName}`);
+        } catch (error) {
+            console.error("Error deleting document: ", error);
+            toast.error("Failed to delete attendance log.");
+        }
+    };
 
     const filteredLogs = useMemo(() => {
         if (!searchTerm.trim()) return logs;
@@ -88,6 +106,9 @@ const AttendanceLogs = () => {
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                                     Status
                                 </th>
+                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white text-sm">
@@ -110,11 +131,19 @@ const AttendanceLogs = () => {
                                             {log.status}
                                         </span>
                                     </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button
+                                            onClick={() => handleDeleteLog(log.id, log.teacherName)}
+                                            className="bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs px-3 py-1 rounded-lg border border-red-200 transition"
+                                        >
+                                            🗑️ Delete
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                             {filteredLogs.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="text-center py-6 text-gray-400">
+                                    <td colSpan="6" className="text-center py-6 text-gray-400">
                                         No attendance logs found for {selectedDate}.
                                     </td>
                                 </tr>
