@@ -70,6 +70,9 @@ import StaffAttendanceScanner from "../Staff/StaffAttendanceScanner";
 import StaffAttendanceScanner2 from "../Staff/StaffAttendanceScanner2";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffAttendanceRecords2 from "../Staff/StaffAttendanceRecords2";
+import PupilIDCardScan from "../PupilsPage/PupilIDCardScan";
+import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScanner";
+import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
 
 
 
@@ -158,15 +161,29 @@ const NAV_ITEMS = [
     children: [
       { key: "PupilIDCard", label: "PupilIDCard", icon: <MdPerson /> },
       { key: "IDCardPage", label: "IDCardPage", icon: <MdPerson /> },
-      { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
+    ],
+  },
+  {
+    key: "qrcode-Pupil",
+    label: "Qr code Attendance-Pupil",
+    icon: <MdBarChart />,
+    children: [
+      { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
+      { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
+      { key: "PupilAttendanceLogs", label: "Pupil Attendance Logs", icon: <MdPerson /> },
+    ],
+  },
+  {
+    key: "qrcode-Staff",
+    label: "Qr code Attendance-Staff",
+    icon: <MdBarChart />,
+    children: [
+   { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
       { key: "TeacherIDCards2", label: "Teacher IDCards 2", icon: <MdPerson /> },
       { key: "StaffAttendanceScanner", label: "Staff Attendance Scanner", icon: <MdPerson /> },
       { key: "StaffAttendanceScanner2", label: "Staff Attendance Scanner 2", icon: <MdPerson /> },
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
       { key: "StaffAttendanceRecords2", label: "Staff Attendance Records 2", icon: <MdPerson /> },
-
-      // { key: "Testing", label: "Testing", icon: <MdPerson /> },
-
     ],
   },
   {
@@ -318,6 +335,9 @@ function AdminPanel() {
       case "StaffAttendanceScanner": return <StaffAttendanceScanner />;
       case "StaffAttendanceRecords": return <StaffAttendanceRecords />;
       case "StaffAttendanceRecords2": return <StaffAttendanceRecords2 />;
+      case "PupilIDCardScan": return <PupilIDCardScan />;
+      case "PupilAttendanceScanner": return <PupilAttendanceScanner />;
+      case "PupilAttendanceLogs": return <PupilAttendanceLogs />;
 
 
       default: return <Placeholder title={activeTab} />;
