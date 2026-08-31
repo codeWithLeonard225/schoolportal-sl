@@ -65,11 +65,8 @@ import AncillaryReceiptForm from "../FeeReceipt.jsx/AncillaryReceiptForm";
 import PreviousFees from "../FeeReceipt.jsx/PreviousFees";
 import WASCEForm from "../Voters/WASCEForm";
 import TeacherIDCards from "../Staff/TeacherIDCards";
-import TeacherIDCards2 from "../Staff/TeacherIDCards2";
 import StaffAttendanceScanner from "../Staff/StaffAttendanceScanner";
-import StaffAttendanceScanner2 from "../Staff/StaffAttendanceScanner2";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
-import StaffAttendanceRecords2 from "../Staff/StaffAttendanceRecords2";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScan";
 import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScanner";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
@@ -90,8 +87,8 @@ const NAV_ITEMS = [
       // { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
       // { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
       { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
-       { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
-       { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+      { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
+      { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
 
 
     ],
@@ -149,7 +146,7 @@ const NAV_ITEMS = [
     children: [
       { key: "beceResult", label: "Bece Result Entering", icon: <MdPerson /> },
       { key: "beceReport", label: "Bece Result Report", icon: <MdPerson /> },
-       { key: "WASCEForm", label: "Wasce Entering", icon: <MdPerson /> },
+      { key: "WASCEForm", label: "Wasce Entering", icon: <MdPerson /> },
 
 
     ],
@@ -178,12 +175,9 @@ const NAV_ITEMS = [
     label: "Qr code Attendance-Staff",
     icon: <MdBarChart />,
     children: [
-   { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
-      { key: "TeacherIDCards2", label: "Teacher IDCards 2", icon: <MdPerson /> },
+      { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
       { key: "StaffAttendanceScanner", label: "Staff Attendance Scanner", icon: <MdPerson /> },
-      { key: "StaffAttendanceScanner2", label: "Staff Attendance Scanner 2", icon: <MdPerson /> },
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
-      { key: "StaffAttendanceRecords2", label: "Staff Attendance Records 2", icon: <MdPerson /> },
     ],
   },
   {
@@ -330,11 +324,8 @@ function AdminPanel() {
       case "AncillaryReceiptForm": return <AncillaryReceiptForm />;
       case "PreviousFees": return <PreviousFees />;
       case "TeacherIDCards": return <TeacherIDCards />;
-      case "TeacherIDCards2": return <TeacherIDCards2 />;
-      case "StaffAttendanceScanner2": return <StaffAttendanceScanner2 />;
       case "StaffAttendanceScanner": return <StaffAttendanceScanner />;
       case "StaffAttendanceRecords": return <StaffAttendanceRecords />;
-      case "StaffAttendanceRecords2": return <StaffAttendanceRecords2 />;
       case "PupilIDCardScan": return <PupilIDCardScan />;
       case "PupilAttendanceScanner": return <PupilAttendanceScanner />;
       case "PupilAttendanceLogs": return <PupilAttendanceLogs />;

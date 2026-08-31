@@ -38,6 +38,14 @@ const AttendanceScanner = () => {
     const [manualNote, setManualNote] = useState("");
     const [manualSubmitting, setManualSubmitting] = useState(false);
 
+    const getLocalDateString = (date = new Date()) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+    };
+
     // Keep active scanMode fresh in scanner callbacks
     const scanModeRef = useRef(scanMode);
     useEffect(() => {
@@ -131,28 +139,133 @@ const AttendanceScanner = () => {
         };
     }, [activeTab]);
 
+    // Automatically mark pupils as Absent at 3:00 PM
+    useEffect(() => {
+        if (!currentSchoolId || pupilsList.length === 0) return;
+
+        const markAbsentPupils = async () => {
+            const now = new Date();
+
+            const currentMinutes =
+                now.getHours() * 60 + now.getMinutes();
+
+            const schoolClosingMinutes = 15 * 60; // 3:00 PM
+
+            // Only run at or after 3:00 PM
+            if (currentMinutes < schoolClosingMinutes) {
+                return;
+            }
+
+            const todayStr = now.toISOString().slice(0, 10);
+
+            try {
+                console.log("Checking pupils for automatic absence...");
+
+                for (const pupil of pupilsList) {
+                    if (!pupil.studentID) continue;
+
+                    const attendanceId =
+                        `${currentSchoolId}_${pupil.studentID}_${todayStr}`;
+
+                    const attendanceRef = doc(
+                        db,
+                        "AttendanceLogs",
+                        attendanceId
+                    );
+
+                    const attendanceSnap = await getDoc(attendanceRef);
+
+                    // IMPORTANT:
+                    // If ANY attendance record already exists,
+                    // do not touch it.
+                    if (attendanceSnap.exists()) {
+                        continue;
+                    }
+
+                    await setDoc(attendanceRef, {
+                        studentID: pupil.studentID,
+                        studentName: pupil.studentName,
+                        class: pupil.class || "",
+                        academicYear: pupil.academicYear || "",
+                        userPhotoUrl: pupil.userPhotoUrl || "",
+                        schoolId: currentSchoolId,
+                        date: todayStr,
+
+                        clockInTime: null,
+                        clockOutTime: null,
+
+                        status: "Absent",
+
+                        note: "No clock-in recorded before 3:00 PM school closing time",
+
+                        loggedBy: "Automatic Attendance System",
+
+                        createdAt: serverTimestamp(),
+                    });
+
+                    console.log(
+                        `${pupil.studentName} automatically marked Absent`
+                    );
+                }
+
+                console.log("Automatic absence check completed.");
+            } catch (error) {
+                console.error(
+                    "Error automatically marking pupils absent:",
+                    error
+                );
+            }
+        };
+
+        // Check immediately
+        markAbsentPupils();
+
+        // Check every minute
+        const interval = setInterval(() => {
+            markAbsentPupils();
+        }, 60 * 1000);
+
+        return () => clearInterval(interval);
+
+    }, [currentSchoolId, pupilsList]);
+
     // Helper: Compute status based on arrival time
+    // Pupil attendance time rules
     const calculateClockInStatus = (nowDate) => {
         const hours = nowDate.getHours();
         const minutes = nowDate.getMinutes();
         const totalMinutes = hours * 60 + minutes;
 
-        const eightAMInMinutes = 8 * 60;   // 8:00 AM (480 min)
-        const twelvePMInMinutes = 12 * 60; // 12:00 PM (720 min)
+        const PRESENT_CUTOFF = 8 * 60 + 30; // 8:30 AM
+        const SCHOOL_END_TIME = 15 * 60;    // 3:00 PM
 
-        if (totalMinutes < eightAMInMinutes) {
-            return { status: "Present", allowed: true };
-        } else if (totalMinutes >= eightAMInMinutes && totalMinutes < twelvePMInMinutes) {
-            return { status: "Late", allowed: true };
-        } else {
-            return { status: "Absent", allowed: false };
+        // Before 8:30 AM = Present
+        if (totalMinutes < PRESENT_CUTOFF) {
+            return {
+                status: "Present",
+                allowed: true,
+            };
         }
+
+        // From 8:30 AM until before 3:00 PM = Late
+        if (totalMinutes < SCHOOL_END_TIME) {
+            return {
+                status: "Late",
+                allowed: true,
+            };
+        }
+
+        // 3:00 PM or later = Absent
+        return {
+            status: "Absent",
+            allowed: false,
+        };
     };
 
     // Main QR Attendance Handler
     const handleAttendanceLogging = async (studentID, mode) => {
         const now = new Date();
-        const todayStr = now.toISOString().slice(0, 10);
+        const todayStr = getLocalDateString(now);
         const nowTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
         // 1. Fetch Pupil Details
@@ -199,7 +312,9 @@ const AttendanceScanner = () => {
             const { status: derivedStatus, allowed } = calculateClockInStatus(now);
 
             if (!allowed) {
-                // Record marked as Absent due to 12:00 PM cutoff
+                // At 3:00 PM or later, pupil cannot clock in
+                // and is immediately recorded as Absent.
+
                 await setDoc(attendanceRef, {
                     studentID: pupilData.studentID,
                     studentName: pupilData.studentName,
@@ -211,13 +326,14 @@ const AttendanceScanner = () => {
                     clockInTime: null,
                     clockOutTime: null,
                     status: "Absent",
-                    note: "Attempted clock-in past 12:00 PM cutoff",
+                    note: "No clock-in recorded before 3:00 PM school closing time",
+                    loggedBy: "Automatic Attendance System",
                     createdAt: serverTimestamp(),
                 });
 
                 setScanResult({
                     name: pupilData.studentName,
-                    action: "Clock In Blocked (Past Cutoff)",
+                    action: "Clock In Blocked (School Closed)",
                     time: "--",
                     clockOutTime: "--",
                     status: "Absent",
@@ -225,7 +341,11 @@ const AttendanceScanner = () => {
                     userPhotoUrl: pupilData.userPhotoUrl,
                     isError: true,
                 });
-                toast.error(`❌ Blocked: Marked as ABSENT (Past 12:00 PM)`);
+
+                toast.error(
+                    `❌ ${pupilData.studentName} marked ABSENT. School clock-in closed at 3:00 PM.`
+                );
+
                 return;
             }
 
@@ -357,7 +477,7 @@ const AttendanceScanner = () => {
         setManualSubmitting(true);
 
         try {
-            const todayStr = new Date().toISOString().slice(0, 10);
+            const todayStr = getLocalDateString();
 
             // 1. Fetch Pupil Details
             const pupilQ = query(
@@ -426,21 +546,19 @@ const AttendanceScanner = () => {
                 <div className="flex border-b border-gray-200 mb-6">
                     <button
                         onClick={() => setActiveTab("scanner")}
-                        className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition ${
-                            activeTab === "scanner"
-                                ? "border-indigo-600 text-indigo-600"
-                                : "border-transparent text-gray-500 hover:text-gray-700"
-                        }`}
+                        className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition ${activeTab === "scanner"
+                            ? "border-indigo-600 text-indigo-600"
+                            : "border-transparent text-gray-500 hover:text-gray-700"
+                            }`}
                     >
                         📷 QR Scanner Mode
                     </button>
                     <button
                         onClick={() => setActiveTab("manual")}
-                        className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition ${
-                            activeTab === "manual"
-                                ? "border-indigo-600 text-indigo-600"
-                                : "border-transparent text-gray-500 hover:text-gray-700"
-                        }`}
+                        className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition ${activeTab === "manual"
+                            ? "border-indigo-600 text-indigo-600"
+                            : "border-transparent text-gray-500 hover:text-gray-700"
+                            }`}
                     >
                         📝 Manual Override
                     </button>
@@ -454,11 +572,10 @@ const AttendanceScanner = () => {
                         {/* Scan Mode Radio Buttons */}
                         <div className="flex justify-center space-x-3 mb-6 bg-gray-100 p-2 rounded-xl border border-gray-200">
                             <label
-                                className={`flex-1 flex items-center justify-center space-x-1 py-2 px-3 rounded-lg font-bold text-sm cursor-pointer transition ${
-                                    scanMode === "clockIn"
-                                        ? "bg-green-600 text-white shadow-md"
-                                        : "text-gray-600 hover:bg-gray-200"
-                                }`}
+                                className={`flex-1 flex items-center justify-center space-x-1 py-2 px-3 rounded-lg font-bold text-sm cursor-pointer transition ${scanMode === "clockIn"
+                                    ? "bg-green-600 text-white shadow-md"
+                                    : "text-gray-600 hover:bg-gray-200"
+                                    }`}
                             >
                                 <input
                                     type="radio"
@@ -472,11 +589,10 @@ const AttendanceScanner = () => {
                             </label>
 
                             <label
-                                className={`flex-1 flex items-center justify-center space-x-1 py-2 px-3 rounded-lg font-bold text-sm cursor-pointer transition ${
-                                    scanMode === "clockOut"
-                                        ? "bg-blue-600 text-white shadow-md"
-                                        : "text-gray-600 hover:bg-gray-200"
-                                }`}
+                                className={`flex-1 flex items-center justify-center space-x-1 py-2 px-3 rounded-lg font-bold text-sm cursor-pointer transition ${scanMode === "clockOut"
+                                    ? "bg-blue-600 text-white shadow-md"
+                                    : "text-gray-600 hover:bg-gray-200"
+                                    }`}
                             >
                                 <input
                                     type="radio"
@@ -496,17 +612,15 @@ const AttendanceScanner = () => {
                         {/* Scan Result Popup / Display */}
                         {scanResult && (
                             <div
-                                className={`p-4 rounded-xl text-left space-y-3 border ${
-                                    scanResult.isError
-                                        ? "bg-amber-50 border-amber-300"
-                                        : "bg-indigo-50 border-indigo-200"
-                                }`}
+                                className={`p-4 rounded-xl text-left space-y-3 border ${scanResult.isError
+                                    ? "bg-amber-50 border-amber-300"
+                                    : "bg-indigo-50 border-indigo-200"
+                                    }`}
                             >
                                 <div className="flex justify-between items-center border-b pb-2">
                                     <span
-                                        className={`text-xs font-bold uppercase tracking-wider ${
-                                            scanResult.isError ? "text-amber-700" : "text-indigo-600"
-                                        }`}
+                                        className={`text-xs font-bold uppercase tracking-wider ${scanResult.isError ? "text-amber-700" : "text-indigo-600"
+                                            }`}
                                     >
                                         {scanResult.isError ? "Scan Warning" : "Scan Result"}
                                     </span>
@@ -533,15 +647,14 @@ const AttendanceScanner = () => {
                                     <p>
                                         Status:{" "}
                                         <span
-                                            className={`font-semibold px-2 py-0.5 rounded text-xs ${
-                                                scanResult.status === "Present"
-                                                    ? "bg-green-100 text-green-800"
-                                                    : scanResult.status === "Late"
+                                            className={`font-semibold px-2 py-0.5 rounded text-xs ${scanResult.status === "Present"
+                                                ? "bg-green-100 text-green-800"
+                                                : scanResult.status === "Late"
                                                     ? "bg-amber-100 text-amber-800"
                                                     : scanResult.status === "Excuse" || scanResult.status === "Leave"
-                                                    ? "bg-blue-100 text-blue-800"
-                                                    : "bg-red-100 text-red-800"
-                                            }`}
+                                                        ? "bg-blue-100 text-blue-800"
+                                                        : "bg-red-100 text-red-800"
+                                                }`}
                                         >
                                             {scanResult.status}
                                         </span>
