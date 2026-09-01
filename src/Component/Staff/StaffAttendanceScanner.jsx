@@ -1,933 +1,224 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import React, { useState, useEffect } from "react";
 import { db } from "../../../firebase";
-import {
-    collection,
-    addDoc,
-    query,
-    where,
-    getDocs,
-    getDoc,
-    updateDoc,
-    setDoc,
-    doc,
-    serverTimestamp
-} from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "react-toastify";
 
-const StaffAttendanceScanner = () => {
+// Print Layout Constants
+const CARDS_PER_ROW = 2;
+const CARD_WIDTH = "3.375in"; // Standard CR80 ID Card Width
+const GAP_BETWEEN_CARDS = "0.25in";
+
+const TeacherIDCards = () => {
     const location = useLocation();
-    const schoolId = location.state?.schoolId || "N/A";
+    const {
+        schoolId: passedSchoolId,
+        schoolName = "LeoTech Academy",
+        schoolLogoUrl,
+        schoolAddress = "123 Education Way, Academic District",
+        schoolMotto = "Excellence in Education",
+        schoolContact = "contact@school.edu",
+    } = location.state || {};
 
-    const [attendanceType, setAttendanceType] = useState("clock-in"); // "clock-in" | "clock-out" | "excuse" | "leave"
-    const [scannedResult, setScannedResult] = useState(null);
-    const [isProcessing, setIsProcessing] = useState(false);
-
-    const [showOverrideModal, setShowOverrideModal] = useState(false);
-    const [overrideRecord, setOverrideRecord] = useState(null);
-    const [overrideNote, setOverrideNote] = useState("");
-    const [overrideAction, setOverrideAction] = useState(null);
-    const [isOverriding, setIsOverriding] = useState(false);
-
-    // Manual Modal State
-    const [showManualModal, setShowManualModal] = useState(false);
-    const [teacherList, setTeacherList] = useState([]);
-    const [selectedTeacherId, setSelectedTeacherId] = useState("");
-    const [manualStatus, setManualStatus] = useState("Excused");
-    const [manualNote, setManualNote] = useState("");
-    const [isSavingManual, setIsSavingManual] = useState(false);
-
-    const html5QrCodeRef = useRef(null);
-    const attendanceTypeRef = useRef(attendanceType);
-
-    const getLocalDateString = (date = new Date()) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-
-        return `${year}-${month}-${day}`;
-    };
+    const schoolId = passedSchoolId || "N/A";
+    const [teachers, setTeachers] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        attendanceTypeRef.current = attendanceType;
-    }, [attendanceType]);
-
-    // Fetch teachers list for manual selection
-    const fetchTeachers = async () => {
-        try {
-            const q = query(collection(db, "Teachers"), where("schoolId", "==", schoolId));
-            const snap = await getDocs(q);
-            const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setTeacherList(list);
-        } catch (err) {
-            console.error("Error fetching teachers:", err);
-            toast.error("Could not load teacher list.");
+        if (schoolId === "N/A") {
+            setLoading(false);
+            return;
         }
-    };
 
-    const handleOpenManualModal = () => {
-        fetchTeachers();
-        setShowManualModal(true);
-    };
-
-    // Helper: Determine status based on current time
-    const getClockInStatus = (now) => {
-        const hours = now.getHours();
-        if (hours >= 12) {
-            return { status: "Absent", allowed: false, reason: "Clock-in closed after 12:00 PM (Marked Absent)" };
-        }
-        if (hours < 8) {
-            return { status: "Present", allowed: true, reason: "" };
-        }
-        return { status: "Late", allowed: true, reason: "" };
-    };
-
-    useEffect(() => {
-        const html5QrCode = new Html5Qrcode("reader-viewfinder");
-        html5QrCodeRef.current = html5QrCode;
-
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText) => { handleScanSuccess(decodedText); },
-            () => { }
-        ).catch((err) => {
-            console.error("Failed to start camera:", err);
-            toast.error("Could not access camera permission.");
-        });
-
-        return () => {
-            if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-                html5QrCodeRef.current.stop().catch(e => console.error("Stop failed", e));
+        const fetchTeachers = async () => {
+            try {
+                const q = query(collection(db, "Teachers"), where("schoolId", "==", schoolId));
+                const snapshot = await getDocs(q);
+                const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setTeachers(list);
+            } catch (err) {
+                console.error("Error fetching teachers for IDs:", err);
+                toast.error("Failed to load staff list.");
+            } finally {
+                setLoading(false);
             }
         };
-    }, []);
 
-    const isAttendanceLocked = (record) => {
-        return record?.isFinal === true;
+        fetchTeachers();
+    }, [schoolId]);
+
+    const handlePrint = () => {
+        window.print();
     };
 
-    const handleScanSuccess = async (rawText) => {
-        if (isProcessing) return;
-
-        setIsProcessing(true);
-
-        // Immediately pause scanner
-        if (html5QrCodeRef.current) {
-            try {
-                html5QrCodeRef.current.pause(true);
-            } catch (e) {
-                console.error("Pause failed:", e);
-            }
-        }
-
-        try {
-            // -----------------------------
-            // 1. READ QR CODE
-            // -----------------------------
-            let parsedData;
-
-            try {
-                parsedData = JSON.parse(rawText);
-            } catch {
-                parsedData = {
-                    teacherID: rawText.trim()
-                };
-            }
-
-            const teacherID = parsedData.teacherID?.trim();
-
-            if (!teacherID) {
-                toast.error("Invalid QR Code payload.");
-                return;
-            }
-
-            const currentMode = attendanceTypeRef.current;
-
-            // -----------------------------
-            // 2. FIND TEACHER
-            // -----------------------------
-            const teacherQ = query(
-                collection(db, "Teachers"),
-                where("teacherID", "==", teacherID),
-                where("schoolId", "==", schoolId)
-            );
-
-            const teacherSnap = await getDocs(teacherQ);
-
-            if (teacherSnap.empty) {
-                toast.error(`Teacher ID ${teacherID} not found.`);
-                return;
-            }
-
-            const teacherData = teacherSnap.docs[0].data();
-
-            // -----------------------------
-            // 3. TIME
-            // -----------------------------
-            const now = new Date();
-
-            const todayStr = getLocalDateString(now);
-
-            const timeStr = now.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit"
-            });
-
-            // -----------------------------
-            // 4. DIRECT ATTENDANCE LOOKUP
-            // -----------------------------
-            const attendanceId =
-                `${schoolId}_${teacherID}_${todayStr}`;
-
-            const attendanceRef = doc(
-                db,
-                "StaffAttendance",
-                attendanceId
-            );
-
-            const attendanceSnap = await getDoc(attendanceRef);
-
-            const existing =
-                attendanceSnap.exists()
-                    ? attendanceSnap.data()
-                    : null;
-
-            // ==================================================
-            // CLOCK IN
-            // ==================================================
-            if (currentMode === "clock-in") {
-
-                if (existing) {
-
-                    if (isAttendanceLocked(existing)) {
-                        toast.error(
-                            `🚫 ${teacherData.teacherName} already has finalized attendance (${existing.status}).`
-                        );
-
-                        setScannedResult({
-                            name: teacherData.teacherName,
-                            status: `Blocked: Finalized (${existing.status})`,
-                            time: existing.clockInTime || "N/A",
-                            note: existing.note,
-                            isError: true
-                        });
-
-                        return;
-                    }
-
-                    if (existing.clockOutTime) {
-                        toast.error(
-                            `🚫 ${teacherData.teacherName} has already clocked out today at ${existing.clockOutTime}.`
-                        );
-
-                        setScannedResult({
-                            name: teacherData.teacherName,
-                            status: "Blocked: Already Clocked Out Today",
-                            time: existing.clockOutTime,
-                            note: "Re-clock in prohibited after clock-out",
-                            isError: true
-                        });
-
-                        return;
-                    }
-
-                    toast.warning(
-                        `🚫 ${teacherData.teacherName} is already clocked in today at ${existing.clockInTime || "N/A"}.`
-                    );
-
-                    setScannedResult({
-                        name: teacherData.teacherName,
-                        status: `Blocked: Already Clocked In (${existing.status})`,
-                        time: existing.clockInTime || "N/A",
-                        note: existing.note || null,
-                        isError: true
-                    });
-
-                    return;
-                }
-
-                // -----------------------------
-                // CHECK CLOCK-IN TIME
-                // -----------------------------
-                const {
-                    status,
-                    allowed,
-                    reason
-                } = getClockInStatus(now);
-
-                if (!allowed) {
-
-                    toast.error(`🚫 ${reason}`);
-
-                    setScannedResult({
-                        name: teacherData.teacherName,
-                        status: `Blocked: ${reason}`,
-                        time: timeStr,
-                        note: reason,
-                        isError: true
-                    });
-
-                    return;
-                }
-
-                // -----------------------------
-                // CREATE ATTENDANCE
-                // -----------------------------
-                await setDoc(attendanceRef, {
-                    teacherID,
-                    teacherName: teacherData.teacherName,
-                    schoolId,
-                    date: todayStr,
-
-                    clockInTime: timeStr,
-                    clockOutTime: null,
-
-                    status,
-
-                    note: null,
-
-                    isFinal: false,
-                    finalizedBy: "scan",
-
-                    timestamp: serverTimestamp()
-                });
-
-                toast.success(
-                    `🟢 ${teacherData.teacherName} Clocked In (${status}) at ${timeStr}`
-                );
-
-                setScannedResult({
-                    name: teacherData.teacherName,
-                    status: `Clocked In Successfully (${status})`,
-                    time: timeStr,
-                    note: null,
-                    isError: false
-                });
-
-                return;
-            }
-
-            // ==================================================
-            // CLOCK OUT
-            // ==================================================
-            if (currentMode === "clock-out") {
-
-                if (!existing) {
-
-                    toast.error(
-                        `🚫 ${teacherData.teacherName} cannot clock out without a clock-in record today.`
-                    );
-
-                    setScannedResult({
-                        name: teacherData.teacherName,
-                        status: "Blocked: No Clock-In Record Today",
-                        time: "N/A",
-                        note: null,
-                        isError: true
-                    });
-
-                    return;
-                }
-
-                if (isAttendanceLocked(existing)) {
-
-                    toast.error(
-                        `🚫 ${teacherData.teacherName} attendance has already been finalized.`
-                    );
-
-                    setScannedResult({
-                        name: teacherData.teacherName,
-                        status: "Blocked: Finalized Attendance",
-                        time: existing.clockOutTime ||
-                            existing.clockInTime ||
-                            "N/A",
-                        note: existing.note,
-                        isError: true
-                    });
-
-                    return;
-                }
-
-                if (existing.clockOutTime) {
-
-                    toast.warning(
-                        `🚫 ${teacherData.teacherName} has ALREADY clocked out today at ${existing.clockOutTime}.`
-                    );
-
-                    setScannedResult({
-                        name: teacherData.teacherName,
-                        status: "Blocked: Clock-Out Already Completed Today",
-                        time: existing.clockOutTime,
-                        note: existing.note || null,
-                        isError: true
-                    });
-
-                    return;
-                }
-
-                // -----------------------------
-                // UPDATE DIRECT DOCUMENT
-                // -----------------------------
-                await updateDoc(attendanceRef, {
-                    clockOutTime: timeStr
-                });
-
-                toast.success(
-                    `🔴 ${teacherData.teacherName} Clocked Out at ${timeStr}`
-                );
-
-                setScannedResult({
-                    name: teacherData.teacherName,
-                    status: "Clocked Out Successfully",
-                    time: timeStr,
-                    note: existing.note || null,
-                    isError: false
-                });
-
-                return;
-            }
-
-            // ==================================================
-            // EXCUSE / LEAVE
-            // ==================================================
-            if (
-                currentMode === "excuse" ||
-                currentMode === "leave"
-            ) {
-
-                const targetStatus =
-                    currentMode === "excuse"
-                        ? "Excused"
-                        : "On Leave";
-
-                if (existing) {
-
-                    if (isAttendanceLocked(existing)) {
-
-                        toast.warning(
-                            `${teacherData.teacherName} already has a completed attendance record. Override requires manual action.`
-                        );
-
-                        setScannedResult({
-                            name: teacherData.teacherName,
-                            status: "Blocked: Attendance Already Finalized",
-                            time:
-                                existing.clockOutTime ||
-                                existing.clockInTime ||
-                                "N/A",
-                            note: existing.note,
-                            isError: true
-                        });
-
-                        return;
-                    }
-
-                    toast.warning(
-                        `${teacherData.teacherName} already has attendance logged for today.`
-                    );
-
-                    return;
-                }
-
-                const notePrompt = window.prompt(
-                    `Enter reason for ${targetStatus}:`
-                );
-
-                if (!notePrompt || !notePrompt.trim()) {
-                    toast.error("Reason note is required.");
-                    return;
-                }
-
-                // -----------------------------
-                // CREATE DIRECT DOCUMENT
-                // -----------------------------
-                await setDoc(attendanceRef, {
-                    teacherID,
-                    teacherName: teacherData.teacherName,
-                    schoolId,
-                    date: todayStr,
-
-                    clockInTime: null,
-                    clockOutTime: null,
-
-                    status: targetStatus,
-
-                    note: notePrompt.trim(),
-
-                    isFinal: true,
-                    finalizedBy: "scan",
-
-                    finalizedAt: serverTimestamp(),
-                    timestamp: serverTimestamp()
-                });
-
-                toast.success(
-                    `${teacherData.teacherName} marked ${targetStatus}`
-                );
-
-                setScannedResult({
-                    name: teacherData.teacherName,
-                    status: targetStatus,
-                    time: timeStr,
-                    note: notePrompt.trim(),
-                    isError: false
-                });
-            }
-
-        } catch (err) {
-
-            console.error("Scan processing error:", err);
-
-            toast.error("Error logging attendance.");
-
-        } finally {
-
-            setTimeout(() => {
-
-                if (html5QrCodeRef.current) {
-                    try {
-                        html5QrCodeRef.current.resume();
-                    } catch (e) {
-                        console.error("Resume failed:", e);
-                    }
-                }
-
-                setIsProcessing(false);
-
-            }, 1000);
-        }
-    };
-
-    // Save attendance manually via selection modal
-    const handleSaveManualEntry = async (e) => {
-
-        e.preventDefault();
-
-        if (!selectedTeacherId) {
-            toast.error("Please select a staff member.");
-            return;
-        }
-
-        if (!manualNote.trim()) {
-            toast.error("A short note is compulsory for every manual attendance entry.");
-            return;
-        }
-
-        setIsSavingManual(true);
-
-        try {
-
-            const selectedStaff = teacherList.find(
-                t => t.teacherID === selectedTeacherId || t.id === selectedTeacherId
-            );
-
-            const teacherName =
-                selectedStaff?.teacherName || "Staff Member";
-
-            const todayStr =
-                new Date().toLocaleDateString("en-CA");
-
-            const qLog = query(
-                collection(db, "StaffAttendance"),
-                where("teacherID", "==", selectedTeacherId),
-                where("date", "==", todayStr),
-                where("schoolId", "==", schoolId)
-            );
-
-            const logSnap = await getDocs(qLog);
-
-            // RECORD ALREADY EXISTS
-            if (!logSnap.empty) {
-
-                const existingDoc = logSnap.docs[0];
-                const existing = existingDoc.data();
-
-                // FINAL RECORD → SHOW WARNING
-                if (isAttendanceLocked(existing)) {
-
-                    setOverrideRecord({
-                        docRef: existingDoc.ref,
-                        teacherID: selectedTeacherId,
-                        teacherName,
-                        previousStatus: existing.status,
-                        previousNote: existing.note,
-                        newStatus: manualStatus
-                    });
-
-                    setOverrideAction("manual");
-
-                    setShowManualModal(false);
-                    setShowOverrideModal(true);
-
-                    return;
-                }
-
-                // Normal scan record can also be protected
-                setOverrideRecord({
-                    docRef: existingDoc.ref,
-                    teacherID: selectedTeacherId,
-                    teacherName,
-                    previousStatus: existing.status,
-                    previousNote: existing.note,
-                    newStatus: manualStatus
-                });
-
-                setOverrideAction("manual");
-                setShowManualModal(false);
-                setShowOverrideModal(true);
-
-                return;
-            }
-
-            // NEW MANUAL RECORD
-
-            await addDoc(collection(db, "StaffAttendance"), {
-
-                teacherID: selectedTeacherId,
-                teacherName,
-                schoolId,
-                date: todayStr,
-
-                clockInTime:
-                    manualStatus === "Present" ? new Date().toLocaleTimeString() : null,
-
-                clockOutTime: null,
-
-                status: manualStatus,
-
-                note: manualNote.trim(),
-
-                isFinal: true,
-                finalizedBy: "manual",
-                finalizedAt: serverTimestamp(),
-
-                timestamp: serverTimestamp()
-            });
-
-            toast.success(
-                `${teacherName} marked ${manualStatus}`
-            );
-
-            setShowManualModal(false);
-            setSelectedTeacherId("");
-            setManualNote("");
-
-        } catch (err) {
-
-            console.error(err);
-            toast.error("Failed to save manual attendance.");
-
-        } finally {
-
-            setIsSavingManual(false);
-
-        }
-    };
-
-    const handleConfirmOverride = async () => {
-
-        if (!overrideNote.trim()) {
-            toast.error("Override note is compulsory.");
-            return;
-        }
-
-        setIsOverriding(true);
-
-        try {
-
-            const previousHistory = overrideRecord.previousHistory || [];
-
-            const historyEntry = {
-                previousStatus: overrideRecord.previousStatus,
-                previousNote: overrideRecord.previousNote || null,
-                changedTo: overrideRecord.newStatus,
-                overrideNote: overrideNote.trim(),
-                changedAt: new Date().toISOString()
-            };
-
-            await updateDoc(overrideRecord.docRef, {
-
-                status: overrideRecord.newStatus,
-                note: overrideNote.trim(),
-
-                isFinal: true,
-                finalizedBy: "manual override",
-                finalizedAt: serverTimestamp(),
-
-                overrideHistory: [
-                    ...previousHistory,
-                    historyEntry
-                ]
-            });
-
-            toast.success(
-                `${overrideRecord.teacherName} attendance overridden successfully.`
-            );
-
-            setShowOverrideModal(false);
-            setOverrideRecord(null);
-            setOverrideNote("");
-            setSelectedTeacherId("");
-            setManualNote("");
-
-        } catch (err) {
-
-            console.error(err);
-            toast.error("Override failed.");
-
-        } finally {
-
-            setIsOverriding(false);
-
-        }
-    };
+    if (loading) {
+        return <div className="p-6 text-center font-medium text-gray-600">Loading Staff ID Cards...</div>;
+    }
 
     return (
         <div className="p-6 min-h-screen bg-gray-100 flex flex-col items-center">
-            <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-md text-center">
-                <h1 className="text-2xl font-bold mb-4">Staff Attendance Scanner 📷</h1>
+            {/* PRINT CSS OVERRIDES */}
+            <style>
+                {`
+                    @media print {
+                        body * {
+                            visibility: hidden !important;
+                        }
 
-                {/* Mode Selector Buttons */}
-                <div className="grid grid-cols-2 gap-2 mb-4 bg-gray-100 p-1.5 rounded-xl">
-                    <button
-                        onClick={() => setAttendanceType("clock-in")}
-                        className={`py-2 text-xs font-semibold rounded-lg transition ${attendanceType === "clock-in" ? "bg-green-600 text-white shadow" : "text-gray-600 hover:bg-gray-200"
-                            }`}
-                    >
-                        Clock-In
-                    </button>
-                    <button
-                        onClick={() => setAttendanceType("clock-out")}
-                        className={`py-2 text-xs font-semibold rounded-lg transition ${attendanceType === "clock-out" ? "bg-red-600 text-white shadow" : "text-gray-600 hover:bg-gray-200"
-                            }`}
-                    >
-                        Clock-Out
-                    </button>
-                    <button
-                        onClick={() => setAttendanceType("excuse")}
-                        className={`py-2 text-xs font-semibold rounded-lg transition ${attendanceType === "excuse" ? "bg-amber-600 text-white shadow" : "text-gray-600 hover:bg-gray-200"
-                            }`}
-                    >
-                        Mark Excuse
-                    </button>
-                    <button
-                        onClick={() => setAttendanceType("leave")}
-                        className={`py-2 text-xs font-semibold rounded-lg transition ${attendanceType === "leave" ? "bg-blue-600 text-white shadow" : "text-gray-600 hover:bg-gray-200"
-                            }`}
-                    >
-                        Mark Leave
-                    </button>
+                        .cards-container, .cards-container * {
+                            visibility: visible !important;
+                        }
+
+                        .cards-container {
+                            position: absolute !important;
+                            left: 0 !important;
+                            top: 0 !important;
+                            margin: 0 !important;
+                            width: 100% !important;
+                            display: grid !important;
+                            grid-template-columns: repeat(${CARDS_PER_ROW}, ${CARD_WIDTH}) !important;
+                            gap: ${GAP_BETWEEN_CARDS} !important;
+                            justify-content: center !important;
+                        }
+
+                        @page {
+                            size: A4 portrait;
+                            margin: 0.4in;
+                        }
+
+                        body {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                            margin: 0 !important;
+                            background: white !important;
+                            overflow: visible !important;
+                        }
+                    }
+                `}
+            </style>
+
+            {/* Action Bar */}
+            <div className="w-full max-w-4xl flex justify-between items-center mb-6 print:hidden">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">Staff ID Cards Generator</h1>
+                    <p className="text-xs text-gray-500">{schoolName} ({teachers.length} Members Found)</p>
                 </div>
-
-                {/* Viewfinder Target */}
-                <div className="relative">
-                    <div
-                        id="reader-viewfinder"
-                        className="w-full overflow-hidden rounded-xl border-2 border-indigo-500 mb-4 bg-black min-h-[250px]"
-                    ></div>
-
-                    {isProcessing && (
-                        <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center mb-4">
-                            <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-semibold animate-pulse">
-                                Processing...
-                            </span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Manual Override Action Button */}
                 <button
-                    onClick={handleOpenManualModal}
-                    className="w-full mb-4 py-2 px-4 bg-gray-800 text-white text-xs font-semibold rounded-xl hover:bg-gray-900 transition flex items-center justify-center gap-2"
+                    onClick={handlePrint}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition flex items-center gap-2"
                 >
-                    📝 Manual Status Override (Without Scan)
+                    <span>Print All ID Cards</span> 🖨️
                 </button>
+            </div>
 
-                {/* Scan Feedback UI Panel */}
-                {scannedResult && (
-                    <div className={`p-4 rounded-xl border ${scannedResult.isError
-                        ? "bg-red-50 border-red-200 text-red-900"
-                        : "bg-indigo-50 border-indigo-200 text-indigo-900"
-                        }`}>
-                        <h3 className="font-bold text-lg">{scannedResult.name}</h3>
-                        <p className="text-sm font-semibold mt-1">{scannedResult.status}</p>
-                        <p className="text-xs text-gray-500 mt-1">Time: {scannedResult.time}</p>
-                        {scannedResult.note && (
-                            <p className="text-xs italic mt-1 text-gray-600">
-                                📝 Reason: "{scannedResult.note}"
-                            </p>
-                        )}
+            {/* ID Cards Container */}
+            <div className="cards-container grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+                {teachers.map((teacher) => {
+                    // Preserved original QR Code payload
+                    // const qrPayload = JSON.stringify({
+                    //     teacherID: teacher.teacherID,
+                    //     teacherName: teacher.teacherName,
+                    //     schoolId: teacher.schoolId
+                    // });
+                    const qrPayload = teacher.teacherID || "";
+
+                    return (
+                        <div
+                            key={teacher.id}
+                            className="w-[3.375in] h-[2.125in] bg-white border border-gray-300 rounded-xl shadow-md overflow-hidden flex flex-col justify-between relative print:shadow-none print:border-gray-400 mx-auto"
+                            style={{ pageBreakInside: "avoid" }}
+                        >
+                            {/* Card Top Banner (School Branded) */}
+                            <div className="bg-slate-900 text-white px-3 py-1.5 flex items-center justify-between border-b-2 border-indigo-500">
+                                <div className="flex items-center gap-2 max-w-[70%]">
+                                    {schoolLogoUrl ? (
+                                        <img src={schoolLogoUrl} alt="Logo" className="w-6 h-6 object-contain rounded" />
+                                    ) : (
+                                        <div className="w-6 h-6 bg-indigo-600 rounded flex items-center justify-center text-[10px] font-bold">
+                                            {schoolName.charAt(0)}
+                                        </div>
+                                    )}
+                                    <div className="overflow-hidden">
+                                        <h2 className="text-[11px] font-bold tracking-tight truncate leading-tight uppercase">
+                                            {schoolName}
+                                        </h2>
+                                        <p className="text-[8px] text-gray-300 truncate leading-tight italic">
+                                            {schoolMotto}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="bg-indigo-600 text-[8px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider text-white">
+                                    STAFF
+                                </span>
+                            </div>
+
+                            {/* Main Body */}
+                            <div className="p-2.5 flex gap-3 items-center flex-1">
+                                {/* Staff Photo */}
+                                <div className="w-[1in] h-[1.2in] bg-gray-100 rounded-md overflow-hidden border border-gray-300 flex-shrink-0 shadow-inner">
+                                    {teacher.userPhotoUrl ? (
+                                        <img
+                                            src={teacher.userPhotoUrl}
+                                            alt={teacher.teacherName}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full text-[9px] text-gray-400 text-center p-1">
+                                            No Photo
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Details & Role */}
+                                <div className="flex-1 min-w-0 flex flex-col justify-between h-[1.2in]">
+                                    <div>
+                                        <h3 className="text-xs font-bold text-gray-900 leading-tight truncate">
+                                            {teacher.teacherName}
+                                        </h3>
+                                        <p className="text-[9px] text-indigo-600 font-semibold mt-0.5">
+                                            {teacher.isFormTeacher ? `Form Teacher (${teacher.assignClass || "N/A"})` : "Academic Staff"}
+                                        </p>
+                                    </div>
+
+                                    <div className="text-[8.5px] text-gray-600 space-y-0.5 border-t pt-1 border-gray-100">
+                                        <p className="truncate"><span className="font-medium text-gray-700">ID:</span> {teacher.teacherID || "N/A"}</p>
+                                        <p className="truncate"><span className="font-medium text-gray-700">Gender:</span> {teacher.gender || "N/A"}</p>
+                                        <p className="truncate"><span className="font-medium text-gray-700">Phone:</span> {teacher.phone || "N/A"}</p>
+                                    </div>
+                                </div>
+
+                                {/* Preserved QR Code */}
+                                <div className="flex flex-col items-center justify-center bg-gray-50 p-1 rounded border border-gray-200 flex-shrink-0">
+                                    {/* <QRCodeSVG value={qrPayload} size={54} /> */}
+                                    <QRCodeSVG
+                                        value={qrPayload}
+                                        size={54}
+                                        level="M"
+                                    />
+                                    <span className="text-[7px] font-bold text-gray-500 mt-0.5 uppercase tracking-wider">
+                                        VERIFY
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Card Footer */}
+                            <div className="bg-gray-100 px-3 py-1 flex justify-between items-center text-[7.5px] text-gray-500 border-t border-gray-200">
+                                <span className="truncate max-w-[60%]">{schoolAddress}</span>
+                                <span className="font-semibold text-gray-700">Code: {schoolId}</span>
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {teachers.length === 0 && (
+                    <div className="col-span-2 text-center text-gray-500 py-10 bg-white rounded-lg border border-dashed border-gray-300">
+                        No staff members found matching school code: <span className="font-semibold">{schoolId}</span>
                     </div>
                 )}
             </div>
-
-            {/* Manual Status Entry Modal */}
-            {showManualModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-left">
-                        <h3 className="text-lg font-bold mb-3 text-gray-800">Manual Attendance Entry</h3>
-
-                        <form onSubmit={handleSaveManualEntry} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Select Staff Member</label>
-                                <select
-                                    value={selectedTeacherId}
-                                    onChange={(e) => setSelectedTeacherId(e.target.value)}
-                                    className="w-full p-2.5 border rounded-xl text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    required
-                                >
-                                    <option value="">-- Choose Staff --</option>
-                                    {teacherList.map((t) => (
-                                        <option key={t.id} value={t.teacherID || t.id}>
-                                            {t.teacherName} ({t.teacherID})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Set Attendance Status</label>
-                                <select
-                                    value={manualStatus}
-                                    onChange={(e) => setManualStatus(e.target.value)}
-                                    className="w-full p-2.5 border rounded-xl text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                >
-                                    <option value="Excused">Excused</option>
-                                    <option value="On Leave">On Leave</option>
-                                    <option value="Absent">Absent</option>
-                                    <option value="Present">Present (Manual)</option>
-                                </select>
-                            </div>
-
-                            {/* Reason / Note Text Input */}
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                    Reason / Short Note <span className="text-red-500">*</span>
-                                </label>
-
-                                <input
-                                    type="text"
-                                    placeholder="Enter short reason or note..."
-                                    value={manualNote}
-                                    onChange={(e) => setManualNote(e.target.value)}
-                                    className="w-full p-2.5 border rounded-xl text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    required
-                                />
-
-                                <p className="text-[10px] text-gray-400 mt-1">
-                                    Note is compulsory for every manual attendance entry.
-                                </p>
-                            </div>
-
-                            <div className="flex gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowManualModal(false);
-                                        setManualNote("");
-                                    }}
-                                    className="flex-1 py-2 text-xs font-semibold border text-gray-600 rounded-xl hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isSavingManual}
-                                    className="flex-1 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50"
-                                >
-                                    {isSavingManual ? "Saving..." : "Save Entry"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-            {showOverrideModal && overrideRecord && (
-
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-
-                        <h3 className="text-lg font-bold text-red-600 mb-2">
-                            ⚠ Attendance Already Completed
-                        </h3>
-
-                        <p className="text-sm text-gray-700 mb-4">
-
-                            <strong>{overrideRecord.teacherName}</strong> already has
-                            attendance for today.
-
-                        </p>
-
-                        <div className="bg-gray-50 border rounded-xl p-3 mb-4 text-sm">
-
-                            <p>
-                                Previous Status:
-                                <strong className="ml-1">
-                                    {overrideRecord.previousStatus}
-                                </strong>
-                            </p>
-
-                            {overrideRecord.previousNote && (
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Previous Note: {overrideRecord.previousNote}
-                                </p>
-                            )}
-
-                            <p className="mt-2">
-                                New Status:
-                                <strong className="ml-1 text-indigo-600">
-                                    {overrideRecord.newStatus}
-                                </strong>
-                            </p>
-
-                        </div>
-
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                            Override Reason <span className="text-red-500">*</span>
-                        </label>
-
-                        <textarea
-                            rows="3"
-                            value={overrideNote}
-                            onChange={(e) => setOverrideNote(e.target.value)}
-                            placeholder="Explain why this attendance is being overridden..."
-                            className="w-full p-2 border rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:outline-none"
-                        />
-
-                        <div className="flex gap-2 mt-4">
-
-                            <button
-                                onClick={() => {
-                                    setShowOverrideModal(false);
-                                    setOverrideNote("");
-                                    setOverrideRecord(null);
-                                }}
-                                className="flex-1 py-2 border rounded-xl text-sm font-semibold"
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                onClick={handleConfirmOverride}
-                                disabled={isOverriding}
-                                className="flex-1 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50"
-                            >
-                                {isOverriding ? "Overriding..." : "Confirm Override"}
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-            )}
         </div>
     );
 };
 
-export default StaffAttendanceScanner;
+export default TeacherIDCards;
