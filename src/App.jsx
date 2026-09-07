@@ -22,6 +22,7 @@ import SupervisorThreeDashboard from "./Component/Dashboard/SupervisorThreeDashb
 import SupervisorTwoDashboard from "./Component/Dashboard/SupervisorTwoDashboard";
 import HipsaIndianDashboard from "./Component/Dashboard/HipsaIndianDashboard";
 import HipsaDijaDashboard from "./Component/Dashboard/HipsaDijaDashboard";
+import InternationalReg from "./Component/Dashboard/InternationalReg";
 import RegisteraPannel from "./Component/Admin/RegisteraPannel";
 import FinancePannel from "./Component/Admin/FinancePannel";
 import FinanceJuniorPannel from "./Component/Admin/FinanceJuniorPannel";
@@ -180,6 +181,14 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <HODPannel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/InternationalReg"
+            element={
+              <ProtectedRoute role="admin">
+                <InternationalReg />
               </ProtectedRoute>
             }
           />

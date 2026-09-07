@@ -443,6 +443,7 @@ const AdminForm = () => {
                             <option value="Finance">Finance</option>
                             <option value="FinanceJunior">FinanceJunior</option>
                             <option value="FinanceSenior">FinanceSenior</option>
+                            <option value="International">InternationalReg</option>
                             <option value="HOD">HOD</option>
                         </select>
                     </div>

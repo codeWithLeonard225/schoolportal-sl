@@ -58,6 +58,7 @@ const LoginPage = () => {
             case "FinanceSenior": return "/FinanceSeniorPannel";
             case "Exams": return "/ExamsPannel";
             case "HOD": return "/HODDashboard";
+            case "International": return "/InternationalReg";
             default: return "/admin";
         }
     };

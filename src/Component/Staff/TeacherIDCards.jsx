@@ -116,11 +116,12 @@ const TeacherIDCards = () => {
             <div className="cards-container grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
                 {teachers.map((teacher) => {
                     // Preserved original QR Code payload
-                    const qrPayload = JSON.stringify({
-                        teacherID: teacher.teacherID,
-                        teacherName: teacher.teacherName,
-                        schoolId: teacher.schoolId
-                    });
+                    // const qrPayload = JSON.stringify({
+                    //     teacherID: teacher.teacherID,
+                    //     teacherName: teacher.teacherName,
+                    //     schoolId: teacher.schoolId
+                    // });
+                    const qrPayload = teacher.teacherID || "";
 
                     return (
                         <div
@@ -189,7 +190,12 @@ const TeacherIDCards = () => {
 
                                 {/* Preserved QR Code */}
                                 <div className="flex flex-col items-center justify-center bg-gray-50 p-1 rounded border border-gray-200 flex-shrink-0">
-                                    <QRCodeSVG value={qrPayload} size={54} />
+                                    {/* <QRCodeSVG value={qrPayload} size={54} /> */}
+                                    <QRCodeSVG
+                                        value={qrPayload}
+                                        size={54}
+                                        level="M"
+                                    />
                                     <span className="text-[7px] font-bold text-gray-500 mt-0.5 uppercase tracking-wider">
                                         VERIFY
                                     </span>
