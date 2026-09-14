@@ -51,6 +51,9 @@ const TeacherRegistration = () => {
         address: "",
         position: "",
          salary: "",
+         academicStartDate: new Date().toISOString().slice(0, 10),
+lateCostPerDay: "",
+absentCostPerDay: "",
         registrationDate: new Date().toISOString().slice(0, 10),
         registeredBy: "",
         userPhoto: null,
@@ -270,24 +273,35 @@ const TeacherRegistration = () => {
             const newTeacherName = formData.teacherName.trim().toUpperCase();
 
             const teacherData = {
-                teacherID: formData.teacherID,
-                teacherName: newTeacherName,
-                position: formData.position,
-                gender: formData.gender,
-                phone: formData.phone,
-                email: formData.email,
-                address: formData.address,
-                registrationDate: formData.registrationDate,
-                registeredBy: formData.registeredBy,
-                 salary: formData.salary ? Number(formData.salary) : null,
-                userPhotoUrl: formData.userPhoto,
-                userPublicId: formData.userPublicId,
-                schoolId: formData.schoolId,
+    teacherID: formData.teacherID,
+    teacherName: newTeacherName,
+    position: formData.position,
+    gender: formData.gender,
+    phone: formData.phone,
+    email: formData.email,
+    address: formData.address,
+    registrationDate: formData.registrationDate,
+    registeredBy: formData.registeredBy,
 
-                // ✅ NEW
-                isFormTeacher: formData.isFormTeacher,
-                assignClass: formData.assignClass || null,
-            };
+    // Salary
+    salary: formData.salary ? Number(formData.salary) : null,
+
+    // Attendance / Payroll Rules
+    academicStartDate: formData.academicStartDate || null,
+    lateCostPerDay: formData.lateCostPerDay
+        ? Number(formData.lateCostPerDay)
+        : 0,
+    absentCostPerDay: formData.absentCostPerDay
+        ? Number(formData.absentCostPerDay)
+        : 0,
+
+    userPhotoUrl: formData.userPhoto,
+    userPublicId: formData.userPublicId,
+    schoolId: formData.schoolId,
+
+    isFormTeacher: formData.isFormTeacher,
+    assignClass: formData.assignClass || null,
+};
 
             if (formData.id) {
                 // --- START: Update Logic ---
@@ -340,6 +354,9 @@ const TeacherRegistration = () => {
                 registrationDate: new Date().toISOString().slice(0, 10),
                 registeredBy: "",
                 salary: "",
+                academicStartDate: new Date().toISOString().slice(0, 10),
+lateCostPerDay: "",
+absentCostPerDay: "",
                 userPhoto: null,
                 userPublicId: null,
                 schoolId: schoolId,
@@ -369,6 +386,13 @@ const TeacherRegistration = () => {
             registrationDate: teacher.registrationDate,
             registeredBy: teacher.registeredBy,
             salary: teacher.salary ?? "",
+           
+academicStartDate:
+    teacher.academicStartDate ||
+    new Date().toISOString().slice(0, 10),
+lateCostPerDay: teacher.lateCostPerDay ?? "",
+absentCostPerDay: teacher.absentCostPerDay ?? "",
+
             userPhoto: teacher.userPhotoUrl,
             userPublicId: teacher.userPublicId,
             schoolId: teacher.schoolId || schoolId,
@@ -614,34 +638,41 @@ const TeacherRegistration = () => {
                     </div>
                 )}
 
-                <div className="flex flex-col md:flex-row md:space-x-4">
-                    <div className="flex-1">
-                        <label className="block mb-2 font-medium text-sm">
-                            Registration Date
-                        </label>
-                        <input
-                            type="date"
-                            name="registrationDate"
-                            value={formData.registrationDate}
-                            onChange={handleInputChange}
-                            className="w-full p-2 mb-4 border rounded-lg"
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <label className="block mb-2 font-medium text-sm">
-                            Registered By
-                        </label>
-                        <input
-                            type="text"
-                            name="registeredBy"
-                            value={formData.registeredBy}
-                            onChange={handleInputChange}
-                            className="w-full p-2 mb-4 border rounded-lg"
-                            placeholder="Enter Staff ID"
-                        />
-                    </div>
+               {/* Registration Date, Registered By and Salary */}
+<div className="flex flex-col md:flex-row md:space-x-4">
 
-                        {/* Salary */}
+    {/* Registration Date */}
+    <div className="flex-1">
+        <label className="block mb-2 font-medium text-sm">
+            Registration Date
+        </label>
+
+        <input
+            type="date"
+            name="registrationDate"
+            value={formData.registrationDate}
+            onChange={handleInputChange}
+            className="w-full p-2 mb-4 border rounded-lg"
+        />
+    </div>
+
+    {/* Registered By */}
+    <div className="flex-1">
+        <label className="block mb-2 font-medium text-sm">
+            Registered By
+        </label>
+
+        <input
+            type="text"
+            name="registeredBy"
+            value={formData.registeredBy}
+            onChange={handleInputChange}
+            className="w-full p-2 mb-4 border rounded-lg"
+            placeholder="Enter Staff ID"
+        />
+    </div>
+
+    {/* Salary */}
     <div className="flex-1">
         <label className="block mb-2 font-medium text-sm">
             Salary <span className="text-gray-400">(Optional)</span>
@@ -657,7 +688,88 @@ const TeacherRegistration = () => {
             min="0"
         />
     </div>
-                </div>
+
+</div>
+
+
+{/* ===================================== */}
+{/* SALARY & ATTENDANCE DEDUCTION RULES */}
+{/* ===================================== */}
+
+<div className="border-t border-gray-200 pt-4 mt-2 mb-4">
+
+    <h3 className="text-sm font-bold text-gray-700 mb-4">
+        Salary & Attendance Deduction Rules
+    </h3>
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        {/* Academic Start Date */}
+        <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Academic Start Date
+            </label>
+
+            <input
+                type="date"
+                name="academicStartDate"
+                value={formData.academicStartDate}
+                onChange={handleInputChange}
+                className="w-full p-2.5 border rounded-xl text-sm bg-gray-50"
+            />
+
+            <p className="text-[10px] text-gray-400 mt-1">
+                Attendance deductions will only be calculated from this date.
+            </p>
+        </div>
+
+
+        {/* Late Deduction */}
+        <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Late Deduction Per Day
+            </label>
+
+            <input
+                type="number"
+                name="lateCostPerDay"
+                min="0"
+                value={formData.lateCostPerDay}
+                onChange={handleInputChange}
+                placeholder="e.g. 20"
+                className="w-full p-2.5 border rounded-xl text-sm bg-gray-50"
+            />
+
+            <p className="text-[10px] text-gray-400 mt-1">
+                Amount deducted from salary for each late day.
+            </p>
+        </div>
+
+
+        {/* Absent Deduction */}
+        <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Absent Deduction Per Day
+            </label>
+
+            <input
+                type="number"
+                name="absentCostPerDay"
+                min="0"
+                value={formData.absentCostPerDay}
+                onChange={handleInputChange}
+                placeholder="e.g. 50"
+                className="w-full p-2.5 border rounded-xl text-sm bg-gray-50"
+            />
+
+            <p className="text-[10px] text-gray-400 mt-1">
+                Amount deducted from salary for each absent day.
+            </p>
+        </div>
+
+    </div>
+
+</div>
 
                 {/* Photo Upload */}
                 <div className="flex flex-col items-center mb-4 border-t pt-4">
