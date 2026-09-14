@@ -349,14 +349,24 @@ const Registration = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleUploadSuccess = (url, publicId) => {
-        setFormData((prev) => ({
-            ...prev,
-            userPhoto: url,
-            userPublicId: publicId,
-        }));
-        toast.success("Image uploaded successfully!");
-    };
+   const handleUploadSuccess = (url, publicId) => {
+    console.log("PUPIL PHOTO URL:", url);
+    console.log("PUPIL PHOTO PUBLIC ID:", publicId);
+
+    if (!url) {
+        console.error("No Cloudinary URL received.");
+        toast.error("Photo uploaded but no image URL was returned.");
+        return;
+    }
+
+    setFormData((prev) => ({
+        ...prev,
+        userPhoto: url,
+        userPublicId: publicId,
+    }));
+
+    toast.success("Pupil photo uploaded successfully!");
+};
 
     const handleCameraCapture = async (base64Data) => {
         setIsUploading(true);
@@ -956,14 +966,41 @@ const Registration = () => {
                 <div className="flex flex-col items-center mb-4 border-t pt-4">
                     <label className="mb-2 font-medium text-sm">Student Photo</label>
                     <div className="border-4 border-dashed w-36 h-48 flex items-center justify-center bg-white/30 mb-2">
-                        {formData.userPhoto ? <img src={formData.userPhoto} alt="Student" className="w-full h-full object-cover" /> : "2-inch Photo"}
+                       {formData.userPhoto ? (
+    <img
+        src={formData.userPhoto}
+        alt="Student"
+        className="w-full h-full object-cover"
+        onLoad={() => {
+            console.log(
+                "PUPIL PHOTO DISPLAYED:",
+                formData.userPhoto
+            );
+        }}
+        onError={() => {
+            console.error(
+                "PUPIL PHOTO FAILED TO DISPLAY:",
+                formData.userPhoto
+            );
+        }}
+    />
+) : (
+    <span className="text-gray-500 text-sm text-center">
+        2-inch Photo
+    </span>
+)}
                     </div>
                     <CloudinaryImageUploader
+                        folder="SchoolAppPupils/Uploads"
                         onUploadSuccess={handleUploadSuccess}
-                        schoolId={currentSchoolId}
-                        onUploadStart={() => { setIsUploading(true); setUploadProgress(0); }}
+                        onUploadStart={() => {
+                            setIsUploading(true);
+                            setUploadProgress(0);
+                        }}
                         onUploadProgress={setUploadProgress}
-                        onUploadComplete={() => setIsUploading(false)}
+                        onUploadComplete={() => {
+                            setIsUploading(false);
+                        }}
                     />
                     <button type="button" onClick={() => setShowCamera(true)} className="w-full sm:w-auto bg-green-600 text-white py-2 px-6 rounded-md text-sm font-semibold mt-2" disabled={isUploading}>
                         Use Camera

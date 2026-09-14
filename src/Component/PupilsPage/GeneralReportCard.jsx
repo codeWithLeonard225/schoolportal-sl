@@ -104,56 +104,116 @@ const GeneralReportCard = () => {
     }, [selectedClass, schoolId]);
 
     // 🔹 Count total pupils in class
-    useEffect(() => {
-        const trimmedClass = selectedClass;
-        if (!academicYear || !trimmedClass || !schoolId) {
-            setTotalPupilsInClass(0);
+ // 🔹 Count unique historical pupils in class
+useEffect(() => {
+    if (!academicYear || !selectedClass || !schoolId) {
+        setTotalPupilsInClass(0);
+        return;
+    }
+
+    const q = query(
+        collection(schooldb, "PupilGrades"),
+        where("academicYear", "==", academicYear),
+        where("schoolId", "==", schoolId),
+        where("className", "==", selectedClass)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const pupilIDs = [
+            ...new Set(
+                snapshot.docs
+                    .map(doc => doc.data().pupilID)
+                    .filter(Boolean)
+            )
+        ];
+
+        setTotalPupilsInClass(pupilIDs.length);
+    });
+
+    return () => unsubscribe();
+}, [academicYear, selectedClass, schoolId]);
+
+    // 🔹 Fetch Pupils
+   // 🔹 Fetch Historical Pupils
+useEffect(() => {
+    if (!academicYear || !selectedClass || !schoolId) {
+        setPupils([]);
+        setSelectedPupil("");
+        return;
+    }
+
+    const gradesQuery = query(
+        collection(schooldb, "PupilGrades"),
+        where("schoolId", "==", schoolId),
+        where("academicYear", "==", academicYear),
+        where("className", "==", selectedClass)
+    );
+
+    const unsubscribe = onSnapshot(gradesQuery, async (snapshot) => {
+
+        // Get unique historical pupil IDs
+        const pupilIDs = [
+            ...new Set(
+                snapshot.docs
+                    .map(doc => doc.data().pupilID)
+                    .filter(Boolean)
+            )
+        ];
+
+        if (pupilIDs.length === 0) {
+            setPupils([]);
+            setSelectedPupil("");
             return;
         }
 
-        const pupilsRef = query(
+        // Get current pupil profiles
+        const profilesQuery = query(
             collection(db, "PupilsReg"),
-            where("academicYear", "==", academicYear),
             where("schoolId", "==", schoolId)
         );
 
-        const unsubscribe = onSnapshot(pupilsRef, (snapshot) => {
-            const total = snapshot.docs
-                .filter(doc => doc.data().class && doc.data().class.trim() === trimmedClass)
-                .length;
+        const profileSnapshot = await getDocs(profilesQuery);
 
-            setTotalPupilsInClass(total);
+        const profiles = profileSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        // Match historical pupil IDs with profiles
+        const historicalPupils = pupilIDs.map((pupilID) => {
+            const profile = profiles.find(
+                p => p.studentID === pupilID
+            );
+
+            return profile || {
+                studentID: pupilID,
+                studentName: `Pupil ${pupilID}`
+            };
         });
 
-        return () => unsubscribe();
-    }, [academicYear, selectedClass, schoolId]);
-
-    // 🔹 Fetch Pupils
-    useEffect(() => {
-        const trimmedClass = selectedClass;
-        if (!academicYear || !trimmedClass || !schoolId) {
-            setPupils([]);
-            return;
-        }
-        setSelectedPupil("");
-
-        const q = query(
-            collection(db, "PupilsReg"),
-            where("schoolId", "==", schoolId),
-            where("academicYear", "==", academicYear),
+        historicalPupils.sort((a, b) =>
+            (a.studentName || "").localeCompare(
+                b.studentName || ""
+            )
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const allPupilData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-            const filteredPupils = allPupilData
-                .filter(pupil => pupil.class && pupil.class.trim() === trimmedClass)
-                .sort((a, b) => a.studentName.localeCompare(b.studentName));
+        setPupils(historicalPupils);
 
-            setPupils(filteredPupils);
-            if (filteredPupils.length > 0) setSelectedPupil(filteredPupils[0].studentID);
+        // Keep selected pupil if still available
+        setSelectedPupil(prev => {
+            const exists = historicalPupils.some(
+                p => p.studentID === prev
+            );
+
+            return exists
+                ? prev
+                : historicalPupils[0]?.studentID || "";
         });
-        return () => unsubscribe();
-    }, [academicYear, selectedClass, schoolId]);
+    });
+
+    return () => unsubscribe();
+
+}, [academicYear, selectedClass, schoolId]);
 
     // 🔹 Fetch ALL grades for the class to dynamically generate ranks
     useEffect(() => {
@@ -429,7 +489,7 @@ const GeneralReportCard = () => {
 
             doc.setFont("Helvetica", "normal");
             doc.setTextColor(30, 41, 59);
-            doc.text(`${pupilInfo.class || "N/A"} (${totalPupilsInClass} pupils) | ${academicYear}`, pageWidth / 2 + 70, y + 16);
+            doc.text(`${selectedClass || "N/A"} (${totalPupilsInClass} pupils) | ${academicYear}`, pageWidth / 2 + 70, y + 16);
             doc.text("Three-Term Complete Comprehensive Report Card", pageWidth / 2 + 70, y + 30);
 
             y += 55;
@@ -822,7 +882,7 @@ const GeneralReportCard = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-100 mb-6 text-xs">
                         <div>
                             <span className="block text-[10px] font-bold text-slate-400 uppercase">Class Stream</span>
-                            <span className="font-semibold text-slate-700">{pupilInfo.class || "N/A"}</span>
+                            <span className="font-semibold text-slate-700">{selectedClass || "N/A"}</span>
                         </div>
                         <div>
                             <span className="block text-[10px] font-bold text-slate-400 uppercase">Demographics</span>

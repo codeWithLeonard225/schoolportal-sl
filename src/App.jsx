@@ -29,6 +29,8 @@ import FinanceJuniorPannel from "./Component/Admin/FinanceJuniorPannel";
 import FinanceSeniorPannel from "./Component/Admin/FinanceSeniorPannel";
 import ExamsPannel from "./Component/Admin/ExamsDashboard";
 import HODPannel from "./Component/Admin/HODPannel";
+import HaffizeenSecondary from "./Component/Admin/HaffizeenSecondary";
+import HaffizeenPrimary from "./Component/Admin/HaffizeenPrimary";
 import PreviousFees from "./Component/FeeReceipt.jsx/PreviousFees";
 
 
@@ -189,6 +191,22 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <InternationalReg />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HaffizeenSecondary"
+            element={
+              <ProtectedRoute role="admin">
+                <HaffizeenSecondary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HaffizeenPrimary"
+            element={
+              <ProtectedRoute role="admin">
+                <HaffizeenPrimary />
               </ProtectedRoute>
             }
           />

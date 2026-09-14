@@ -65,10 +65,10 @@ import AncillaryReceiptForm from "../FeeReceipt.jsx/AncillaryReceiptForm";
 import PreviousFees from "../FeeReceipt.jsx/PreviousFees";
 import WASCEForm from "../Voters/WASCEForm";
 import TeacherIDCards from "../Staff/TeacherIDCards";
-import StaffAttendanceScanner from "../Staff/StaffAttendanceScanner";
+import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerHaffizeenPrimary";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScan";
-import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScanner";
+import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerHaffizeenPrimary";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
 
 
@@ -84,9 +84,9 @@ const NAV_ITEMS = [
       { key: "Form", label: " Pupils", icon: <MdPerson /> },
       { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
-      { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
-      { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
-      { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
+    //   { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
+    //   { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
+    //   { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
       // { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
       // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
 
@@ -151,15 +151,15 @@ const NAV_ITEMS = [
 
     ],
   },
-  {
-    key: "idcards",
-    label: "Pupils ID Cards",
-    icon: <MdBarChart />,
-    children: [
-      { key: "PupilIDCard", label: "PupilIDCard", icon: <MdPerson /> },
-      { key: "IDCardPage", label: "IDCardPage", icon: <MdPerson /> },
-    ],
-  },
+//   {
+//     key: "idcards",
+//     label: "Pupils ID Cards",
+//     icon: <MdBarChart />,
+//     children: [
+//       { key: "PupilIDCard", label: "PupilIDCard", icon: <MdPerson /> },
+//       { key: "IDCardPage", label: "IDCardPage", icon: <MdPerson /> },
+//     ],
+//   },
   {
     key: "qrcode-Pupil",
     label: "Qr code Attendance-Pupil",

@@ -6,10 +6,12 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLocation } from "react-router-dom";
 
-import { getTermScores, 
-    calculateSubjectRanks, 
-    calculateSubjectAnnualRanks, 
-    calculateOverallMetrics } from "../Utilis/ResultCalculators";
+import {
+  getTermScores,
+  calculateSubjectRanks,
+  calculateSubjectAnnualRanks,
+  calculateOverallMetrics
+} from "../Utilis/ResultCalculators";
 
 // Ensure you have installed these packages:
 // npm install jspdf jspdf-autotable
@@ -93,60 +95,119 @@ const ReportCardTermly = () => {
     fetchClasses();
   }, [schoolId]);
 
-  // ✅ Count total pupils in selected class and academic year
-  useEffect(() => {
-    const trimmedClass = selectedClass;
 
-    if (!academicYear || !trimmedClass || !schoolId) {
-        setTotalPupilsInClass(0);
-        return;
+  // ✅ Count total pupils in selected class and academic year
+  // Uses PupilGrades so promoted pupils remain visible in historical reports.
+  useEffect(() => {
+    if (!academicYear || !selectedClass || !schoolId) {
+      setTotalPupilsInClass(0);
+      return;
     }
 
-    const pupilsRef = query(
-      collection(db, "PupilsReg"),
+    const gradesRef = query(
+      collection(schooldb, "PupilGrades"),
       where("academicYear", "==", academicYear),
-      where("schoolId", "==", schoolId)
+      where("schoolId", "==", schoolId),
+      where("className", "==", selectedClass)
     );
 
-    const unsubscribe = onSnapshot(pupilsRef, (snapshot) => {
-      const total = snapshot.docs
-        .filter(doc => doc.data().class && doc.data().class.trim() === trimmedClass)
-        .length;
-      
-      setTotalPupilsInClass(total);
+    const unsubscribe = onSnapshot(gradesRef, (snapshot) => {
+      const pupilIDs = new Set();
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+
+        if (data.pupilID) {
+          pupilIDs.add(data.pupilID);
+        }
+      });
+
+      setTotalPupilsInClass(pupilIDs.size);
     });
 
     return () => unsubscribe();
   }, [academicYear, selectedClass, schoolId]);
 
   // 🔹 Fetch pupils in class/year
+  // 🔹 Fetch pupils for selected class/year
+  // IMPORTANT:
+  // PupilGrades determines which pupils belong to the historical
+  // class/year. PupilsReg is only used to retrieve the pupil profile.
   useEffect(() => {
-    const trimmedClass = selectedClass;
-
-    if (!academicYear || !trimmedClass || !schoolId) {
-        setPupils([]);
-        return;
+    if (!academicYear || !selectedClass || !schoolId) {
+      setPupils([]);
+      setSelectedPupil("");
+      return;
     }
-    
+
     setSelectedPupil("");
 
-    const q = query(
-      collection(db, "PupilsReg"),
+    const gradesQuery = query(
+      collection(schooldb, "PupilGrades"),
       where("schoolId", "==", schoolId),
       where("academicYear", "==", academicYear),
+      where("className", "==", selectedClass)
     );
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allPupilData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-      const filteredPupils = allPupilData
-        .filter(pupil => pupil.class && pupil.class.trim() === trimmedClass)
-        .sort((a, b) => a.studentName.localeCompare(b.studentName));
-    
-      setPupils(filteredPupils);
-      
-      if (filteredPupils.length > 0) setSelectedPupil(filteredPupils[0].studentID);
+    const unsubscribe = onSnapshot(gradesQuery, async (snapshot) => {
+      try {
+        // Get unique pupil IDs from PupilGrades
+        const pupilIDs = [
+          ...new Set(
+            snapshot.docs
+              .map((doc) => doc.data().pupilID)
+              .filter(Boolean)
+          )
+        ];
+
+        const pupilProfiles = [];
+
+        // Get profile information from PupilsReg
+        for (const studentID of pupilIDs) {
+          const pupilQuery = query(
+            collection(db, "PupilsReg"),
+            where("schoolId", "==", schoolId),
+            where("studentID", "==", studentID)
+          );
+
+          const pupilSnapshot = await getDocs(pupilQuery);
+
+          if (!pupilSnapshot.empty) {
+            const pupilData = pupilSnapshot.docs[0].data();
+
+            pupilProfiles.push({
+              ...pupilData,
+              studentID
+            });
+          } else {
+            // Keep the pupil in the list even if the current
+            // PupilsReg record is unavailable.
+            pupilProfiles.push({
+              studentID,
+              studentName: `Pupil ${studentID}`
+            });
+          }
+        }
+
+        // Sort alphabetically
+        pupilProfiles.sort((a, b) =>
+          (a.studentName || "").localeCompare(
+            b.studentName || ""
+          )
+        );
+
+        setPupils(pupilProfiles);
+
+        if (pupilProfiles.length > 0) {
+          setSelectedPupil(pupilProfiles[0].studentID);
+        }
+      } catch (error) {
+        console.error("Error fetching pupil profiles:", error);
+        setPupils([]);
+        setSelectedPupil("");
+      }
     });
+
     return () => unsubscribe();
   }, [academicYear, selectedClass, schoolId]);
 
@@ -186,139 +247,139 @@ const ReportCardTermly = () => {
   const tests = termTests[selectedTerm];
 
   // 🔹 Memoized score statistics
-const {
-  subjects,
-  reportRows,
-  totalMarks,
-  overallPercentage,
-  overallRank,
-  annualAverage,
-  annualRank,
-} = useMemo(() => {
-  if (pupilGradesData.length === 0) {
-    return {
-      subjects: [],
-      reportRows: [],
-      totalMarks: 0,
-      overallPercentage: 0,
-      overallRank: "—",
-      annualAverage: "0.0",
-      annualRank: "—",
-    };
-  }
+  const {
+    subjects,
+    reportRows,
+    totalMarks,
+    overallPercentage,
+    overallRank,
+    annualAverage,
+    annualRank,
+  } = useMemo(() => {
+    if (pupilGradesData.length === 0) {
+      return {
+        subjects: [],
+        reportRows: [],
+        totalMarks: 0,
+        overallPercentage: 0,
+        overallRank: "—",
+        annualAverage: "0.0",
+        annualRank: "—",
+      };
+    }
 
-  const pupilIDs = [...new Set(classGradesData.map((d) => d.pupilID))];
-  const uniqueSubjects = [...new Set(classGradesData.map((d) => d.subject))].sort();
+    const pupilIDs = [...new Set(classGradesData.map((d) => d.pupilID))];
+    const uniqueSubjects = [...new Set(classGradesData.map((d) => d.subject))].sort();
 
-  const classInfo = classesCache.find(
-    (c) => c.schoolId === schoolId && c.className === selectedClass
-  );
-
-  const totalSubjectPercentage =
-    classInfo?.subjectPercentage || uniqueSubjects.length * 100;
-
-  //-----------------------------------------
-  // Subject Ranks
-  //-----------------------------------------
-
-  const subjectRanks = calculateSubjectRanks(
-    classGradesData,
-    pupilIDs,
-    uniqueSubjects
-  );
-
-  //-----------------------------------------
-  // Annual Subject Ranks
-  //-----------------------------------------
-
-  const annualSubjectRanks = calculateSubjectAnnualRanks(
-    classGradesData,
-    pupilIDs,
-    uniqueSubjects
-  );
-
-  //-----------------------------------------
-  // Overall Metrics
-  //-----------------------------------------
-
-  const metrics = calculateOverallMetrics(
-    classGradesData,
-    pupilIDs,
-    uniqueSubjects,
-    selectedPupil,
-    totalSubjectPercentage
-  );
-
-  //-----------------------------------------
-  // Build report rows
-  //-----------------------------------------
-
-  const reportRows = uniqueSubjects.map((subject) => {
-    const scores = getTermScores(
-      classGradesData,
-      selectedPupil,
-      subject,
-      selectedTerm
+    const classInfo = classesCache.find(
+      (c) => c.schoolId === schoolId && c.className === selectedClass
     );
 
+    const totalSubjectPercentage =
+      classInfo?.subjectPercentage || uniqueSubjects.length * 100;
+
+    //-----------------------------------------
+    // Subject Ranks
+    //-----------------------------------------
+
+    const subjectRanks = calculateSubjectRanks(
+      classGradesData,
+      pupilIDs,
+      uniqueSubjects
+    );
+
+    //-----------------------------------------
+    // Annual Subject Ranks
+    //-----------------------------------------
+
+    const annualSubjectRanks = calculateSubjectAnnualRanks(
+      classGradesData,
+      pupilIDs,
+      uniqueSubjects
+    );
+
+    //-----------------------------------------
+    // Overall Metrics
+    //-----------------------------------------
+
+    const metrics = calculateOverallMetrics(
+      classGradesData,
+      pupilIDs,
+      uniqueSubjects,
+      selectedPupil,
+      totalSubjectPercentage
+    );
+
+    //-----------------------------------------
+    // Build report rows
+    //-----------------------------------------
+
+    const reportRows = uniqueSubjects.map((subject) => {
+      const scores = getTermScores(
+        classGradesData,
+        selectedPupil,
+        subject,
+        selectedTerm
+      );
+
+      return {
+        subject,
+        test1: scores.t1 ?? "",
+        test2: scores.t2 ?? "",
+        mean: scores.mean ?? "",
+        rank:
+          subjectRanks[`${subject}_${selectedTerm}`]?.[selectedPupil] ?? "—",
+
+        annualRank:
+          annualSubjectRanks[subject]?.[selectedPupil] ?? "—",
+      };
+    });
+
     return {
-      subject,
-      test1: scores.t1 ?? "",
-      test2: scores.t2 ?? "",
-      mean: scores.mean ?? "",
-      rank:
-        subjectRanks[`${subject}_${selectedTerm}`]?.[selectedPupil] ?? "—",
+      subjects: uniqueSubjects,
+      reportRows,
 
-      annualRank:
-        annualSubjectRanks[subject]?.[selectedPupil] ?? "—",
+      totalMarks:
+        metrics.termSummaries[selectedTerm]?.total || 0,
+
+      overallPercentage:
+        metrics.termSummaries[selectedTerm]?.percentage || 0,
+
+      overallRank:
+        metrics.termSummaries[selectedTerm]?.rank || "—",
+
+      annualAverage: metrics.annualSummary.avg,
+
+      annualRank: metrics.annualSummary.rank,
     };
-  });
-
-  return {
-    subjects: uniqueSubjects,
-    reportRows,
-
-    totalMarks:
-      metrics.termSummaries[selectedTerm]?.total || 0,
-
-    overallPercentage:
-      metrics.termSummaries[selectedTerm]?.percentage || 0,
-
-    overallRank:
-      metrics.termSummaries[selectedTerm]?.rank || "—",
-
-    annualAverage: metrics.annualSummary.avg,
-
-    annualRank: metrics.annualSummary.rank,
-  };
-}, [
-  classGradesData,
-  pupilGradesData,
-  selectedPupil,
-  selectedClass,
-  selectedTerm,
-  classesCache,
-  schoolId,
-]);
+  }, [
+    classGradesData,
+    pupilGradesData,
+    selectedPupil,
+    selectedClass,
+    selectedTerm,
+    classesCache,
+    schoolId,
+  ]);
 
   const pupilInfo = pupils.find((p) => p.studentID === selectedPupil);
 
   // Grade styling classes
- const getGradeColor = (val) => {
-  const grade = Number(val);
+  const getGradeColor = (val) => {
+    const grade = Number(val);
 
-  if (isNaN(grade)) return "text-slate-700";
+    if (isNaN(grade)) return "text-slate-700";
 
-  if (grade >= 50) {
-    return "text-blue-600 font-semibold";
-  }
+    if (grade >= 50) {
+      return "text-blue-600 font-semibold";
+    }
 
-  if (grade <= 49) {
-    return "text-red-600 font-semibold";
-  }
+    if (grade <= 49) {
+      return "text-red-600 font-semibold";
+    }
 
-  return "text-slate-700";
-};
+    return "text-slate-700";
+  };
 
   // Dynamic label background color for structural matrix column
   const getRemarkBadgeColor = (remark) => {
@@ -368,7 +429,7 @@ const {
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(100, 116, 139); // slate-500
-      
+
       const details = [
         schoolAddress || "Address not found",
         schoolMotto ? `"${schoolMotto}"` : null,
@@ -406,11 +467,11 @@ const {
       doc.setFontSize(9.5);
       doc.setTextColor(100, 116, 139);
       doc.setFont("Helvetica", "bold");
-      
+
       // Box Left Column
       doc.text("PUPIL NAME:", 55, y + 18);
       doc.text("STUDENT ID:", 55, y + 36);
-      
+
       doc.setFont("Helvetica", "normal");
       doc.setTextColor(30, 41, 59);
       doc.text(pupilInfo.studentName.toUpperCase(), 140, y + 18);
@@ -424,7 +485,7 @@ const {
 
       doc.setFont("Helvetica", "normal");
       doc.setTextColor(30, 41, 59);
-      doc.text(`${pupilInfo.class || "N/A"} (${totalPupilsInClass} pupils) | ${academicYear}`, pageWidth / 2 + 130, y + 18);
+      doc.text(`${selectedClass || "N/A"} | ${academicYear}`, pageWidth / 2 + 130, y + 18);
       doc.text(selectedTerm, pageWidth / 2 + 130, y + 36);
 
       y += 75;
@@ -441,7 +502,7 @@ const {
         styles: { halign: "center", fontSize: 9.5, font: "Helvetica" },
         headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: "bold" },
         margin: { left: 40, right: 40 },
-        columnStyles: { 
+        columnStyles: {
           0: { halign: "left", fontStyle: "bold", cellWidth: 150 },
           5: { halign: "center", fontStyle: "bold", cellWidth: 80 }
         },
@@ -452,14 +513,14 @@ const {
 
           if (gradeColumns.includes(data.column.index) && data.cell.section === "body") {
             const grade = Number(data.cell.text[0]);
-           if (grade >= 50) {
-  data.cell.styles.textColor = [37, 99, 235]; // blue-600
-} 
-else if (grade <= 49) {
-  data.cell.styles.textColor = [244, 63, 94]; // red/rose-500
-}
+            if (grade >= 50) {
+              data.cell.styles.textColor = [37, 99, 235]; // blue-600
+            }
+            else if (grade <= 49) {
+              data.cell.styles.textColor = [244, 63, 94]; // red/rose-500
+            }
 
-data.cell.styles.fontStyle = "bold";
+            data.cell.styles.fontStyle = "bold";
           }
 
           if (data.column.index === rankColumn && data.cell.section === "body") {
@@ -492,7 +553,7 @@ data.cell.styles.fontStyle = "bold";
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(10);
       doc.text("ACADEMIC PERFORMANCE SUMMARY", 50, currentY + 18);
-      
+
       doc.setTextColor(30, 41, 59);
       doc.setFont("Helvetica", "normal");
       doc.text(`Total Aggregated Marks:`, 50, currentY + 38);
@@ -505,7 +566,7 @@ data.cell.styles.fontStyle = "bold";
       doc.text(`${totalMarks}`, pageWidth / 2 - 45, currentY + 38, { align: "right" });
       doc.text(`${overallPercentage}%`, pageWidth / 2 - 45, currentY + 54, { align: "right" });
       doc.text(`${overallRank}`, pageWidth / 2 - 45, currentY + 70, { align: "right" });
-      
+
       const printedRemark = getRemark(overallPercentage);
       if (printedRemark === "Excellent" || printedRemark === "Very Good") {
         doc.setTextColor(16, 185, 129);
@@ -584,11 +645,10 @@ data.cell.styles.fontStyle = "bold";
             <button
               key={term}
               onClick={() => setSelectedTerm(term)}
-              className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                selectedTerm === term
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${selectedTerm === term
                   ? "bg-white text-indigo-600 shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
+                }`}
             >
               {term}
             </button>
@@ -687,8 +747,13 @@ data.cell.styles.fontStyle = "bold";
           {/* Academic Profile Board */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-100 mb-8">
             <div>
-              <span className="block text-[10px] font-bold text-slate-400 uppercase">Class Stream</span>
-              <span className="text-sm font-semibold text-slate-700">{pupilInfo.class || "N/A"}</span>
+              <span className="block text-[10px] font-bold text-slate-400 uppercase">
+                Class Stream
+              </span>
+
+              <span className="text-sm font-semibold text-slate-700">
+                {selectedClass || "N/A"}
+              </span>
             </div>
             <div>
               <span className="block text-[10px] font-bold text-slate-400 uppercase">Class Demographics</span>

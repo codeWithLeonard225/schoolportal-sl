@@ -53,33 +53,90 @@ const AnnualBroadSheet = () => {
   }, [schoolId]);
 
   // 2. Fetch Pupils
-  useEffect(() => {
-    if (!academicYear || !selectedClass || !schoolId) return;
+ // 2. Fetch Historical Pupils from PupilGrades
+useEffect(() => {
+  if (!academicYear || !selectedClass || !schoolId) return;
 
-    const q = query(
+  const gradesQuery = query(
+    collection(schooldb, "PupilGrades"),
+    where("schoolId", "==", schoolId),
+    where("academicYear", "==", academicYear),
+    where("className", "==", selectedClass)
+  );
+
+  const unsubscribeGrades = onSnapshot(gradesQuery, (gradeSnapshot) => {
+
+    // Get unique pupil IDs from historical grades
+    const pupilIDs = [
+      ...new Set(
+        gradeSnapshot.docs
+          .map(doc => doc.data().pupilID)
+          .filter(Boolean)
+      )
+    ];
+
+    if (pupilIDs.length === 0) {
+      setPupils([]);
+      setSelectedPupil("");
+      return;
+    }
+
+    // Get pupil profiles
+    const pupilsQuery = query(
       collection(db, "PupilsReg"),
-      where("schoolId", "==", schoolId),
-      where("academicYear", "==", academicYear)
+      where("schoolId", "==", schoolId)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const filtered = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(p => p.class && p.class.trim() === selectedClass)
-        .sort((a, b) => a.studentName.localeCompare(b.studentName));
+    const unsubscribePupils = onSnapshot(
+      pupilsQuery,
+      (pupilSnapshot) => {
 
-      setPupils(filtered);
+        const profiles = pupilSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-      if (filtered.length > 0) {
-        setSelectedPupil(filtered[0].studentID);
-      } else {
-        setSelectedPupil(""); 
+        // Match historical pupil IDs with current profiles
+        const historicalPupils = pupilIDs.map(pupilID => {
+
+          const profile = profiles.find(
+            p => p.studentID === pupilID
+          );
+
+          return profile || {
+            studentID: pupilID,
+            studentName: `Pupil ${pupilID}`
+          };
+
+        });
+
+        // Sort alphabetically
+        historicalPupils.sort((a, b) =>
+          (a.studentName || "").localeCompare(
+            b.studentName || ""
+          )
+        );
+
+        setPupils(historicalPupils);
+
+        // Select first pupil automatically
+        if (historicalPupils.length > 0) {
+          setSelectedPupil(
+            historicalPupils[0].studentID
+          );
+        } else {
+          setSelectedPupil("");
+        }
       }
-    });
+    );
 
-    return () => unsubscribe();
-  }, [academicYear, selectedClass, schoolId]);
+    // Clean up pupil listener
+    return () => unsubscribePupils();
+  });
 
+  return () => unsubscribeGrades();
+
+}, [academicYear, selectedClass, schoolId]);
   // 3. Fetch Grades
   useEffect(() => {
     if (!academicYear || !selectedClass) return;

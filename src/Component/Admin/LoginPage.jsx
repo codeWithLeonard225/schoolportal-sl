@@ -59,6 +59,8 @@ const LoginPage = () => {
             case "Exams": return "/ExamsPannel";
             case "HOD": return "/HODDashboard";
             case "International": return "/InternationalReg";
+            case "HaffizeenSecondary": return "/HaffizeenSecondary";
+            case "HaffizeenPrimary": return "/HaffizeenPrimary";
             default: return "/admin";
         }
     };

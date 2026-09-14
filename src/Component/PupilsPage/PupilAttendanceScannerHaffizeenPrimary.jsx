@@ -15,7 +15,7 @@ import { db } from "../../../firebase";
 import { useAuth } from "../Security/AuthContext";
 import { toast } from "react-toastify";
 
-const AttendanceScanner = () => {
+const PupilAttendanceScannerHaffizeenSenior = () => {
     const { user } = useAuth();
     const currentSchoolId = user?.schoolId || null;
 
@@ -324,12 +324,11 @@ const filteredPupils = pupilsList
         const totalMinutes = hours * 60 + minutes;
 
         // Attendance time limits
-        const ATTENDANCE_START = 6 * 60 + 30;   // 6:30 AM
-        const PRESENT_END = 9 * 60 + 30;        // 9:30 AM
-        const LATE_END = 10 * 60 + 30;           // 10:30 AM
-        const ABSENT_END = 12 * 60 + 55;         // 12:55 PM
-
-        // Before 6:30 AM
+    const ATTENDANCE_START = 6 * 60 + 30;   // 6:30 AM
+const PRESENT_END = 9 * 60 + 10;        // 9:10 AM
+const LATE_END = 9 * 60 + 40;           // 9:40 AM
+const ABSENT_END = 13 * 60 + 10;        // 1:10 PM
+       
         if (totalMinutes < ATTENDANCE_START) {
             return {
                 status: "Not Started",
@@ -1544,4 +1543,4 @@ const filteredPupils = pupilsList
     );
 };
 
-export default AttendanceScanner;
+export default PupilAttendanceScannerHaffizeenSenior;

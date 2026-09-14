@@ -35,6 +35,12 @@ const TeacherRegistration = () => {
     const schoolId = location.state?.schoolId || "N/A";
     const CACHE_KEY = `teachers_list_${schoolId}`; // Key specific to schoolId
 
+
+
+    const [positions, setPositions] = useState([]);
+    const [showPositionModal, setShowPositionModal] = useState(false);
+    const [newPosition, setNewPosition] = useState("");
+
     const [formData, setFormData] = useState({
         id: null,
         teacherID: uuidv4().slice(0, 8),
@@ -43,6 +49,8 @@ const TeacherRegistration = () => {
         phone: "",
         email: "",
         address: "",
+        position: "",
+         salary: "",
         registrationDate: new Date().toISOString().slice(0, 10),
         registeredBy: "",
         userPhoto: null,
@@ -62,6 +70,40 @@ const TeacherRegistration = () => {
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(true); // ⬅️ Added loading state
     const [classes, setClasses] = useState([]);
+
+
+    // Load positions for this school
+    useEffect(() => {
+        if (!schoolId || schoolId === "N/A") {
+            setPositions([]);
+            return;
+        }
+
+        const positionsRef = collection(db, "SchoolPositions");
+
+        const q = query(
+            positionsRef,
+            where("schoolId", "==", schoolId)
+        );
+
+        const unsubscribe = onSnapshot(
+            q,
+            (snapshot) => {
+                const schoolPositions = snapshot.docs.map((positionDoc) => ({
+                    id: positionDoc.id,
+                    ...positionDoc.data(),
+                }));
+
+                setPositions(schoolPositions);
+            },
+            (error) => {
+                console.error("Error loading school positions:", error);
+                toast.error("Failed to load positions.");
+            }
+        );
+
+        return () => unsubscribe();
+    }, [schoolId]);
 
     // 🧠 Fetch and Cache Teachers list
     useEffect(() => {
@@ -230,12 +272,14 @@ const TeacherRegistration = () => {
             const teacherData = {
                 teacherID: formData.teacherID,
                 teacherName: newTeacherName,
+                position: formData.position,
                 gender: formData.gender,
                 phone: formData.phone,
                 email: formData.email,
                 address: formData.address,
                 registrationDate: formData.registrationDate,
                 registeredBy: formData.registeredBy,
+                 salary: formData.salary ? Number(formData.salary) : null,
                 userPhotoUrl: formData.userPhoto,
                 userPublicId: formData.userPublicId,
                 schoolId: formData.schoolId,
@@ -288,12 +332,14 @@ const TeacherRegistration = () => {
                 id: null,
                 teacherID: uuidv4().slice(0, 8),
                 teacherName: "",
+                position: "",
                 gender: "",
                 phone: "",
                 email: "",
                 address: "",
                 registrationDate: new Date().toISOString().slice(0, 10),
                 registeredBy: "",
+                salary: "",
                 userPhoto: null,
                 userPublicId: null,
                 schoolId: schoolId,
@@ -315,12 +361,14 @@ const TeacherRegistration = () => {
             id: teacher.id,
             teacherID: teacher.teacherID,
             teacherName: teacher.teacherName,
+            position: teacher.position || "",
             gender: teacher.gender || "",
             phone: teacher.phone || "",
             email: teacher.email || "",
             address: teacher.address || "",
             registrationDate: teacher.registrationDate,
             registeredBy: teacher.registeredBy,
+            salary: teacher.salary ?? "",
             userPhoto: teacher.userPhotoUrl,
             userPublicId: teacher.userPublicId,
             schoolId: teacher.schoolId || schoolId,
@@ -360,6 +408,45 @@ const TeacherRegistration = () => {
         );
     }
 
+   const handleAddPosition = async () => {
+    const position = newPosition.trim();
+
+    if (!position) {
+        toast.error("Please enter a position.");
+        return;
+    }
+
+    if (!schoolId || schoolId === "N/A") {
+        toast.error("School ID is missing.");
+        return;
+    }
+
+    const exists = positions.some(
+        (item) =>
+            item.position.toLowerCase() === position.toLowerCase()
+    );
+
+    if (exists) {
+        toast.error("This position already exists.");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, "SchoolPositions"), {
+            position: position,
+            schoolId: schoolId
+        });
+
+        setNewPosition("");
+        setShowPositionModal(false);
+
+        toast.success("Position added successfully.");
+    } catch (error) {
+        console.error("Error adding position:", error);
+        toast.error("Failed to add position.");
+    }
+};
+
     return (
         <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6 space-y-6">
             {/* ---------------- FORM ---------------- */}
@@ -382,16 +469,61 @@ const TeacherRegistration = () => {
                             className="w-full p-2 mb-4 border rounded-lg bg-gray-100"
                         />
                     </div>
-                    <div className="flex-1">
-                        <label className="block mb-2 font-medium text-sm">Teacher Name</label>
-                        <input
-                            type="text"
-                            name="teacherName"
-                            value={formData.teacherName}
-                            onChange={handleInputChange}
-                            className="w-full p-2 mb-4 border rounded-lg"
-                            required
-                        />
+                    <div className="flex flex-col md:flex-row md:space-x-4">
+
+                        {/* Teacher Name */}
+                        <div className="flex-1">
+                            <label className="block mb-2 font-medium text-sm">
+                                Teacher Name
+                            </label>
+
+                            <input
+                                type="text"
+                                name="teacherName"
+                                value={formData.teacherName}
+                                onChange={handleInputChange}
+                                className="w-full p-2 mb-4 border rounded-lg"
+                                required
+                            />
+                        </div>
+
+                        {/* Title / Position */}
+                        {/* Title / Position */}
+                        <div className="flex-1">
+                            <label className="block mb-2 font-medium text-sm">
+                                Title / Position
+                            </label>
+
+                            <div className="flex gap-2 mb-4">
+                                <select
+                                    name="position"
+                                    value={formData.position}
+                                    onChange={handleInputChange}
+                                    className="flex-1 p-2 border rounded-lg"
+                                >
+                                    <option value="">Select Position</option>
+
+                                    {positions.map((item) => (
+                                        <option
+                                            key={item.id}
+                                            value={item.position}
+                                        >
+                                            {item.position}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPositionModal(true)}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-4 rounded-lg font-semibold"
+                                    title="Add Position"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -508,6 +640,23 @@ const TeacherRegistration = () => {
                             placeholder="Enter Staff ID"
                         />
                     </div>
+
+                        {/* Salary */}
+    <div className="flex-1">
+        <label className="block mb-2 font-medium text-sm">
+            Salary <span className="text-gray-400">(Optional)</span>
+        </label>
+
+        <input
+            type="number"
+            name="salary"
+            value={formData.salary}
+            onChange={handleInputChange}
+            className="w-full p-2 mb-4 border rounded-lg"
+            placeholder="Enter salary"
+            min="0"
+        />
+    </div>
                 </div>
 
                 {/* Photo Upload */}
@@ -524,15 +673,18 @@ const TeacherRegistration = () => {
                             "2-inch Photo"
                         )}
                     </div>
-                    <CloudinaryImageUploader
-                        onUploadSuccess={handleUploadSuccess}
-                        onUploadStart={() => {
-                            setIsUploading(true);
-                            setUploadProgress(0);
-                        }}
-                        onUploadProgress={setUploadProgress}
-                        onUploadComplete={() => setIsUploading(false)}
-                    />
+                  <CloudinaryImageUploader
+    folder="SchoolApp/Teachers"
+    onUploadSuccess={handleUploadSuccess}
+    onUploadStart={() => {
+        setIsUploading(true);
+        setUploadProgress(0);
+    }}
+    onUploadProgress={setUploadProgress}
+    onUploadComplete={() => {
+        setIsUploading(false);
+    }}
+/>
                     <button
                         type="button"
                         onClick={() => setShowCamera(true)}
@@ -572,6 +724,48 @@ const TeacherRegistration = () => {
                 />
             )}
 
+            {showPositionModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+
+                        <h2 className="text-xl font-bold mb-4">
+                            Add Position
+                        </h2>
+
+                        <input
+                            type="text"
+                            value={newPosition}
+                            onChange={(e) => setNewPosition(e.target.value)}
+                            placeholder="Enter position"
+                            className="w-full p-3 border rounded-lg mb-4"
+                        />
+
+                        <div className="flex justify-end gap-3">
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowPositionModal(false);
+                                    setNewPosition("");
+                                }}
+                                className="px-4 py-2 bg-gray-300 rounded-lg"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleAddPosition}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                            >
+                                Add Position
+                            </button>
+
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ---------------- TABLE ---------------- */}
             <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-full lg:max-w-4xl">
                 <h2 className="text-2xl font-bold text-center mb-4">
@@ -597,6 +791,9 @@ const TeacherRegistration = () => {
                                 </th>
                                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                     Name
+                                </th>
+                                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    Position
                                 </th>
                                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">
                                     Gender
@@ -626,6 +823,9 @@ const TeacherRegistration = () => {
                                     </td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {teacher.teacherName}
+                                    </td>
+                                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {teacher.position || "—"}
                                     </td>
                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
                                         {teacher.gender}
@@ -676,7 +876,7 @@ const TeacherRegistration = () => {
                             {filteredTeachers.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan="7"
+                                        colSpan="8"
                                         className="px-6 py-4 text-center text-sm text-gray-500"
                                     >
                                         No teachers found.
