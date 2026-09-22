@@ -15,15 +15,22 @@ import { useAuth } from "../Security/AuthContext";
 
 const PupilAttendanceLogs = () => {
   const { user } = useAuth();
+
   const currentSchoolId = user?.schoolId || "";
 
   const [logs, setLogs] = useState([]);
+  const [classPupils, setClassPupils] = useState([]);
+  const [availableClasses, setAvailableClasses] = useState([]);
+
+  const [availableAcademicYears, setAvailableAcademicYears] = useState([]);
+const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
 
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
 
-  const [filterClass, setFilterClass] = useState("All");
+  // No "All"
+  const [filterClass, setFilterClass] = useState("");
 
   // ==========================================================
   // STATUS EDIT
@@ -48,8 +55,9 @@ const PupilAttendanceLogs = () => {
   // ==========================================================
   const getLoggedInUser = () => {
     try {
-      const savedUser =
-        JSON.parse(localStorage.getItem("schoolUser"));
+      const savedUser = JSON.parse(
+        localStorage.getItem("schoolUser")
+      );
 
       if (!savedUser) {
         return {
@@ -77,9 +85,7 @@ const PupilAttendanceLogs = () => {
           userData.className ||
           "Unknown User",
 
-        role:
-          savedUser.role ||
-          "Unknown",
+        role: savedUser.role || "Unknown",
       };
     } catch (error) {
       console.error(
@@ -117,13 +123,175 @@ const PupilAttendanceLogs = () => {
   };
 
   // ==========================================================
-  // FETCH DAILY ATTENDANCE LOGS
+  // 1. LOAD CLASS NAMES
+  //
+  // IMPORTANT:
+  // We only use this to populate the class dropdown.
+  //
+  // We DO NOT load all pupils into allPupils anymore.
+  // ==========================================================
+  // ==========================================================
+// 1. LOAD CLASS NAMES AND ACADEMIC YEARS
+// ==========================================================
+
+useEffect(() => {
+  if (!currentSchoolId) return;
+
+  const pupilsQuery = query(
+    collection(db, "PupilsReg"),
+    where("schoolId", "==", currentSchoolId)
+  );
+
+  const unsubscribe = onSnapshot(
+    pupilsQuery,
+    (snapshot) => {
+      const classes = Array.from(
+        new Set(
+          snapshot.docs
+            .map((doc) => {
+              const data = doc.data();
+
+              return (
+                data.class ||
+                data.className ||
+                ""
+              );
+            })
+            .filter(Boolean)
+        )
+      ).sort();
+
+      const academicYears = Array.from(
+        new Set(
+          snapshot.docs
+            .map((doc) => {
+              const data = doc.data();
+
+              return (
+                data.academicYear ||
+                data.academic_year ||
+                ""
+              );
+            })
+            .filter(Boolean)
+        )
+      ).sort();
+
+      setAvailableClasses(classes);
+      setAvailableAcademicYears(academicYears);
+
+      // Clear class if it no longer exists
+      setFilterClass((currentClass) => {
+        if (
+          currentClass &&
+          !classes.includes(currentClass)
+        ) {
+          return "";
+        }
+
+        return currentClass;
+      });
+
+      // Clear academic year if it no longer exists
+      setSelectedAcademicYear((currentYear) => {
+        if (
+          currentYear &&
+          !academicYears.includes(currentYear)
+        ) {
+          return "";
+        }
+
+        return currentYear;
+      });
+    },
+    (error) => {
+      console.error(
+        "Error fetching classes and academic years:",
+        error
+      );
+    }
+  );
+
+  return () => unsubscribe();
+}, [currentSchoolId]);
+
+  // ==========================================================
+  // 2. LOAD ONLY PUPILS FROM SELECTED CLASS
+  //
+  // This is the important part for schools with 1000+
+  // pupils.
+  //
+  // We DO NOT load every pupil into memory.
+  // ==========================================================
+  // ==========================================================
+// 2. LOAD ONLY PUPILS FROM SELECTED CLASS + ACADEMIC YEAR
+// ==========================================================
+
+useEffect(() => {
+  setClassPupils([]);
+
+  // Do nothing until class and academic year are selected
+  if (
+    !currentSchoolId ||
+    !filterClass ||
+    !selectedAcademicYear
+  ) {
+    return;
+  }
+
+  const pupilsQuery = query(
+    collection(db, "PupilsReg"),
+    where("schoolId", "==", currentSchoolId),
+    where("class", "==", filterClass),
+    where("academicYear", "==", selectedAcademicYear)
+  );
+
+  const unsubscribe = onSnapshot(
+    pupilsQuery,
+    (snapshot) => {
+      const pupils = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setClassPupils(pupils);
+    },
+    (error) => {
+      console.error(
+        "Error fetching pupils for selected class and academic year:",
+        error
+      );
+    }
+  );
+
+  return () => unsubscribe();
+}, [
+  currentSchoolId,
+  filterClass,
+  selectedAcademicYear,
+]);
+
+  // ==========================================================
+  // 3. FETCH ATTENDANCE LOGS
+  //
+  // We only fetch attendance when a specific class
+  // has been selected.
   // ==========================================================
   useEffect(() => {
-    if (!currentSchoolId) return;
+    setLogs([]);
 
-    const collectionRef =
-      collection(db, "AttendanceLogs");
+    if (
+      !currentSchoolId ||
+      !filterClass ||
+      !selectedDate
+    ) {
+      return;
+    }
+
+    const collectionRef = collection(
+      db,
+      "AttendanceLogs"
+    );
 
     const q = query(
       collectionRef,
@@ -136,6 +304,11 @@ const PupilAttendanceLogs = () => {
         "date",
         "==",
         selectedDate
+      ),
+      where(
+        "class",
+        "==",
+        filterClass
       )
     );
 
@@ -152,17 +325,21 @@ const PupilAttendanceLogs = () => {
       },
       (error) => {
         console.error(
-          "Error fetching attendance logs:",
+          "Error fetching class attendance logs:",
           error
         );
       }
     );
 
     return () => unsubscribe();
-  }, [currentSchoolId, selectedDate]);
+  }, [
+    currentSchoolId,
+    selectedDate,
+    filterClass,
+  ]);
 
   // ==========================================================
-  // CHECK EARLY DEPARTURE
+  // 4. CHECK EARLY DEPARTURE
   // ==========================================================
   const checkEarlyDepartureNotice = (
     clockOutTimeString
@@ -230,70 +407,87 @@ const PupilAttendanceLogs = () => {
   };
 
   // ==========================================================
-  // QUICK CLOCK IN / CLOCK OUT
+  // 5. QUICK CLOCK IN / CLOCK OUT
   // ==========================================================
   const handleQuickClockAction = async (log) => {
-  const now = new Date();
-
-  const nowTime = now.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const logRef = doc(db, "AttendanceLogs", log.id);
-
-  // Get logged-in user
-  const loggedInUser = getLoggedInUser();
-
-  setActionLoading(true);
-
-  try {
-    // ==========================================
-    // MANUAL CLOCK IN
-    // ==========================================
-    if (!log.clockInTime) {
-      await updateDoc(logRef, {
-        clockInTime: nowTime,
-        status: "Present",
-
-        // Who manually clocked in the pupil
-        loggedById: loggedInUser.id,
-        loggedByName: loggedInUser.name,
-        loggedByRole: loggedInUser.role,
-
-        updatedAt: serverTimestamp(),
-      });
-
-      alert(`${log.studentName} clocked in at ${nowTime}`);
+    if (log.isAutomaticallyAbsent) {
+      return;
     }
 
-    // ==========================================
-    // MANUAL CLOCK OUT
-    // ==========================================
-    else if (!log.clockOutTime) {
-      await updateDoc(logRef, {
-        clockOutTime: nowTime,
+    const now = new Date();
 
-        // Who manually clocked out the pupil
-        clockOutById: loggedInUser.id,
-        clockOutByName: loggedInUser.name,
-        clockOutByRole: loggedInUser.role,
-
-        updatedAt: serverTimestamp(),
+    const nowTime =
+      now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
       });
 
-      alert(`${log.studentName} clocked out at ${nowTime}`);
+    const logRef = doc(
+      db,
+      "AttendanceLogs",
+      log.id
+    );
+
+    const loggedInUser =
+      getLoggedInUser();
+
+    setActionLoading(true);
+
+    try {
+      // ==========================================
+      // MANUAL CLOCK IN
+      // ==========================================
+      if (!log.clockInTime) {
+        await updateDoc(logRef, {
+          clockInTime: nowTime,
+          status: "Present",
+
+          loggedById: loggedInUser.id,
+          loggedByName: loggedInUser.name,
+          loggedByRole: loggedInUser.role,
+
+          updatedAt: serverTimestamp(),
+        });
+
+        alert(
+          `${log.studentName} clocked in at ${nowTime}`
+        );
+      }
+
+      // ==========================================
+      // MANUAL CLOCK OUT
+      // ==========================================
+      else if (!log.clockOutTime) {
+        await updateDoc(logRef, {
+          clockOutTime: nowTime,
+
+          clockOutById: loggedInUser.id,
+          clockOutByName: loggedInUser.name,
+          clockOutByRole: loggedInUser.role,
+
+          updatedAt: serverTimestamp(),
+        });
+
+        alert(
+          `${log.studentName} clocked out at ${nowTime}`
+        );
+      }
+    } catch (err) {
+      console.error(
+        "Action error:",
+        err
+      );
+
+      alert(
+        "Failed to update clock time."
+      );
+    } finally {
+      setActionLoading(false);
     }
-  } catch (err) {
-    console.error("Action error:", err);
-    alert("Failed to update clock time.");
-  } finally {
-    setActionLoading(false);
-  }
-};
+  };
 
   // ==========================================================
-  // SAVE STATUS OVERRIDE
+  // 6. SAVE STATUS OVERRIDE
   // ==========================================================
   const handleSaveStatusOverride = async (
     logId
@@ -317,9 +511,6 @@ const PupilAttendanceLogs = () => {
           editNote.trim() ||
           `Status updated to ${editStatus} by ${loggedInUser.name}`,
 
-        // ==============================================
-        // PERSON WHO UPDATED THE ATTENDANCE STATUS
-        // ==============================================
         loggedById: loggedInUser.id,
         loggedByName: loggedInUser.name,
         loggedByRole: loggedInUser.role,
@@ -345,7 +536,7 @@ const PupilAttendanceLogs = () => {
   };
 
   // ==========================================================
-  // DELETE ATTENDANCE LOG
+  // 7. DELETE ATTENDANCE LOG
   // ==========================================================
   const handleDeleteLog = async (
     logId,
@@ -384,29 +575,187 @@ const PupilAttendanceLogs = () => {
   };
 
   // ==========================================================
-  // AVAILABLE CLASSES
+  // 8. BUILD DISPLAY ATTENDANCE
+  //
+  // IMPORTANT:
+  //
+  // Nothing is displayed until a specific class
+  // is selected.
+  //
+  // If the selected class has no attendance activity:
+  //     → show []
+  //
+  // If the selected class has attendance activity:
+  //     → show pupils in that class
+  //
+  // Pupils without a real attendance record:
+  //     → automatically display as Absent
+  //
+  // Automatic absences are NOT saved to Firestore.
   // ==========================================================
-  const availableClasses = [
-    "All",
-    ...Array.from(
-      new Set(
-        logs
-          .map((log) => log.class)
-          .filter(Boolean)
-      )
-    ),
-  ];
+ // ==========================================================
+// 8. BUILD DISPLAY ATTENDANCE
+//
+// TOTAL PUPILS comes from:
+//    PupilsReg → schoolId + class + academicYear
+//
+// ATTENDANCE comes from:
+//    AttendanceLogs → schoolId + class + selectedDate
+//
+// If attendance has started for the selected class/date,
+// pupils without an attendance record are displayed as Absent.
+//
+// Automatic absences are NOT saved to Firestore.
+// ==========================================================
 
-  // ==========================================================
-  // FILTER LOGS
-  // ==========================================================
-  const filteredLogs =
-    filterClass === "All"
-      ? logs
-      : logs.filter(
-          (log) =>
-            log.class === filterClass
-        );
+const getDisplayAttendance = () => {
+  // Require both class and academic year
+  if (
+    !filterClass ||
+    !selectedAcademicYear
+  ) {
+    return [];
+  }
+
+  // ========================================================
+  // CREATE MAP OF EXISTING ATTENDANCE
+  // ========================================================
+
+  const attendanceMap = new Map();
+
+  logs.forEach((log) => {
+    const studentId =
+      log.studentID ||
+      log.pupilID ||
+      log.studentId;
+
+    if (studentId) {
+      attendanceMap.set(
+        String(studentId),
+        log
+      );
+    }
+  });
+
+  // ========================================================
+  // IMPORTANT:
+  // If there are NO attendance records for this date,
+  // don't automatically display everyone as absent.
+  // ========================================================
+
+  if (logs.length === 0) {
+    return [];
+  }
+
+  // ========================================================
+  // BUILD DISPLAY FROM SELECTED ACADEMIC YEAR PUPILS
+  // ========================================================
+
+  return classPupils.map((pupil) => {
+    const studentID =
+      pupil.studentID ||
+      pupil.pupilID ||
+      pupil.studentId ||
+      pupil.id ||
+      "";
+
+    const existingRecord =
+      attendanceMap.get(
+        String(studentID)
+      );
+
+    // ======================================================
+    // REAL ATTENDANCE RECORD
+    // ======================================================
+
+    if (existingRecord) {
+      return {
+        ...existingRecord,
+        isAutomaticallyAbsent: false,
+      };
+    }
+
+    // ======================================================
+    // AUTOMATIC ABSENCE
+    // ======================================================
+
+    return {
+      id: `absent-${pupil.id}`,
+
+      studentID:
+        pupil.studentID ||
+        pupil.pupilID ||
+        pupil.studentId ||
+        pupil.id ||
+        "---",
+
+      studentName:
+        pupil.studentName ||
+        pupil.pupilName ||
+        pupil.name ||
+        "Unnamed Pupil",
+
+      class:
+        pupil.class ||
+        pupil.className ||
+        filterClass,
+
+      academicYear:
+        pupil.academicYear ||
+        selectedAcademicYear,
+
+      userPhotoUrl:
+        pupil.userPhotoUrl ||
+        pupil.photoUrl ||
+        pupil.photo ||
+        "",
+
+      date: selectedDate,
+
+      clockInTime: null,
+      clockOutTime: null,
+
+      status: "Absent",
+
+      note: "",
+
+      isAutomaticallyAbsent: true,
+
+      isManual: false,
+    };
+  });
+};
+
+const displayAttendance =
+  getDisplayAttendance();
+
+const filteredLogs =
+  displayAttendance;
+    // ==========================================================
+// ATTENDANCE SUMMARY
+// ==========================================================
+const totalPupils = classPupils.length;
+
+const totalPresent = filteredLogs.filter(
+  (log) =>
+    String(log.status || "")
+      .trim()
+      .toLowerCase() === "present"
+).length;
+
+const totalLate = filteredLogs.filter(
+  (log) =>
+    String(log.status || "")
+      .trim()
+      .toLowerCase() === "late"
+).length;
+
+const totalAbsent = filteredLogs.filter(
+  (log) =>
+    String(log.status || "")
+      .trim()
+      .toLowerCase() === "absent"
+).length;
 
   // ==========================================================
   // STATUS STYLE
@@ -414,30 +763,41 @@ const PupilAttendanceLogs = () => {
   const getStatusStyle = (
     status
   ) => {
-    switch (status) {
-      case "Present":
+    switch (
+      String(status || "")
+        .trim()
+        .toLowerCase()
+    ) {
+      case "present":
         return {
           backgroundColor: "#d1fae5",
           color: "#065f46",
         };
 
-      case "Late":
+      case "late":
         return {
           backgroundColor: "#fef3c7",
           color: "#92400e",
         };
 
-      case "Absent":
+      case "absent":
         return {
           backgroundColor: "#fee2e2",
           color: "#991b1b",
         };
 
-      case "Excuse":
-      case "Leave":
+      case "excuse":
+      case "excused":
         return {
           backgroundColor: "#dbeafe",
           color: "#1e40af",
+        };
+
+      case "leave":
+      case "on leave":
+        return {
+          backgroundColor: "#ede9fe",
+          color: "#6d28d9",
         };
 
       default:
@@ -463,6 +823,7 @@ const PupilAttendanceLogs = () => {
       {/* ====================================================
           PAGE TITLE
       ==================================================== */}
+
       <h2
         style={{
           fontSize: "20px",
@@ -477,6 +838,7 @@ const PupilAttendanceLogs = () => {
       {/* ====================================================
           CONTROLS
       ==================================================== */}
+
       <div
         style={{
           display: "flex",
@@ -491,6 +853,8 @@ const PupilAttendanceLogs = () => {
         }}
       >
         {/* DATE */}
+        
+
         <div>
           <label
             style={{
@@ -511,8 +875,7 @@ const PupilAttendanceLogs = () => {
               )
             }
             style={{
-              padding:
-                "8px 12px",
+              padding: "8px 12px",
               borderRadius: "6px",
               border:
                 "1px solid #d1d5db",
@@ -522,6 +885,7 @@ const PupilAttendanceLogs = () => {
         </div>
 
         {/* CLASS */}
+
         <div>
           <label
             style={{
@@ -530,7 +894,7 @@ const PupilAttendanceLogs = () => {
               fontSize: "14px",
             }}
           >
-            Filter Class:
+            Select Class:
           </label>
 
           <select
@@ -541,16 +905,19 @@ const PupilAttendanceLogs = () => {
               )
             }
             style={{
-              padding:
-                "8px 12px",
+              padding: "8px 12px",
               borderRadius: "6px",
               border:
                 "1px solid #d1d5db",
               fontSize: "14px",
-              backgroundColor:
-                "#fff",
+              backgroundColor: "#fff",
+              minWidth: "180px",
             }}
           >
+            <option value="">
+              -- Select a Class --
+            </option>
+
             {availableClasses.map(
               (cls) => (
                 <option
@@ -563,11 +930,292 @@ const PupilAttendanceLogs = () => {
             )}
           </select>
         </div>
+
+        {/* ACADEMIC YEAR */}
+
+<div>
+  <label
+    style={{
+      marginRight: "8px",
+      fontWeight: "600",
+      fontSize: "14px",
+    }}
+  >
+    Academic Year:
+  </label>
+
+  <select
+    value={selectedAcademicYear}
+    onChange={(e) =>
+      setSelectedAcademicYear(e.target.value)
+    }
+    style={{
+      padding: "8px 12px",
+      borderRadius: "6px",
+      border: "1px solid #d1d5db",
+      fontSize: "14px",
+      backgroundColor: "#fff",
+      minWidth: "180px",
+    }}
+  >
+    <option value="">
+      -- Select Academic Year --
+    </option>
+
+    {availableAcademicYears.map((year) => (
+      <option
+        key={year}
+        value={year}
+      >
+        {year}
+      </option>
+    ))}
+  </select>
+</div>
       </div>
+
+      {/* ====================================================
+    ATTENDANCE SUMMARY
+==================================================== */}
+
+{filterClass && (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns:
+        "repeat(auto-fit, minmax(180px, 1fr))",
+      gap: "14px",
+      marginBottom: "20px",
+    }}
+  >
+    {/* TOTAL PUPILS */}
+    <div
+      style={{
+        backgroundColor: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "10px",
+        padding: "18px",
+        boxShadow:
+          "0 1px 3px rgba(0,0,0,0.05)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "13px",
+          color: "#6b7280",
+          fontWeight: "600",
+          marginBottom: "8px",
+        }}
+      >
+        TOTAL PUPILS
+      </div>
+
+      <div
+        style={{
+          fontSize: "28px",
+          fontWeight: "bold",
+          color: "#111827",
+        }}
+      >
+        {totalPupils}
+      </div>
+
+      <div
+        style={{
+          fontSize: "12px",
+          color: "#6b7280",
+          marginTop: "4px",
+        }}
+      >
+        {filterClass}
+      </div>
+    </div>
+
+    {/* PRESENT */}
+    <div
+      style={{
+        backgroundColor: "#ecfdf5",
+        border: "1px solid #a7f3d0",
+        borderRadius: "10px",
+        padding: "18px",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "13px",
+          color: "#047857",
+          fontWeight: "600",
+          marginBottom: "8px",
+        }}
+      >
+        PRESENT
+      </div>
+
+      <div
+        style={{
+          fontSize: "28px",
+          fontWeight: "bold",
+          color: "#065f46",
+        }}
+      >
+        {totalPresent}
+      </div>
+
+      <div
+        style={{
+          fontSize: "12px",
+          color: "#047857",
+          marginTop: "4px",
+        }}
+      >
+        Present pupils
+      </div>
+    </div>
+
+    {/* LATE */}
+    <div
+      style={{
+        backgroundColor: "#fffbeb",
+        border: "1px solid #fde68a",
+        borderRadius: "10px",
+        padding: "18px",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "13px",
+          color: "#b45309",
+          fontWeight: "600",
+          marginBottom: "8px",
+        }}
+      >
+        LATE
+      </div>
+
+      <div
+        style={{
+          fontSize: "28px",
+          fontWeight: "bold",
+          color: "#92400e",
+        }}
+      >
+        {totalLate}
+      </div>
+
+      <div
+        style={{
+          fontSize: "12px",
+          color: "#b45309",
+          marginTop: "4px",
+        }}
+      >
+        Late pupils
+      </div>
+    </div>
+
+    {/* ABSENT */}
+    <div
+      style={{
+        backgroundColor: "#fef2f2",
+        border: "1px solid #fecaca",
+        borderRadius: "10px",
+        padding: "18px",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "13px",
+          color: "#dc2626",
+          fontWeight: "600",
+          marginBottom: "8px",
+        }}
+      >
+        ABSENT
+      </div>
+
+      <div
+        style={{
+          fontSize: "28px",
+          fontWeight: "bold",
+          color: "#991b1b",
+        }}
+      >
+        {totalAbsent}
+      </div>
+
+      <div
+        style={{
+          fontSize: "12px",
+          color: "#dc2626",
+          marginTop: "4px",
+        }}
+      >
+        Absent pupils
+      </div>
+    </div>
+  </div>
+)}
+
+      {/* ====================================================
+          NO CLASS SELECTED
+      ==================================================== */}
+
+      {filterClass && selectedAcademicYear &&(
+        <div
+          style={{
+            marginBottom: "16px",
+            padding: "14px 16px",
+            backgroundColor: "#eff6ff",
+            color: "#1d4ed8",
+            border:
+              "1px solid #bfdbfe",
+            borderRadius: "8px",
+            fontSize: "13px",
+          }}
+        >
+          ℹ️ Please select a specific class
+          to view student attendance.
+        </div>
+      )}
+
+      {/* ====================================================
+          NO ATTENDANCE FOR SELECTED CLASS
+      ==================================================== */}
+
+      {filterClass &&
+        logs.length === 0 && (
+          <div
+            style={{
+              marginBottom: "16px",
+              padding: "12px 16px",
+              backgroundColor: "#eff6ff",
+              color: "#1d4ed8",
+              border:
+                "1px solid #bfdbfe",
+              borderRadius: "8px",
+              fontSize: "13px",
+            }}
+          >
+            ℹ️ No pupil attendance has
+            been recorded for{" "}
+            <strong>
+              {filterClass}
+            </strong>{" "}
+            on{" "}
+            <strong>
+              {selectedDate}
+            </strong>
+            . Pupils are not marked absent
+            until at least one attendance
+            record is recorded for this class
+            on this day.
+          </div>
+        )}
 
       {/* ====================================================
           LOGS TABLE
       ==================================================== */}
+
       <div
         style={{
           overflowX: "auto",
@@ -629,8 +1277,7 @@ const PupilAttendanceLogs = () => {
               <th
                 style={{
                   padding: "12px",
-                  textAlign:
-                    "center",
+                  textAlign: "center",
                 }}
               >
                 Actions
@@ -639,23 +1286,22 @@ const PupilAttendanceLogs = () => {
           </thead>
 
           <tbody>
-            {filteredLogs.length ===
-            0 ? (
+            {filteredLogs.length === 0 ? (
               <tr>
                 <td
                   colSpan="9"
                   style={{
-                    padding:
-                      "24px",
+                    padding: "24px",
                     textAlign:
                       "center",
-                    color:
-                      "#6b7280",
+                    color: "#6b7280",
                   }}
                 >
-                  No attendance logs
-                  found for the
-                  selected criteria.
+                  {!filterClass
+                    ? "Select a class to view attendance."
+                    : logs.length === 0
+                    ? "No attendance logs found for the selected class and date."
+                    : "No attendance records found."}
                 </td>
               </tr>
             ) : (
@@ -670,23 +1316,33 @@ const PupilAttendanceLogs = () => {
                     editingLogId ===
                     log.id;
 
+                  const isAutomaticallyAbsent =
+                    log.isAutomaticallyAbsent;
+
+                  const studentClass =
+                    log.class ||
+                    log.className ||
+                    filterClass ||
+                    "—";
+
                   return (
                     <tr
                       key={log.id}
                       style={{
                         borderBottom:
                           "1px solid #e5e7eb",
+                        backgroundColor:
+                          isAutomaticallyAbsent
+                            ? "#fff7f7"
+                            : "transparent",
                       }}
                     >
-                      {/* =================================
-                          STUDENT
-                      ================================= */}
+                      {/* STUDENT */}
+
                       <td
                         style={{
-                          padding:
-                            "12px",
-                          display:
-                            "flex",
+                          padding: "12px",
+                          display: "flex",
                           alignItems:
                             "center",
                           gap: "10px",
@@ -701,10 +1357,8 @@ const PupilAttendanceLogs = () => {
                             log.studentName
                           }
                           style={{
-                            width:
-                              "36px",
-                            height:
-                              "36px",
+                            width: "36px",
+                            height: "36px",
                             borderRadius:
                               "50%",
                             objectFit:
@@ -712,26 +1366,54 @@ const PupilAttendanceLogs = () => {
                           }}
                         />
 
-                        <span
-                          style={{
-                            fontWeight:
-                              "600",
-                            color:
-                              "#111827",
-                          }}
-                        >
-                          {log.studentName ||
-                            "—"}
-                        </span>
+                        <div>
+                          <span
+                            style={{
+                              fontWeight:
+                                "600",
+                              color:
+                                "#111827",
+                            }}
+                          >
+                            {log.studentName ||
+                              "—"}
+                          </span>
+
+                          {isAutomaticallyAbsent && (
+                            <div
+                              style={{
+                                marginTop:
+                                  "3px",
+                                display:
+                                  "inline-block",
+                                fontSize:
+                                  "10px",
+                                padding:
+                                  "2px 6px",
+                                borderRadius:
+                                  "4px",
+                                backgroundColor:
+                                  "#fee2e2",
+                                color:
+                                  "#991b1b",
+                                border:
+                                  "1px solid #fecaca",
+                                fontWeight:
+                                  "600",
+                              }}
+                            >
+                              Automatically
+                              marked absent
+                            </div>
+                          )}
+                        </div>
                       </td>
 
-                      {/* =================================
-                          STUDENT ID
-                      ================================= */}
+                      {/* STUDENT ID */}
+
                       <td
                         style={{
-                          padding:
-                            "12px",
+                          padding: "12px",
                           fontFamily:
                             "monospace",
                           color:
@@ -742,26 +1424,21 @@ const PupilAttendanceLogs = () => {
                           "—"}
                       </td>
 
-                      {/* =================================
-                          CLASS
-                      ================================= */}
+                      {/* CLASS */}
+
                       <td
                         style={{
-                          padding:
-                            "12px",
+                          padding: "12px",
                         }}
                       >
-                        {log.class ||
-                          "—"}
+                        {studentClass}
                       </td>
 
-                      {/* =================================
-                          STATUS
-                      ================================= */}
+                      {/* STATUS */}
+
                       <td
                         style={{
-                          padding:
-                            "12px",
+                          padding: "12px",
                         }}
                       >
                         <span
@@ -784,13 +1461,11 @@ const PupilAttendanceLogs = () => {
                         </span>
                       </td>
 
-                      {/* =================================
-                          CLOCK IN
-                      ================================= */}
+                      {/* CLOCK IN */}
+
                       <td
                         style={{
-                          padding:
-                            "12px",
+                          padding: "12px",
                           color:
                             "#047857",
                           fontWeight:
@@ -802,13 +1477,11 @@ const PupilAttendanceLogs = () => {
                           : "—"}
                       </td>
 
-                      {/* =================================
-                          CLOCK OUT
-                      ================================= */}
+                      {/* CLOCK OUT */}
+
                       <td
                         style={{
-                          padding:
-                            "12px",
+                          padding: "12px",
                           color:
                             "#1d4ed8",
                           fontWeight:
@@ -841,7 +1514,6 @@ const PupilAttendanceLogs = () => {
                               </div>
                             )}
 
-                            {/* CLOCK OUT PERSON */}
                             {log.clockOutByName && (
                               <div
                                 style={{
@@ -884,19 +1556,18 @@ const PupilAttendanceLogs = () => {
                                 "normal",
                             }}
                           >
-                            Still On
-                            Campus
+                            {isAutomaticallyAbsent
+                              ? "—"
+                              : "Still On Campus"}
                           </span>
                         )}
                       </td>
 
-                      {/* =================================
-                          RECORDED BY
-                      ================================= */}
+                      {/* RECORDED BY */}
+
                       <td
                         style={{
-                          padding:
-                            "12px",
+                          padding: "12px",
                           minWidth:
                             "150px",
                         }}
@@ -948,13 +1619,11 @@ const PupilAttendanceLogs = () => {
                         )}
                       </td>
 
-                      {/* =================================
-                          NOTES
-                      ================================= */}
+                      {/* NOTES */}
+
                       <td
                         style={{
-                          padding:
-                            "12px",
+                          padding: "12px",
                           color:
                             "#6b7280",
                           fontSize:
@@ -965,21 +1634,29 @@ const PupilAttendanceLogs = () => {
                           "—"}
                       </td>
 
-                      {/* =================================
-                          ACTIONS
-                      ================================= */}
+                      {/* ACTIONS */}
+
                       <td
                         style={{
-                          padding:
-                            "12px",
+                          padding: "12px",
                           textAlign:
                             "center",
                         }}
                       >
-                        {isEditing ? (
-                          /* =================================
-                             EDIT MODE
-                          ================================= */
+                        {isAutomaticallyAbsent ? (
+                          <span
+                            style={{
+                              fontSize:
+                                "11px",
+                              color:
+                                "#9f1239",
+                              fontStyle:
+                                "italic",
+                            }}
+                          >
+                            No record
+                          </span>
+                        ) : isEditing ? (
                           <div
                             style={{
                               display:
@@ -1125,9 +1802,6 @@ const PupilAttendanceLogs = () => {
                             </div>
                           </div>
                         ) : (
-                          /* =================================
-                             NORMAL ACTION BUTTONS
-                          ================================= */
                           <div
                             style={{
                               display:
@@ -1139,9 +1813,8 @@ const PupilAttendanceLogs = () => {
                                 "wrap",
                             }}
                           >
-                            {/* ===============================
-                                QUICK CLOCK BUTTON
-                            =============================== */}
+                            {/* QUICK CLOCK */}
+
                             {!log.clockOutTime && (
                               <button
                                 onClick={() =>
@@ -1184,51 +1857,9 @@ const PupilAttendanceLogs = () => {
                               </button>
                             )}
 
-                            {/* ===============================
-                                EDIT STATUS
-                            =============================== */}
-                            <button
-                              onClick={() => {
-                                setEditingLogId(
-                                  log.id
-                                );
+                            {/* DELETE */}
 
-                                setEditStatus(
-                                  log.status ||
-                                    "Present"
-                                );
-
-                                setEditNote(
-                                  log.note ||
-                                    ""
-                                );
-                              }}
-                              title="Edit Status or Add Note"
-                              style={{
-                                padding:
-                                  "5px 10px",
-                                backgroundColor:
-                                  "#f59e0b",
-                                color:
-                                  "#fff",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "6px",
-                                fontSize:
-                                  "12px",
-                                fontWeight:
-                                  "600",
-                                cursor:
-                                  "pointer",
-                              }}
-                            >
-                              ✏️ Edit
-                            </button>
-
-                            {/* ===============================
-                                DELETE
-                            =============================== */}
+                            {/*
                             <button
                               onClick={() =>
                                 handleDeleteLog(
@@ -1261,6 +1892,7 @@ const PupilAttendanceLogs = () => {
                             >
                               🗑️
                             </button>
+                            */}
                           </div>
                         )}
                       </td>
@@ -1277,4 +1909,3 @@ const PupilAttendanceLogs = () => {
 };
 
 export default PupilAttendanceLogs;
-

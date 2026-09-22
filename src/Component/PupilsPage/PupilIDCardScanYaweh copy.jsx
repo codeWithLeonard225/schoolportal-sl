@@ -15,10 +15,10 @@ const ROWS_PER_PAGE = 4;
 const CARDS_PER_BROWSER_PAGE = CARDS_PER_ROW * ROWS_PER_PAGE;
 
 // Helper to truncate long class strings to the first 4 characters (e.g., "Jss 1 Move" -> "Jss 1")
-const formatClassName = (className) => {
-    if (!className) return "";
-    return className.trim().slice(0, 4);
-};
+// const formatClassName = (className) => {
+//     if (!className) return "";
+//     return className.trim().slice(0, 4);
+// };
 
 const PupilIDCard = () => {
     const location = useLocation();
@@ -180,138 +180,138 @@ const PupilIDCard = () => {
 
             {/* ID Cards Grid */}
             <div 
-                className="grid" 
-                style={{ 
-                    display: "grid", 
-                    gridTemplateColumns: `repeat(${CARDS_PER_ROW}, ${CARD_WIDTH})`, 
-                    gap: GAP_BETWEEN_CARDS, 
-                    justifyContent: "center",
-                    width: "100%",
-                    maxWidth: "800px"
+    className="grid" 
+    style={{ 
+        display: "grid", 
+        gridTemplateColumns: `repeat(${CARDS_PER_ROW}, ${CARD_WIDTH})`, 
+        gap: GAP_BETWEEN_CARDS, 
+        justifyContent: "center",
+        width: "100%",
+        maxWidth: "800px"
+    }}
+>
+    {visiblePupils.length > 0 ? (
+        visiblePupils.map((pupil) => (
+            <div 
+                key={pupil.id} 
+                style={{
+                    width: CARD_WIDTH,
+                    height: CARD_HEIGHT,
+                    border: "1px solid #0D47A1",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    boxSizing: "border-box",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    background: "linear-gradient(135deg, #ffffff 0%, #fffde7 100%)", // Soft pale yellow tint
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
+                    pageBreakInside: "avoid",
+                    position: "relative"
                 }}
             >
-                {visiblePupils.length > 0 ? (
-                    visiblePupils.map((pupil) => (
-                        <div 
-                            key={pupil.id} 
-                            style={{
-                                width: CARD_WIDTH,
-                                height: CARD_HEIGHT,
-                                border: "1px solid #500000",
-                                borderRadius: "8px",
-                                overflow: "hidden",
-                                boxSizing: "border-box",
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "space-between",
-                                background: "linear-gradient(135deg, #fffde7 0%, #fff9c4 100%)",
-                                boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
-                                pageBreakInside: "avoid",
-                                position: "relative" // Enables absolute positioning for inner elements
-                            }}
-                        >
-                            {/* Header */}
-                            <div style={{ 
-                                background: "linear-gradient(90deg, #800000 0%, #4a0000 100%)", 
-                                padding: "4px 8px", 
-                                display: "flex", 
-                                alignItems: "center", 
-                                gap: "6px",
-                                minHeight: "36px"
-                            }}>
-                                {schoolLogoUrl && (
-                                    <img 
-                                        src={schoolLogoUrl} 
-                                        alt="School Logo" 
-                                        style={{ width: "26px", height: "26px", objectFit: "contain", borderRadius: "3px", background: "#fff", padding: "1px", flexShrink: 0 }} 
-                                    />
-                                )}
-                                <div style={{ flex: 1, overflow: "hidden", lineHeight: "1.1" }}>
-                                    <div style={{ 
-                                        fontWeight: "bold", 
-                                        fontSize: "9.5px", 
-                                        color: "#ffd700", 
-                                        textTransform: "uppercase", 
-                                        wordBreak: "break-word",
-                                        display: "-webkit-box",
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: "vertical",
-                                        overflow: "hidden"
-                                    }}>
-                                        {schoolName || "STUDENT ID CARD"}
-                                    </div>
-                                    {schoolAddress && (
-                                        <div style={{ fontSize: "6.5px", color: "#fff59d", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                            {schoolAddress}
-                                        </div>
-                                    )}
-                                </div>
-                                <span style={{ fontSize: "8.5px", fontWeight: "600", color: "#ffd700", whiteSpace: "nowrap", flexShrink: 0 }}>
-                                    {pupil.academicYear || ""}
-                                </span>
-                            </div>
-
-                            {/* Card Body */}
-                            <div style={{ display: "flex", gap: "8px", alignItems: "center", padding: "0 8px", margin: "2px 0" }}>
-                                <img 
-                                    src={pupil.userPhotoUrl || "https://via.placeholder.com/80"} 
-                                    alt={pupil.studentName} 
-                                    style={{ width: "60px", height: "60px", borderRadius: "5px", objectFit: "cover", border: "1px solid #800000", flexShrink: 0 }}
-                                />
-                                <div style={{ fontSize: "10px", lineHeight: "1.3", flex: 1, overflow: "hidden", color: "#4a0000" }}>
-                                    <div style={{ fontWeight: "bold", fontSize: "11px", color: "#800000", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                        {pupil.studentName}
-                                    </div>
-                                    <div><strong>ID:</strong> {pupil.studentID}</div>
-                                    <div><strong>Class:</strong> {formatClassName(pupil.class)}</div>
-                                </div>
-                            </div>
-
-                            {/* Floating QR Code */}
-                            <div style={{ 
-                                position: "absolute",
-                                bottom: "30px",
-                                right: "35px",
-                                background: "#fff", 
-                                padding: "2px", 
-                                borderRadius: "4px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
-                                zIndex: 2
-                            }}>
-                                <QRCodeSVG 
-                                    value={pupil.studentID} 
-                                    size={42}
-                                    level="M"
-                                    includeMargin={false}
-                                />
-                            </div>
-
-                            {/* Card Footer */}
-                            <div style={{ 
-                                display: "flex", 
-                                alignItems: "center", 
-                                background: "linear-gradient(90deg, #800000 0%, #4a0000 100%)", 
-                                padding: "4px 8px",
-                                minHeight: "36px",
-                                paddingRight: "60px" // Reserves right padding so text won't overlap the QR code
-                            }}>
-                                <div style={{ fontSize: "10px", color: "#ffd700", lineHeight: "1.1", overflow: "hidden" }}>
-                                    {schoolMotto && <div style={{ fontStyle: "italic", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>"{schoolMotto}"</div>}
-                                    {schoolContact && <div style={{ whiteSpace: "nowrap", overflow: "hidden",fontWeight: "500", textOverflow: "ellipsis" }}>Tel: {schoolContact}</div>}
-                                    {!schoolMotto && !schoolContact && <div>Official School Pass</div>}
-                                </div>
-                            </div>
+                {/* Header - Sky Blue & Navy */}
+                <div style={{ 
+                    background: "linear-gradient(90deg, #1E88E5 0%, #0D47A1 100%)", 
+                    padding: "4px 8px", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "6px",
+                    minHeight: "36px"
+                }}>
+                    {schoolLogoUrl && (
+                        <img 
+                            src={schoolLogoUrl} 
+                            alt="School Logo" 
+                            style={{ width: "26px", height: "26px", objectFit: "contain", borderRadius: "3px", background: "#fff", padding: "1px", flexShrink: 0 }} 
+                        />
+                    )}
+                    <div style={{ flex: 1, overflow: "hidden", lineHeight: "1.1" }}>
+                        <div style={{ 
+                            fontWeight: "bold", 
+                            fontSize: "9.5px", 
+                            color: "#ffffff", 
+                            textTransform: "uppercase", 
+                            wordBreak: "break-word",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden"
+                        }}>
+                            {schoolName || "STUDENT ID CARD"}
                         </div>
-                    ))
-                ) : (
-                    <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "#6b7280", padding: "40px" }}>
-                        No pupils found for the selected filters.
+                        {schoolAddress && (
+                            <div style={{ fontSize: "6.5px", color: "#e0f7fa", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {schoolAddress}
+                            </div>
+                        )}
                     </div>
-                )}
+                    <span style={{ fontSize: "8.5px", fontWeight: "600", color: "#fff9c4", whiteSpace: "nowrap", flexShrink: 0 }}>
+                        {pupil.academicYear || ""}
+                    </span>
+                </div>
+
+                {/* Card Body - Uniform Pale Yellow & Navy Text */}
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", padding: "0 8px", margin: "2px 0" }}>
+                    <img 
+                        src={pupil.userPhotoUrl || "https://via.placeholder.com/80"} 
+                        alt={pupil.studentName} 
+                        style={{ width: "100px", height: "100px", borderRadius: "5px", objectFit: "cover", border: "1px solid #0D47A1", flexShrink: 0 }}
+                    />
+                    <div style={{ fontSize: "10px", lineHeight: "1.3", flex: 1, overflow: "hidden", color: "#1A237E" }}>
+                        <div style={{ fontWeight: "bold", fontSize: "11px", color: "#0D47A1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {pupil.studentName}
+                        </div>
+                        <div><strong>ID:</strong> {pupil.studentID}</div>
+                        <div><strong>Class:</strong> {pupil.class}</div>
+                    </div>
+                </div>
+
+                {/* Floating QR Code */}
+                <div style={{ 
+                    position: "absolute",
+                    bottom: "30px",
+                    right: "35px",
+                    background: "#fff", 
+                    padding: "2px", 
+                    borderRadius: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+                    zIndex: 2
+                }}>
+                    <QRCodeSVG 
+                        value={pupil.studentID} 
+                        size={42}
+                        level="M"
+                        includeMargin={false}
+                    />
+                </div>
+
+                {/* Card Footer - Deep Navy Accent */}
+                <div style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    background: "linear-gradient(90deg, #0D47A1 0%, #1A237E 100%)", 
+                    padding: "4px 8px",
+                    minHeight: "36px",
+                    paddingRight: "60px"
+                }}>
+                    <div style={{ fontSize: "10px", color: "#fff9c4", lineHeight: "1.1", overflow: "hidden" }}>
+                        {schoolMotto && <div style={{ fontStyle: "italic", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>"{schoolMotto}"</div>}
+                        {schoolContact && <div style={{ whiteSpace: "nowrap", overflow: "hidden", fontWeight: "500", textOverflow: "ellipsis" }}>Tel: {schoolContact}</div>}
+                        {!schoolMotto && !schoolContact && <div>Official School Pass</div>}
+                    </div>
+                </div>
             </div>
+        ))
+    ) : (
+        <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "#6b7280", padding: "40px" }}>
+            No pupils found for the selected filters.
+        </div>
+    )}
+</div>
         </div>
     );
 };

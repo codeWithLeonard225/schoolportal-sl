@@ -31,6 +31,8 @@ import ExamsPannel from "./Component/Admin/ExamsDashboard";
 import HODPannel from "./Component/Admin/HODPannel";
 import HaffizeenSecondary from "./Component/Admin/HaffizeenSecondary";
 import HaffizeenPrimary from "./Component/Admin/HaffizeenPrimary";
+import Yahweh from "./Component/Admin/Yahweh";
+import SheikTais from "./Component/Admin/SheikTais";
 import PreviousFees from "./Component/FeeReceipt.jsx/PreviousFees";
 
 
@@ -207,6 +209,22 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <HaffizeenPrimary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/Yahweh"
+            element={
+              <ProtectedRoute role="admin">
+                <Yahweh />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/SheikTais"
+            element={
+              <ProtectedRoute role="admin">
+                <SheikTais />
               </ProtectedRoute>
             }
           />

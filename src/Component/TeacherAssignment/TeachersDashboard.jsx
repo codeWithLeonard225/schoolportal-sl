@@ -30,6 +30,7 @@ import GradeSheet from "./FormMaster/GradeSheet";
 import TermResult from "./FormMaster/TermResult";
 import YearlyResult from "./FormMaster/YearlyResult";
 import ReportCard from "./FormMaster/ReportCard";
+import PupilAttendanceLogs from "./FormMaster/PupilAttendanceLogs";
 
 
 // ✅ Dynamic Sidebar Items
@@ -70,19 +71,15 @@ const getNavItems = (teacherInfo) => {
       label: `Form Class: ${teacherInfo.assignClass || "N/A"}`,
       icon: <MdLibraryBooks />,
       children: [
-        { key: "FormMasterGradeSheet", label: "Submitted Grades" },
-        { key: "GradeSheet", label: "GradeSheet" },
+        // { key: "FormMasterGradeSheet", label: "Submitted Grades" },
+        // { key: "GradeSheet", label: "GradeSheet" },
         { key: "TermResult", label: "Term Sheet" },
-        { key: "YearlyResult", label: "Yearly Result" },
+        // { key: "YearlyResult", label: "Yearly Result" },
         { key: "ReportCard", label: "Report Card" },
+        { key: "PupilAttendanceLogs", label: "Pupil AttendanceLogs" },
       ],
     });
 
-    baseItems.push({
-      key: "pupilAttendance",
-      label: "Pupil Attendance",
-      icon: <MdWarning />,
-    });
   }
 
   // ✅ Always show logout
@@ -257,6 +254,8 @@ function TeachersDashboard() {
 
       case "YearlyResult":
         return <YearlyResult />;
+      case "PupilAttendanceLogs":
+        return <PupilAttendanceLogs />;
 
       case "LogoutPage":
         return <LogoutPage />;

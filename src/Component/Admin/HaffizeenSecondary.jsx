@@ -64,11 +64,13 @@ import ClassDelete from "../Voters/ClassDelete";
 import AncillaryReceiptForm from "../FeeReceipt.jsx/AncillaryReceiptForm";
 import PreviousFees from "../FeeReceipt.jsx/PreviousFees";
 import WASCEForm from "../Voters/WASCEForm";
-import TeacherIDCards from "../Staff/TeacherIDCards";
+import TeacherIDCards from "../Staff/TeacherIDCardsHaffizeen";
+import StaffIDCardBackHaffizeen from "../Staff/StaffIDCardBackHaffizeen";
 import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerHaffizeenSecondary";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffPayroll from "../Staff/StaffPayroll";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScan";
+import PupilIDCardBack from "../PupilsPage/PupilIDCardBack";
 import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerHaffizeenSenior";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
 
@@ -167,6 +169,7 @@ const NAV_ITEMS = [
     icon: <MdBarChart />,
     children: [
     //   { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
+      // { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
       { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
       { key: "PupilAttendanceLogs", label: "Pupil Attendance Logs", icon: <MdPerson /> },
     ],
@@ -176,22 +179,23 @@ const NAV_ITEMS = [
     label: "Qr code Attendance-Staff",
     icon: <MdBarChart />,
     children: [
-    //   { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
+      { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
+      { key: "StaffIDCardBackHaffizeen", label: "Teacher IDCards Back", icon: <MdPerson /> },
       { key: "StaffAttendanceScanner", label: "Staff Attendance Scanner", icon: <MdPerson /> },
       { key: "StaffPayroll", label: "Staff Payrole", icon: <MdPerson /> },
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
     ],
   },
-  {
-    key: "pupilAttendance",
-    label: "Pupil Attendance",
-    icon: <MdWarning />, // 📖
-  },
-  {
-    key: "staffAttendance",
-    label: "Staff Attendance",
-    icon: <MdWarning />, // 📖
-  },
+  // {
+  //   key: "pupilAttendance",
+  //   label: "Pupil Attendance",
+  //   icon: <MdWarning />, // 📖
+  // },
+  // {
+  //   key: "staffAttendance",
+  //   label: "Staff Attendance",
+  //   icon: <MdWarning />, // 📖
+  // },
   {
     key: "timetable",
     label: "TimeTable",
@@ -326,10 +330,12 @@ function AdminPanel() {
       case "AncillaryReceiptForm": return <AncillaryReceiptForm />;
       case "PreviousFees": return <PreviousFees />;
       case "TeacherIDCards": return <TeacherIDCards />;
+      case "StaffIDCardBackHaffizeen": return <StaffIDCardBackHaffizeen />;
       case "StaffAttendanceScanner": return <StaffAttendanceScanner />;
       case "StaffAttendanceRecords": return <StaffAttendanceRecords />;
       case "StaffPayroll": return <StaffPayroll />;
       case "PupilIDCardScan": return <PupilIDCardScan />;
+      case "PupilIDCardBack": return <PupilIDCardBack />;
       case "PupilAttendanceScanner": return <PupilAttendanceScanner />;
       case "PupilAttendanceLogs": return <PupilAttendanceLogs />;
 

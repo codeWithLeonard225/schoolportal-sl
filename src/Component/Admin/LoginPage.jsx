@@ -61,6 +61,8 @@ const LoginPage = () => {
             case "International": return "/InternationalReg";
             case "HaffizeenSecondary": return "/HaffizeenSecondary";
             case "HaffizeenPrimary": return "/HaffizeenPrimary";
+            case "Yahweh": return "/Yahweh";
+            case "SheikTais": return "/SheikTais";
             default: return "/admin";
         }
     };
