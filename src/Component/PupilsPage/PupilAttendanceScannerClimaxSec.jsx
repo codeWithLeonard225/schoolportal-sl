@@ -340,10 +340,10 @@ const AttendanceScanner = () => {
         const totalMinutes = hours * 60 + minutes;
 
         // Attendance time limits
-          const ATTENDANCE_START = 6 * 60 + 30; // 6:30 AM
-        const PRESENT_END = 9 * 60 ;       // 8:00 AM
-        const LATE_END = 12 * 60;           // 12:00 PM
-        const ABSENT_END = 13 * 60 + 30;             // 1:30 PM
+              const ATTENDANCE_START = 11 * 60 ; // 11:00 AM
+        const PRESENT_END = 14 * 60 ;       // 2:00 AM
+        const LATE_END = 16 * 60;           // 4:00 PM
+        const ABSENT_END = 18 * 60 + 30;             // 6:30 PM
         // Before 6:30 AM
         if (totalMinutes < ATTENDANCE_START) {
             return {

@@ -73,10 +73,12 @@ import StaffPayroll from "../Staff/StaffPayroll";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScanYaweh";
 import PupilIDCardBack from "../PupilsPage/PupilIDCardBackYaweh";
 import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerClimax";
+import PupilAttendanceScannerClimaxSec from "../PupilsPage/PupilAttendanceScannerClimaxSec";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
 import PupilPhotoManager from "../Voters/PupilPhotoManager";
 import PupilPhotoEditor from "../Voters/PupilPhotoEditor";
-import ManualAttendance from "../PupilsPage/ManualAttendanceFormMaster";
+import ManualAttendance from "../PupilsPage/ManualAttendanceFormMasterClimaxPre";
+import ManualAttendanceSec from "../PupilsPage/ManualAttendanceFormMasterClimaxSec";
 import TeacherPhotoEditor from "../Voters/TeacherPhotoEditor";
 import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
 import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
@@ -186,8 +188,10 @@ const NAV_ITEMS = [
     children: [
       // { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
       // { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
-      { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
-      { key: "ManualAttendance", label: "Attendance Manual", icon: <MdPerson /> },
+      { key: "PupilAttendanceScanner", label: "Primary Scanner", icon: <MdPerson /> },
+      { key: "PupilAttendanceScannerClimaxSec", label: "Secondary Scanner", icon: <MdPerson /> },
+      { key: "ManualAttendance", label: "Primary Manual", icon: <MdPerson /> },
+      { key: "ManualAttendanceSec", label: "Secondary Manual", icon: <MdPerson /> },
       { key: "PupilAttendanceLogs", label: "Pupil Attendance Logs", icon: <MdPerson /> },
     ],
   },
@@ -330,6 +334,7 @@ function AdminPanel() {
       case "schoolreg": return <SchoolRegistration />;
       case "staffAttendance": return <StaffAttendance />;
       case "pupilAttendance": return <AttendancePage />;
+      case "PupilAttendanceScannerClimaxSec": return <PupilAttendanceScannerClimaxSec />;
       case "staffClockin": return <StaffClocking />;
       case "TimetableEntry": return <TimetableEntry />;
       case "TimeTableTeacherAtt": return <TimeTableTeacherAtt />;
@@ -355,6 +360,7 @@ function AdminPanel() {
       case "PupilAttendanceScanner": return <PupilAttendanceScanner />;
       case "PupilAttendanceLogs": return <PupilAttendanceLogs />;
             case "ManualAttendance": return <ManualAttendance />;
+            case "ManualAttendanceSec": return <ManualAttendanceSec />;
       case "TeacherPhotoManager": return <TeacherPhotoManager />;
       case "TeacherPhotoEditor": return <TeacherPhotoEditor />;
         case "PupilPhotoManager": return <PupilPhotoManager />;
