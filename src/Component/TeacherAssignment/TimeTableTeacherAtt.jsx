@@ -35,7 +35,7 @@ const TimeTableTeacherAtt = () => {
   const [loading, setLoading] = useState(true);
   const [filterClass, setFilterClass] = useState("");
 
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const days = ["Sunday","Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",];
 
   const getMonday = (d) => {
     d = new Date(d);

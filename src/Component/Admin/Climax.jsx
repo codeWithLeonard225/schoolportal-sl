@@ -66,7 +66,8 @@ import PreviousFees from "../FeeReceipt.jsx/PreviousFees";
 import WASCEForm from "../Voters/WASCEForm";
 import TeacherIDCards from "../Staff/TeacherIDCardsHaffizeen";
 import StaffIDCardBackYaweh from "../Staff/StaffIDCardBackYaweh";
-import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerYahweh";
+import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerClimaxPri";
+import StaffAttendanceScannerClimaxPSec from "../Staff/StaffAttendanceScannerClimaxPSec";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffPayroll from "../Staff/StaffPayroll";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScanYaweh";
@@ -197,7 +198,8 @@ const NAV_ITEMS = [
     children: [
       // { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
       // { key: "StaffIDCardBackYaweh", label: "Teacher IDCards Back", icon: <MdPerson /> },
-      { key: "StaffAttendanceScanner", label: "Staff Attendance Scanner", icon: <MdPerson /> },
+      { key: "StaffAttendanceScanner", label: "Staff Scanner Pri", icon: <MdPerson /> },
+      { key: "StaffAttendanceScannerClimaxPSec", label: "Staff Scanner Sec", icon: <MdPerson /> },
       { key: "StaffPayroll", label: "Staff Payrole", icon: <MdPerson /> },
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
     ],
@@ -345,6 +347,7 @@ function AdminPanel() {
       case "TeacherIDCards": return <TeacherIDCards />;
       case "StaffIDCardBackYaweh": return <StaffIDCardBackYaweh />;
       case "StaffAttendanceScanner": return <StaffAttendanceScanner />;
+      case "StaffAttendanceScannerClimaxPSec": return <StaffAttendanceScannerClimaxPSec />;
       case "StaffAttendanceRecords": return <StaffAttendanceRecords />;
       case "StaffPayroll": return <StaffPayroll />;
       case "PupilIDCardScan": return <PupilIDCardScan />;
