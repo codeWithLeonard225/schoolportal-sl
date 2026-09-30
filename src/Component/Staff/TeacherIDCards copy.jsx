@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { db } from "../../../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -26,9 +25,6 @@ const TeacherIDCards = () => {
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // NEW: Selected teacher IDs
-    const [selectedTeachers, setSelectedTeachers] = useState([]);
-
     useEffect(() => {
         if (schoolId === "N/A") {
             setLoading(false);
@@ -52,30 +48,7 @@ const TeacherIDCards = () => {
         fetchTeachers();
     }, [schoolId]);
 
-    // NEW: Select / unselect one teacher
-    const handleSelectTeacher = (teacherId) => {
-        setSelectedTeachers((prev) =>
-            prev.includes(teacherId)
-                ? prev.filter((id) => id !== teacherId)
-                : [...prev, teacherId]
-        );
-    };
-
-    // NEW: Select / unselect all teachers
-    const handleSelectAll = () => {
-        if (selectedTeachers.length === teachers.length) {
-            setSelectedTeachers([]);
-        } else {
-            setSelectedTeachers(teachers.map((teacher) => teacher.id));
-        }
-    };
-
     const handlePrint = () => {
-        // If no selection, print all
-        if (selectedTeachers.length === 0) {
-            toast.info("No specific ID card selected. Printing all ID cards.");
-        }
-
         window.print();
     };
 
@@ -85,7 +58,6 @@ const TeacherIDCards = () => {
 
     return (
         <div className="p-6 min-h-screen bg-gray-100 flex flex-col items-center">
-
             {/* PRINT CSS OVERRIDES */}
             <style>
                 {`
@@ -110,10 +82,6 @@ const TeacherIDCards = () => {
                             justify-content: center !important;
                         }
 
-                        .print-hidden-card {
-                            display: none !important;
-                        }
-
                         @page {
                             size: A4 portrait;
                             margin: 0.4in;
@@ -132,113 +100,54 @@ const TeacherIDCards = () => {
 
             {/* Action Bar */}
             <div className="w-full max-w-4xl flex justify-between items-center mb-6 print:hidden">
-
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">
-                        Staff ID Cards Generator
-                    </h1>
-
-                    <p className="text-xs text-gray-500">
-                        {schoolName} ({teachers.length} Members Found)
-                    </p>
+                    <h1 className="text-2xl font-bold text-gray-800">Staff ID Cards Generator</h1>
+                    <p className="text-xs text-gray-500">{schoolName} ({teachers.length} Members Found)</p>
                 </div>
-
-                <div className="flex items-center gap-3">
-
-                    {/* Select All */}
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={
-                                teachers.length > 0 &&
-                                selectedTeachers.length === teachers.length
-                            }
-                            onChange={handleSelectAll}
-                            className="w-4 h-4"
-                        />
-                        Select All
-                    </label>
-
-                    {/* Print Button */}
-                    <button
-                        onClick={handlePrint}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition flex items-center gap-2"
-                    >
-                        <span>
-                            {selectedTeachers.length > 0
-                                ? `Print Selected (${selectedTeachers.length})`
-                                : "Print All ID Cards"}
-                        </span>
-                        🖨️
-                    </button>
-
-                </div>
+                <button
+                    onClick={handlePrint}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition flex items-center gap-2"
+                >
+                    <span>Print All ID Cards</span> 🖨️
+                </button>
             </div>
 
             {/* ID Cards Container */}
             <div className="cards-container grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
-
                 {teachers.map((teacher) => {
-
-                    // NEW: Check whether this card is selected
-                    const isSelected = selectedTeachers.includes(teacher.id);
-
                     // Preserved original QR Code payload
+                    // const qrPayload = JSON.stringify({
+                    //     teacherID: teacher.teacherID,
+                    //     teacherName: teacher.teacherName,
+                    //     schoolId: teacher.schoolId
+                    // });
                     const qrPayload = teacher.teacherID || "";
 
                     return (
                         <div
                             key={teacher.id}
-                            className={`
-                                w-[3.375in] h-[2.125in] bg-white border border-gray-300 rounded-xl shadow-md overflow-hidden flex flex-col justify-between relative print:shadow-none print:border-gray-400 mx-auto
-                                ${selectedTeachers.length > 0 && !isSelected
-                                    ? "print-hidden-card"
-                                    : ""}
-                            `}
+                            className="w-[3.375in] h-[2.125in] bg-white border border-gray-300 rounded-xl shadow-md overflow-hidden flex flex-col justify-between relative print:shadow-none print:border-gray-400 mx-auto"
                             style={{ pageBreakInside: "avoid" }}
                         >
-
-                            {/* NEW: Selection Checkbox */}
-                            <div className="absolute top-2 right-2 z-10 print:hidden">
-                                <label className="flex items-center gap-1 bg-white/90 px-1.5 py-1 rounded shadow-sm cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={() => handleSelectTeacher(teacher.id)}
-                                        className="w-4 h-4"
-                                    />
-                                    <span className="text-[9px] font-semibold text-gray-700">
-                                        Select
-                                    </span>
-                                </label>
-                            </div>
-
                             {/* Card Top Banner (School Branded) */}
                             <div className="bg-slate-900 text-white px-3 py-1.5 flex items-center justify-between border-b-2 border-indigo-500">
                                 <div className="flex items-center gap-2 max-w-[70%]">
                                     {schoolLogoUrl ? (
-                                        <img
-                                            src={schoolLogoUrl}
-                                            alt="Logo"
-                                            className="w-6 h-6 object-contain rounded"
-                                        />
+                                        <img src={schoolLogoUrl} alt="Logo" className="w-6 h-6 object-contain rounded" />
                                     ) : (
                                         <div className="w-6 h-6 bg-indigo-600 rounded flex items-center justify-center text-[10px] font-bold">
                                             {schoolName.charAt(0)}
                                         </div>
                                     )}
-
                                     <div className="overflow-hidden">
                                         <h2 className="text-[10px] font-bold tracking-tight leading-tight uppercase break-words line-clamp-2">
-                                            {schoolName}
-                                        </h2>
-
+    {schoolName}
+</h2>
                                         <p className="text-[8px] text-gray-300 truncate leading-tight italic">
                                             {schoolMotto}
                                         </p>
                                     </div>
                                 </div>
-
                                 <span className="bg-indigo-600 text-[8px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider text-white">
                                     STAFF
                                 </span>
@@ -246,7 +155,6 @@ const TeacherIDCards = () => {
 
                             {/* Main Body */}
                             <div className="p-2.5 flex gap-3 items-center flex-1">
-
                                 {/* Staff Photo */}
                                 <div className="w-[1in] h-[1.2in] bg-gray-100 rounded-md overflow-hidden border border-gray-300 flex-shrink-0 shadow-inner">
                                     {teacher.userPhotoUrl ? (
@@ -262,50 +170,45 @@ const TeacherIDCards = () => {
                                     )}
                                 </div>
 
-                                {/* Details & Role */}
-                                <div className="flex-1 min-w-0 flex flex-col items-center justify-center h-[1.2in] text-center top-8">
+                             
+{/* Details & Role */}
+<div className="flex-1 min-w-0 flex flex-col items-center justify-center h-[1.2in] text-center top-8">
 
-                                    {/* Teacher Name */}
-                                    <div className="w-full">
-                                        <h3 className="text-[11px] font-bold text-gray-900 leading-tight break-words line-clamp-2">
-                                            {teacher.teacherName}
-                                        </h3>
+    {/* Teacher Name */}
+    <div className="w-full">
+        <h3 className="text-[11px] font-bold text-gray-900 leading-tight break-words line-clamp-2">
+            {teacher.teacherName}
+        </h3>
 
-                                        {/* Position */}
-                                        <p className="text-[9px] text-indigo-600 font-semibold mt-0.5 leading-tight break-words line-clamp-2">
-                                            {teacher.position || "Staff"}
-                                        </p>
-                                    </div>
+        {/* Position */}
+        <p className="text-[9px] text-indigo-600 font-semibold mt-0.5 leading-tight break-words line-clamp-2">
+            {teacher.position || "Staff"}
+        </p>
+    </div>
 
-                                    {/* Staff Information */}
-                                    <div className="w-full text-[8.5px] text-gray-600 space-y-0.5 border-t pt-1 mt-1">
+    {/* Staff Information */}
+    <div className="w-full text-[8.5px] text-gray-600 space-y-0.5 border-t pt-1 mt-1">
+        <p className="leading-tight">
+            <span className="font-medium text-gray-700">Gender:</span>{" "}
+            {teacher.gender || "N/A"}
+        </p>
 
-                                        <p className="leading-tight">
-                                            <span className="font-medium text-gray-700">
-                                                Gender:
-                                            </span>{" "}
-                                            {teacher.gender || "N/A"}
-                                        </p>
+        <p className="leading-tight">
+            <span className="font-medium text-gray-700">Phone:</span>{" "}
+            {teacher.phone || "N/A"}
+        </p>
+    </div>
 
-                                        <p className="leading-tight">
-                                            <span className="font-medium text-gray-700">
-                                                Phone:
-                                            </span>{" "}
-                                            {teacher.phone || "N/A"}
-                                        </p>
-
-                                    </div>
-                                </div>
+</div>
 
                                 {/* Preserved QR Code */}
                                 <div className="flex flex-col items-center justify-center bg-gray-50 p-1 rounded border border-gray-200 flex-shrink-0">
-
+                                    {/* <QRCodeSVG value={qrPayload} size={54} /> */}
                                     <QRCodeSVG
                                         value={qrPayload}
                                         size={54}
                                         level="M"
                                     />
-
                                     <span className="text-[7px] font-bold text-gray-500 mt-0.5 uppercase tracking-wider">
                                         VERIFY
                                     </span>
@@ -314,9 +217,8 @@ const TeacherIDCards = () => {
 
                             {/* Card Footer */}
                             <div className="bg-gray-100 px-3 py-1 flex justify-between items-center text-[7.5px] text-gray-500 border-t border-gray-200">
-                                <span className="truncate max-w-[60%]">
-                                    {schoolAddress}
-                                </span>
+                                <span className="truncate max-w-[60%]">{schoolAddress}</span>
+                             
                             </div>
                         </div>
                     );
@@ -324,8 +226,7 @@ const TeacherIDCards = () => {
 
                 {teachers.length === 0 && (
                     <div className="col-span-2 text-center text-gray-500 py-10 bg-white rounded-lg border border-dashed border-gray-300">
-                        No staff members found matching school code:{" "}
-                        <span className="font-semibold">{schoolId}</span>
+                        No staff members found matching school code: <span className="font-semibold">{schoolId}</span>
                     </div>
                 )}
             </div>

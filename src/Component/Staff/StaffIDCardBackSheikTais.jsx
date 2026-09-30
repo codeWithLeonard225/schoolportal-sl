@@ -378,8 +378,8 @@ const StaffIDCardBack = () => {
               style={{
                 width: CARD_WIDTH,
                 height: CARD_HEIGHT,
-                // border: "1px solid #1a252f",
-                // borderRadius: "8px",
+                border: "1px solid #1a252f",
+                borderRadius: "8px",
                 boxSizing: "border-box",
                 position: "relative",
                 overflow: "hidden",
@@ -395,14 +395,14 @@ const StaffIDCardBack = () => {
               }}
             >
               <img
-                src="/images/GraceBackSign.png"
+                src="/images/sheiktaisSign.png"
                 alt="ID Card Background"
                 style={{
                   position: "absolute",
-                  top: "80px",
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
+                  top: "70px",
+                  left: "80px",
+                  width: "50%",
+                  height: "50%",
                   objectFit: "cover",
                   zIndex: 0,
                 }}
@@ -453,9 +453,9 @@ const StaffIDCardBack = () => {
                   flex: 1,
                   display: "flex",
                   flexDirection: "column",
-                  justifyContent: "center",
+                  justifyContent: "flex-start",
                   alignItems: "center",
-                  padding: "5px 12px",
+                  padding: "6px 12px 2px",
                   position: "relative",
                   zIndex: 1,
                 }}
@@ -507,14 +507,38 @@ const StaffIDCardBack = () => {
                   IF FOUND, PLEASE RETURN IT TO THE NEAREST POLICE STATION.
                 </div>
               </div>
+              {/* CARD VALIDITY DATES */}
+<div
+    style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: "12px",
+        // marginTop: "6px",
+        fontSize: "8px",
+        fontWeight: "600",
+        color: "#111827",
+    }}
+>
+    <div>
+        <span style={{ fontWeight: "bold" }}>Issuing Date:</span>{" "}
+        29/09/2026
+    </div>
+
+    <div>
+        <span style={{ fontWeight: "bold" }}>Expiry Date:</span>{" "}
+        18/07/2027
+    </div>
+</div>
 
               {/* CONTACT / FOOTER */}
               <div
                 style={{
                   width: "100%",
                   borderTop: "1px solid #ddd",
-                  paddingTop: "1px",
-                  fontSize: "7px",
+                  paddingTop: "5px",
+                     marginBottom: "10px",
+                  fontSize: "10px",
                   color: "#555",
                   lineHeight: "1.3",
                   position: "relative",

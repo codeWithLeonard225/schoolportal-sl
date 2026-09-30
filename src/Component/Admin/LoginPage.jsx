@@ -58,11 +58,14 @@ const LoginPage = () => {
             case "FinanceSenior": return "/FinanceSeniorPannel";
             case "Exams": return "/ExamsPannel";
             case "HOD": return "/HODDashboard";
+            case "Gia": return "/Gia";
             case "International": return "/InternationalReg";
+            case "InternationalSchool": return "/InternationalSchool";
             case "HaffizeenSecondary": return "/HaffizeenSecondary";
             case "HaffizeenPrimary": return "/HaffizeenPrimary";
             case "Yahweh": return "/Yahweh";
             case "SheikTais": return "/SheikTais";
+            case "Climax": return "/Climax";
             default: return "/admin";
         }
     };

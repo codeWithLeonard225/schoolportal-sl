@@ -73,12 +73,24 @@ import PupilIDCardScan from "../PupilsPage/PupilIDCardScan";
 import PupilIDCardBack from "../PupilsPage/PupilIDCardBack";
 import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerHaffizeenSenior";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
+import PupilPhotoManager from "../Voters/PupilPhotoManager";
+import PupilPhotoEditor from "../Voters/PupilPhotoEditor";
+import ManualAttendance from "../PupilsPage/ManualAttendance";
+import TeacherPhotoEditor from "../Voters/TeacherPhotoEditor";
+import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
+import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
 
 
 
 
 // --- Navigation Items ---
 const NAV_ITEMS = [
+  {
+    key: "AttendanceDashboard",
+    label: "Pupil Attendance",
+    icon: <MdWarning />, // 📖
+  },
+  
   {
     key: "forms",
     label: "Registeration",
@@ -154,15 +166,17 @@ const NAV_ITEMS = [
 
     ],
   },
-//   {
-//     key: "idcards",
-//     label: "Pupils ID Cards",
-//     icon: <MdBarChart />,
-//     children: [
-//       { key: "PupilIDCard", label: "PupilIDCard", icon: <MdPerson /> },
-//       { key: "IDCardPage", label: "IDCardPage", icon: <MdPerson /> },
-//     ],
-//   },
+  // {
+  //   key: "editPhotos",
+  //   label: "Edit id card photos",
+  //   icon: <MdBarChart />,
+  //   children: [
+  //     { key: "TeacherPhotoManager", label: "Teacher Zoom & Crop", icon: <MdPerson /> },
+  //     { key: "TeacherPhotoEditor", label: "Remove Bg", icon: <MdPerson /> },
+  //     { key: "PupilPhotoManager", label: "Pupil Zoom & Crop", icon: <MdPerson /> },
+  //     { key: "PupilPhotoEditor", label: "Remove Bg pupil", icon: <MdPerson /> },
+  //   ],
+  // },
   {
     key: "qrcode-Pupil",
     label: "Qr code Attendance-Pupil",
@@ -179,18 +193,14 @@ const NAV_ITEMS = [
     label: "Qr code Attendance-Staff",
     icon: <MdBarChart />,
     children: [
-      { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
-      { key: "StaffIDCardBackYaweh", label: "Teacher IDCards Back", icon: <MdPerson /> },
+      // { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
+      // { key: "StaffIDCardBackYaweh", label: "Teacher IDCards Back", icon: <MdPerson /> },
       { key: "StaffAttendanceScanner", label: "Staff Attendance Scanner", icon: <MdPerson /> },
       { key: "StaffPayroll", label: "Staff Payrole", icon: <MdPerson /> },
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
     ],
   },
-  // {
-  //   key: "pupilAttendance",
-  //   label: "Pupil Attendance",
-  //   icon: <MdWarning />, // 📖
-  // },
+  
   // {
   //   key: "staffAttendance",
   //   label: "Staff Attendance",
@@ -285,6 +295,7 @@ function AdminPanel() {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard": return <RegDashboard />;
+      case "AttendanceDashboard": return <AttendanceDashboard />;
       case "Form": return <Registration />;
       case "class": return <ClassRegistration />;
       case "classList": return <StudentFilterPage />;
@@ -338,6 +349,13 @@ function AdminPanel() {
       case "PupilIDCardBack": return <PupilIDCardBack />;
       case "PupilAttendanceScanner": return <PupilAttendanceScanner />;
       case "PupilAttendanceLogs": return <PupilAttendanceLogs />;
+            case "ManualAttendance": return <ManualAttendance />;
+      case "TeacherPhotoManager": return <TeacherPhotoManager />;
+      case "TeacherPhotoEditor": return <TeacherPhotoEditor />;
+        case "PupilPhotoManager": return <PupilPhotoManager />;
+      case "PupilPhotoEditor": return <PupilPhotoEditor />;
+
+
 
 
       default: return <Placeholder title={activeTab} />;

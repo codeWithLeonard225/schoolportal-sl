@@ -29,10 +29,13 @@ import FinanceJuniorPannel from "./Component/Admin/FinanceJuniorPannel";
 import FinanceSeniorPannel from "./Component/Admin/FinanceSeniorPannel";
 import ExamsPannel from "./Component/Admin/ExamsDashboard";
 import HODPannel from "./Component/Admin/HODPannel";
+import Gia from "./Component/Admin/Gia";
+import InternationalSchool from "./Component/Admin/InternationalSchool";
 import HaffizeenSecondary from "./Component/Admin/HaffizeenSecondary";
 import HaffizeenPrimary from "./Component/Admin/HaffizeenPrimary";
 import Yahweh from "./Component/Admin/Yahweh";
 import SheikTais from "./Component/Admin/SheikTais";
+import Climax from "./Component/Admin/Climax";
 import PreviousFees from "./Component/FeeReceipt.jsx/PreviousFees";
 
 
@@ -197,6 +200,22 @@ function App() {
             }
           />
           <Route
+            path="/InternationalSchool"
+            element={
+              <ProtectedRoute role="admin">
+                <InternationalSchool />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/Gia"
+            element={
+              <ProtectedRoute role="admin">
+                <Gia />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/HaffizeenSecondary"
             element={
               <ProtectedRoute role="admin">
@@ -225,6 +244,14 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <SheikTais />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/Climax"
+            element={
+              <ProtectedRoute role="admin">
+                <Climax />
               </ProtectedRoute>
             }
           />

@@ -20,10 +20,10 @@ import {
   MdRemoveCircle,
 } from "react-icons/md";
 import Registration from "../Voters/Registration";
+import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
 import ClassRegistration from "./ClassRegistration";
 import FeeReceipt from "../FeeReceipt.jsx/FeeReceipt";
 import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
-import FeesDashboard from "../Dashboard/FeesDsahboard";
 import SubjectPage from "../SubjectPage/SubjectPage";
 import TeacherAssignmentPage from "../TeacherAssignment/TeacherAssignmentPage";
 import TeacherRegistration from "../Voters/TeacherRegistration";
@@ -65,18 +65,34 @@ import AncillaryReceiptForm from "../FeeReceipt.jsx/AncillaryReceiptForm";
 import PreviousFees from "../FeeReceipt.jsx/PreviousFees";
 import WASCEForm from "../Voters/WASCEForm";
 import TeacherIDCards from "../Staff/TeacherIDCards";
+import StaffIDCardBackClimax from "../Staff/StaffIDCardBackClimax";
 import StaffAttendanceScanner from "../Staff/StaffAttendanceScanner";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffPayroll from "../Staff/StaffPayroll";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScan";
+import PupilIDCardBack from "../PupilsPage/PupilIDCardBack";
 import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScanner";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
+import ManualAttendance from "../PupilsPage/ManualAttendance";
+import TeacherPhotoEditor from "../Voters/TeacherPhotoEditor";
+import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
+import ClassReconciler from "../Voters/ClassReconciler";
+import PupilPhotoManager from "../Voters/PupilPhotoManager";
+import PupilPhotoEditor from "../Voters/PupilPhotoEditor";
+import PhotoEnhancerPage from "../Voters/PhotoEnhancerPage";
+
 
 
 
 
 // --- Navigation Items ---
 const NAV_ITEMS = [
+  
+    {
+    key: "AttendanceDashboard",
+    label: "Attendance Dashboard",
+    icon: <MdWarning />, // 📖
+  },
   {
     key: "forms",
     label: "Registeration",
@@ -90,6 +106,7 @@ const NAV_ITEMS = [
       { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
       // { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
       // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+      { key: "ClassReconciler", label: " ClassReconciler", icon: <MdPerson /> },
 
 
     ],
@@ -152,22 +169,27 @@ const NAV_ITEMS = [
 
     ],
   },
-  {
-    key: "idcards",
-    label: "Pupils ID Cards",
-    icon: <MdBarChart />,
-    children: [
-      { key: "PupilIDCard", label: "PupilIDCard", icon: <MdPerson /> },
-      { key: "IDCardPage", label: "IDCardPage", icon: <MdPerson /> },
-    ],
-  },
+  // {
+  //   key: "editPhotos",
+  //   label: "Edit id card photos",
+  //   icon: <MdBarChart />,
+  //   children: [
+  //     { key: "TeacherPhotoManager", label: "Teacher Zoom & Crop", icon: <MdPerson /> },
+  //     { key: "TeacherPhotoEditor", label: "Remove Bg", icon: <MdPerson /> },
+  //     { key: "PupilPhotoManager", label: "Pupil Zoom & Crop", icon: <MdPerson /> },
+  //     { key: "PupilPhotoEditor", label: "Remove Bg pupil", icon: <MdPerson /> },
+  //     { key: "PhotoEnhancerPage", label: "Photo Enhancer", icon: <MdPerson /> },
+  //   ],
+  // },
   {
     key: "qrcode-Pupil",
     label: "Qr code Attendance-Pupil",
     icon: <MdBarChart />,
     children: [
       // { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
+        //  { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
       { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
+      { key: "ManualAttendance", label: "Attendance MAnuel", icon: <MdPerson /> },
       { key: "PupilAttendanceLogs", label: "Pupil Attendance Logs", icon: <MdPerson /> },
     ],
   },
@@ -177,21 +199,18 @@ const NAV_ITEMS = [
     icon: <MdBarChart />,
     children: [
       // { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
+      // { key: "StaffIDCardBackClimax", label: "Teacher IDCards Back", icon: <MdPerson /> },
       { key: "StaffAttendanceScanner", label: "Staff Attendance Scanner", icon: <MdPerson /> },
       { key: "StaffPayroll", label: "Staff Payroll ", icon: <MdPerson /> },
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
     ],
   },
-  {
-    key: "pupilAttendance",
-    label: "Pupil Attendance",
-    icon: <MdWarning />, // 📖
-  },
-  {
-    key: "staffAttendance",
-    label: "Staff Attendance",
-    icon: <MdWarning />, // 📖
-  },
+
+  // {
+  //   key: "staffAttendance",
+  //   label: "Staff Attendance",
+  //   icon: <MdWarning />, // 📖
+  // },
   {
     key: "timetable",
     label: "TimeTable",
@@ -306,11 +325,10 @@ function AdminPanel() {
       case "TeacherPupilsPageAdmin": return <TeacherPupilsPageAdmin />;
       case "PastQuestions": return <ExamUploader />;
       case "SchoolLibraryUpload": return <SchoolLibraryUpload />;
-      case "PupilIDCard": return <PupilIDCard />;
-      case "IDCardPage": return <IDCardPage />;
+      case "TeacherPhotoManager": return <TeacherPhotoManager />;
+      case "TeacherPhotoEditor": return <TeacherPhotoEditor />;
       case "schoolreg": return <SchoolRegistration />;
       case "staffAttendance": return <StaffAttendance />;
-      case "pupilAttendance": return <AttendancePage />;
       case "staffClockin": return <StaffClocking />;
       case "TimetableEntry": return <TimetableEntry />;
       case "TimeTableTeacherAtt": return <TimeTableTeacherAtt />;
@@ -326,12 +344,20 @@ function AdminPanel() {
       case "AncillaryReceiptForm": return <AncillaryReceiptForm />;
       case "PreviousFees": return <PreviousFees />;
       case "TeacherIDCards": return <TeacherIDCards />;
+      case "StaffIDCardBackClimax": return <StaffIDCardBackClimax />;
       case "StaffAttendanceScanner": return <StaffAttendanceScanner />;
       case "StaffPayroll": return <StaffPayroll />;
       case "StaffAttendanceRecords": return <StaffAttendanceRecords />;
       case "PupilIDCardScan": return <PupilIDCardScan />;
+      case "PupilIDCardBack": return <PupilIDCardBack />;
+      case "ManualAttendance": return <ManualAttendance />;
       case "PupilAttendanceScanner": return <PupilAttendanceScanner />;
       case "PupilAttendanceLogs": return <PupilAttendanceLogs />;
+      case "ClassReconciler": return <ClassReconciler />;
+      case "AttendanceDashboard": return <AttendanceDashboard />;
+      case "PupilPhotoManager": return <PupilPhotoManager />;
+      case "PupilPhotoEditor": return <PupilPhotoEditor />;
+      case "PhotoEnhancerPage": return <PhotoEnhancerPage />;
 
 
       default: return <Placeholder title={activeTab} />;

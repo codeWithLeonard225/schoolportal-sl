@@ -109,18 +109,18 @@ const NAV_ITEMS = [
 
     ],
   },
-  {
-    key: "fees",
-    label: "Fees",
-    icon: <MdEdit />,
-    children: [
-      { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
-      { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
-      { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
-      { key: "AncillaryReceiptForm", label: " Other Chargers Receipt", icon: <MdPerson /> },
+  // {
+  //   key: "fees",
+  //   label: "Fees",
+  //   icon: <MdEdit />,
+  //   children: [
+  //     { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
+  //     { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
+  //     { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
+  //     { key: "AncillaryReceiptForm", label: " Other Chargers Receipt", icon: <MdPerson /> },
 
-    ],
-  },
+  //   ],
+  // },
   {
     key: "Staff",
     label: "staff",
