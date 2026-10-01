@@ -66,16 +66,16 @@ import PreviousFees from "../FeeReceipt.jsx/PreviousFees";
 import WASCEForm from "../Voters/WASCEForm";
 import TeacherIDCards from "../Staff/TeacherIDCardsHaffizeen";
 import StaffIDCardBackYaweh from "../Staff/StaffIDCardBackYaweh";
-import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerGia";
+import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerYahweh";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffPayroll from "../Staff/StaffPayroll";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScanYaweh";
 import PupilIDCardBack from "../PupilsPage/PupilIDCardBackYaweh";
-import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerGia";
+import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerYaweh";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
 import PupilPhotoManager from "../Voters/PupilPhotoManager";
 import PupilPhotoEditor from "../Voters/PupilPhotoEditor";
-import ManualAttendance from "../PupilsPage/ManualAttendanceFormMasterGia";
+import ManualAttendance from "../PupilsPage/ManualAttendance";
 import TeacherPhotoEditor from "../Voters/TeacherPhotoEditor";
 import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
 import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
@@ -93,58 +93,12 @@ const NAV_ITEMS = [
  
  
   {
-    key: "forms",
-    label: "Registeration",
-    icon: <MdEdit />,
-    children: [
-      { key: "Form", label: " Pupils", icon: <MdPerson /> },
-      { key: "class", label: "Class", icon: <MdPerson /> },
-      { key: "classList", label: "Class List", icon: <MdPerson /> },
-    //   { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
-    //   { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
-    //   { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
-      // { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
-      // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
-
-
-    ],
-  },
-  // {
-  //   key: "fees",
-  //   label: "Fees",
-  //   icon: <MdEdit />,
-  //   children: [
-  //     { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
-  //     { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
-  //     { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
-  //     { key: "AncillaryReceiptForm", label: " Other Chargers Receipt", icon: <MdPerson /> },
-
-  //   ],
-  // },
-  {
-    key: "Staff",
-    label: "staff",
-    icon: <MdBarChart />,
-    children: [
-      { key: "TeacherRegistration", label: "Teacher Regis", icon: <MdPerson /> },
-      { key: "subjects", label: "Subjects", icon: <MdPerson /> },
-      { key: "TeacherAssignment", label: "Teacher Assignment", icon: <MdPerson /> },
-      { key: "TeacherAssignmentReport", label: "Teacher Assignment Report ", icon: <MdPerson /> },
-      { key: "TeacherClassReport", label: " TeacherClassReport", icon: <MdPerson /> },
-      { key: "PastQuestions", label: "Upload Past Questions ", icon: <MdPerson /> },
-      { key: "SchoolLibraryUpload", label: "SchoolLibrary Upload ", icon: <MdPerson /> },
-
-
-
-    ],
-  },
-  {
     key: "results",
     label: "Pupils Results",
     icon: <MdBarChart />,
     children: [
-      { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
-      { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
+      // { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
+      // { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
       { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
       // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
       { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },
@@ -167,52 +121,13 @@ const NAV_ITEMS = [
 
     ],
   },
-  // {
-  //   key: "editPhotos",
-  //   label: "Edit id card photos",
-  //   icon: <MdBarChart />,
-  //   children: [
-  //     { key: "TeacherPhotoManager", label: "Teacher Zoom & Crop", icon: <MdPerson /> },
-  //     { key: "TeacherPhotoEditor", label: "Remove Bg", icon: <MdPerson /> },
-  //     { key: "PupilPhotoManager", label: "Pupil Zoom & Crop", icon: <MdPerson /> },
-  //     { key: "PupilPhotoEditor", label: "Remove Bg pupil", icon: <MdPerson /> },
-  //   ],
-  // },
-  {
-    key: "qrcode-Pupil",
-    label: "Qr code Attendance-Pupil",
-    icon: <MdBarChart />,
-    children: [
-      // { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
-      // { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
-      { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
-      { key: "PupilAttendanceLogs", label: "Pupil Attendance Logs", icon: <MdPerson /> },
-    ],
-  },
-  {
-    key: "qrcode-Staff",
-    label: "Qr code Attendance-Staff",
-    icon: <MdBarChart />,
-    children: [
-      // { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
-      // { key: "StaffIDCardBackYaweh", label: "Teacher IDCards Back", icon: <MdPerson /> },
-      { key: "StaffAttendanceScanner", label: "Staff Attendance Scanner", icon: <MdPerson /> },
-      { key: "StaffPayroll", label: "Staff Payrole", icon: <MdPerson /> },
-      { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
-    ],
-  },
-
-  // {
-  //   key: "staffAttendance",
-  //   label: "Staff Attendance",
-  //   icon: <MdWarning />, // 📖
-  // },
+ 
   {
     key: "timetable",
     label: "TimeTable",
     icon: <MdBarChart />,
     children: [
-      { key: "TimetableEntry", label: "TimetableEntry", icon: <MdPerson /> },
+      // { key: "TimetableEntry", label: "TimetableEntry", icon: <MdPerson /> },
       { key: "TimeTableTeacherAtt", label: "TimeTableTeacherAtt", icon: <MdPerson /> },
       { key: "TimeTableDailyAttendanceReport", label: "DailyAttendanceReport", icon: <MdPerson /> },
       { key: "TimeTableTeacherReport", label: "MonthlyAttendanceReport", icon: <MdPerson /> },

@@ -64,6 +64,8 @@ const LoginPage = () => {
             case "HaffizeenSecondary": return "/HaffizeenSecondary";
             case "HaffizeenPrimary": return "/HaffizeenPrimary";
             case "Yahweh": return "/Yahweh";
+            case "YahwehCEO": return "/YahwehCEO";
+            case "YahwehExams": return "/YahwehExams";
             case "SheikTais": return "/SheikTais";
             case "Climax": return "/Climax";
             default: return "/admin";

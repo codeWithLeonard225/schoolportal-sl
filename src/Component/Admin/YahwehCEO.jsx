@@ -66,16 +66,16 @@ import PreviousFees from "../FeeReceipt.jsx/PreviousFees";
 import WASCEForm from "../Voters/WASCEForm";
 import TeacherIDCards from "../Staff/TeacherIDCardsHaffizeen";
 import StaffIDCardBackYaweh from "../Staff/StaffIDCardBackYaweh";
-import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerGia";
+import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerYahweh";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffPayroll from "../Staff/StaffPayroll";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScanYaweh";
 import PupilIDCardBack from "../PupilsPage/PupilIDCardBackYaweh";
-import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerGia";
+import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerYaweh";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
 import PupilPhotoManager from "../Voters/PupilPhotoManager";
 import PupilPhotoEditor from "../Voters/PupilPhotoEditor";
-import ManualAttendance from "../PupilsPage/ManualAttendanceFormMasterGia";
+import ManualAttendance from "../PupilsPage/ManualAttendance";
 import TeacherPhotoEditor from "../Voters/TeacherPhotoEditor";
 import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
 import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
@@ -109,18 +109,18 @@ const NAV_ITEMS = [
 
     ],
   },
-  // {
-  //   key: "fees",
-  //   label: "Fees",
-  //   icon: <MdEdit />,
-  //   children: [
-  //     { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
-  //     { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
-  //     { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
-  //     { key: "AncillaryReceiptForm", label: " Other Chargers Receipt", icon: <MdPerson /> },
+  {
+    key: "fees",
+    label: "Fees",
+    icon: <MdEdit />,
+    children: [
+      { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
+      { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
+      { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
+      { key: "AncillaryReceiptForm", label: " Other Chargers Receipt", icon: <MdPerson /> },
 
-  //   ],
-  // },
+    ],
+  },
   {
     key: "Staff",
     label: "staff",

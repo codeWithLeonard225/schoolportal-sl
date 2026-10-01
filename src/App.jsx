@@ -34,6 +34,8 @@ import InternationalSchool from "./Component/Admin/InternationalSchool";
 import HaffizeenSecondary from "./Component/Admin/HaffizeenSecondary";
 import HaffizeenPrimary from "./Component/Admin/HaffizeenPrimary";
 import Yahweh from "./Component/Admin/Yahweh";
+import YahwehCEO from "./Component/Admin/YahwehCEO";
+import YahwehExams from "./Component/Admin/YahwehExams";
 import SheikTais from "./Component/Admin/SheikTais";
 import Climax from "./Component/Admin/Climax";
 import PreviousFees from "./Component/FeeReceipt.jsx/PreviousFees";
@@ -240,6 +242,14 @@ function App() {
             }
           />
           <Route
+            path="/YahwehExams"
+            element={
+              <ProtectedRoute role="admin">
+                <YahwehExams />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/SheikTais"
             element={
               <ProtectedRoute role="admin">
@@ -252,6 +262,14 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <Climax />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/YahwehCEO"
+            element={
+              <ProtectedRoute role="admin">
+                <YahwehCEO />
               </ProtectedRoute>
             }
           />

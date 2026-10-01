@@ -26,7 +26,7 @@ import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
 import FeesDashboard from "../Dashboard/FeesDsahboard";
 import SubjectPage from "../SubjectPage/SubjectPage";
 import TeacherAssignmentPage from "../TeacherAssignment/TeacherAssignmentPage";
-import TeacherRegistration from "../Voters/TeacherRegistration";
+import TeacherRegistration from "../Voters/TeacherRegistrationwahweh";
 import TeacherPupilsPage from "../TeacherAssignment/TeacherPupilsPage";
 import GradeSheetPage from "../TeacherAssignment/GradeSheetPage";
 import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPage";
