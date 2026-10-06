@@ -21,6 +21,9 @@ import {
 } from "react-icons/md";
 import Registration from "../Voters/Registration";
 import ClassRegistration from "./ClassRegistration";
+import GradeADashboard from "../PupilsPage/GradeADashboard";
+import ResultDashboard from "../PupilsPage/ResultDashboard";
+import ResultDashboard2 from "../PupilsPage/ResultDashboard2";
 import FeeReceipt from "../FeeReceipt.jsx/FeeReceipt";
 import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
 import FeesDashboard from "../Dashboard/FeesDsahboard";
@@ -90,6 +93,21 @@ const NAV_ITEMS = [
     label: "Pupil Attendance",
     icon: <MdWarning />, // 📖
   },
+   {
+    key: "GradeADashboard",
+    label: "Grade A Pupils",
+    icon: <MdWarning />, // 📖
+  },
+   {
+    key: "ResultDashboard",
+    label: "Results Dashboard",
+    icon: <MdWarning />, // 📖
+  },
+  //  {
+  //   key: "ResultDashboard2",
+  //   label: "Results Dashboard 2",
+  //   icon: <MdWarning />, // 📖
+  // },
  
  
   {
@@ -297,6 +315,9 @@ function AdminPanel() {
     switch (activeTab) {
       case "dashboard": return <RegDashboard />;
       case "AttendanceDashboard": return <AttendanceDashboard />;
+      case "GradeADashboard": return <GradeADashboard />;
+      case "ResultDashboard": return <ResultDashboard />;
+      case "ResultDashboard2": return <ResultDashboard2 />;
       case "Form": return <Registration />;
       case "class": return <ClassRegistration />;
       case "classList": return <StudentFilterPage />;
