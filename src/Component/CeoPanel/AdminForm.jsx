@@ -454,6 +454,7 @@ const AdminForm = () => {
                             <option value="YahwehExams">YahwehExams</option>
                             <option value="SheikTais">SheikTais</option>
                             <option value="Climax">Climax</option>
+                            <option value="ClimaxCEO">ClimaxCEO</option>
                         </select>
                     </div>
                     {/* ✅ UPDATED: Role is now a text input */}

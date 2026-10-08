@@ -38,6 +38,7 @@ import YahwehCEO from "./Component/Admin/YahwehCEO";
 import YahwehExams from "./Component/Admin/YahwehExams";
 import SheikTais from "./Component/Admin/SheikTais";
 import Climax from "./Component/Admin/Climax";
+import ClimaxCEO from "./Component/Admin/ClimaxCEO";
 import PreviousFees from "./Component/FeeReceipt.jsx/PreviousFees";
 
 
@@ -262,6 +263,14 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <Climax />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ClimaxCEO"
+            element={
+              <ProtectedRoute role="admin">
+                <ClimaxCEO />
               </ProtectedRoute>
             }
           />

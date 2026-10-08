@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { db } from "../../../firebase";
 import { schooldb } from "../Database/SchoolsResults";
+import { db } from "../../../firebase";
 import {
   collection,
   query,
   where,
-  onSnapshot
+  onSnapshot,
+  getDocs,
 } from "firebase/firestore";
+
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLocation } from "react-router-dom";
@@ -17,6 +19,12 @@ import {
 } from "../Utilis/ResultCalculators";
 
 const PASS_MARK = 50;
+
+const formatPercentage = (value) => {
+  const number = Number(value);
+
+  return `${(Number.isFinite(number) ? number : 0).toFixed(1)}%`;
+};
 
 const ResultDashboard = () => {
   const location = useLocation();
@@ -45,6 +53,34 @@ const ResultDashboard = () => {
 
   const [activeSection, setActiveSection] =
     useState("overview");
+
+    const [registeredPupils, setRegisteredPupils] = useState([]);
+
+    useEffect(() => {
+  const fetchRegisteredPupils = async () => {
+    try {
+      const snapshot = await getDocs(
+        collection(db, "PupilsReg")
+      );
+
+      const records = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
+      setRegisteredPupils(records);
+    } catch (error) {
+      console.error(
+        "Error fetching registered pupils:",
+        error
+      );
+    }
+  };
+
+  fetchRegisteredPupils();
+}, []);
+
+
 
   const terms = ["Term 1", "Term 2", "Term 3"];
 
@@ -123,39 +159,123 @@ const ResultDashboard = () => {
   ========================================================= */
 
   useEffect(() => {
-    if (!schoolId || !academicYear || !selectedClass) {
-      setPupils([]);
-      return;
+  if (!schoolId || !academicYear || !selectedClass) {
+    setPupils([]);
+    return;
+  }
+
+  setLoading(true);
+
+  const filtered = allGrades.filter((grade) => {
+    const gradeYear =
+      grade.academicYear ||
+      grade.academic_year ||
+      grade.year ||
+      "";
+
+    const gradeClass =
+      grade.className ||
+      grade.class ||
+      grade.studentClass ||
+      "";
+
+    return (
+      grade.schoolId === schoolId &&
+      gradeYear === academicYear &&
+      gradeClass.trim() === selectedClass.trim()
+    );
+  });
+
+  const pupilMap = new Map();
+
+  filtered.forEach((grade) => {
+    const studentID =
+      grade.studentID ||
+      grade.studentId ||
+      grade.pupilID ||
+      grade.pupilId;
+
+    if (!studentID) return;
+
+    if (!pupilMap.has(studentID)) {
+     const pupilID = String(
+  grade.pupilID ||
+  grade.pupilId ||
+  grade.studentID ||
+  grade.studentId ||
+  ""
+);
+
+const registeredPupil = registeredPupils.find(
+  (pupil) =>
+    String(pupil.id) === pupilID ||
+    String(pupil.studentID || "") === pupilID ||
+    String(pupil.studentId || "") === pupilID
+);
+
+const registeredName = registeredPupil
+  ? [
+      registeredPupil.studentName,
+      registeredPupil.pupilName,
+      registeredPupil.name,
+      [
+        registeredPupil.firstName,
+        registeredPupil.middleName,
+        registeredPupil.lastName,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    ].find((name) => name && name.trim())
+  : "";
+
+const studentName =
+  registeredName ||
+  grade.studentName ||
+  grade.pupilName ||
+  grade.name ||
+  [
+    grade.firstName,
+    grade.middleName,
+    grade.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ") ||
+  `Pupil ${studentID}`;
+
+      pupilMap.set(studentID, {
+        studentID,
+        studentName,
+        className:
+          grade.className ||
+          grade.class ||
+          grade.studentClass ||
+          selectedClass,
+        academicYear:
+          grade.academicYear ||
+          grade.academic_year ||
+          grade.year ||
+          academicYear
+      });
     }
+  });
 
-    setLoading(true);
+  const pupilData = Array.from(pupilMap.values()).sort(
+    (a, b) =>
+      (a.studentName || "").localeCompare(
+        b.studentName || ""
+      )
+  );
 
-    const pupilsQuery = query(
-      collection(db, "PupilsReg"),
-      where("schoolId", "==", schoolId),
-      where("academicYear", "==", academicYear),
-      where("class", "==", selectedClass)
-    );
+  setPupils(pupilData);
 
-    const unsubscribe = onSnapshot(
-      pupilsQuery,
-      (snapshot) => {
-        const pupilData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        setPupils(pupilData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error loading pupils:", error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [schoolId, academicYear, selectedClass]);
+  setLoading(false);
+}, [
+  allGrades,
+  schoolId,
+  academicYear,
+  selectedClass,
+  registeredPupils,
+]);
 
   /* =========================================================
      FILTER GRADES
@@ -1664,10 +1784,8 @@ const ResultDashboard = () => {
           item.total,
           item.pass,
           item.fail,
-          `${item.passRate}%`,
-          Number(
-            item.average
-          ).toFixed(2)
+          `${formatPercentage(item.passRate)}%`,
+          Number(item.average).toFixed(1)
         ]
       ),
       theme: "grid"
@@ -1703,7 +1821,7 @@ const ResultDashboard = () => {
           item.studentName,
           Number(
             item.average
-          ).toFixed(2)
+          ).toFixed(1)
         ]
       ),
       theme: "grid"
@@ -1739,7 +1857,7 @@ const ResultDashboard = () => {
           item.studentName,
           Number(
             item.average
-          ).toFixed(2)
+          ).toFixed(1)
         ]
       ),
       theme: "grid"
@@ -1778,7 +1896,7 @@ const ResultDashboard = () => {
             `${item.passRate}%`,
             Number(
               item.average
-            ).toFixed(2)
+            ).toFixed(1)
           ]
         ),
       theme: "grid"
@@ -1829,7 +1947,7 @@ const ResultDashboard = () => {
         doc.text(
           `Average: ${Number(
             selectedSubjectDetails.average
-          ).toFixed(2)}`,
+          ).toFixed(1)}`,
           14,
           49
         );
@@ -1837,7 +1955,7 @@ const ResultDashboard = () => {
         doc.text(
           `Highest: ${Number(
             selectedSubjectDetails.highest
-          ).toFixed(2)}`,
+          ).toFixed(1)}`,
           14,
           55
         );
@@ -1845,7 +1963,7 @@ const ResultDashboard = () => {
         doc.text(
           `Lowest: ${Number(
             selectedSubjectDetails.lowest
-          ).toFixed(2)}`,
+          ).toFixed(1)}`,
           14,
           61
         );
@@ -1879,7 +1997,7 @@ const ResultDashboard = () => {
                 item.studentName,
                 Number(
                   item.score
-                ).toFixed(2)
+                ).toFixed(1)
               ]
             ),
         theme: "grid"
@@ -1916,7 +2034,7 @@ const ResultDashboard = () => {
                 item.studentName,
                 Number(
                   item.score
-                ).toFixed(2)
+                ).toFixed(1)
               ]
             ),
         theme: "grid"
@@ -2021,7 +2139,7 @@ const ResultDashboard = () => {
                 <td className="p-3 text-right font-bold">
                   {Number(
                     item.average
-                  ).toFixed(2)}
+                  ).toFixed(1)}
                 </td>
               </tr>
             ))
@@ -2088,7 +2206,7 @@ const ResultDashboard = () => {
                 <td className="p-3 text-right font-bold">
                   {Number(
                     item.score
-                  ).toFixed(2)}
+                  ).toFixed(1)}
                 </td>
               </tr>
             ))
@@ -2356,9 +2474,7 @@ const ResultDashboard = () => {
 
                   <StatCard
                     title="Class Average"
-                    value={`${termSummary.average.toFixed(
-                      2
-                    )}%`}
+                    value={`${formatPercentage(termSummary.average)}%`}
                     subtitle={selectedTerm}
                   />
 
@@ -2481,7 +2597,7 @@ const ResultDashboard = () => {
                                 {Number(
                                   item.average
                                 ).toFixed(
-                                  2
+                                  1
                                 )}
                               </span>
                             </div>
@@ -2581,7 +2697,7 @@ const ResultDashboard = () => {
                                 {Number(
                                   item.average
                                 ).toFixed(
-                                  2
+                                  1
                                 )}
                               </td>
                             </tr>
@@ -2700,7 +2816,7 @@ const ResultDashboard = () => {
                                 {Number(
                                   item.average
                                 ).toFixed(
-                                  2
+                                  1
                                 )}
                               </td>
 
@@ -2708,7 +2824,7 @@ const ResultDashboard = () => {
                                 {Number(
                                   item.highest
                                 ).toFixed(
-                                  2
+                                  1
                                 )}
                               </td>
 
@@ -2716,7 +2832,7 @@ const ResultDashboard = () => {
                                 {Number(
                                   item.lowest
                                 ).toFixed(
-                                  2
+                                  1
                                 )}
                               </td>
                             </tr>
@@ -3227,7 +3343,7 @@ const ResultDashboard = () => {
                   </div>
 
                   <div className="bg-[#800000] text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                    Pass Mark: {passMark}%
+                    Pass Mark: {formatPercentage(passMark)}%
                   </div>
 
                 </div>

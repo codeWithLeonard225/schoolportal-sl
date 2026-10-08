@@ -20,6 +20,7 @@ import {
 } from "react-icons/md";
 import Registration from "../Voters/Registration";
 import ClassRegistration from "../Admin/ClassRegistration";
+import LogoutPage from "../Admin/LogoutPage";
 import FeeReceipt from "../FeeReceipt.jsx/FeeReceipt";
 import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
 import FeesDashboard from "../Dashboard/FeesDsahboard";
@@ -87,6 +88,12 @@ const NAV_ITEMS = [
       { key: "BECEStatementOfResult", label: " BECEStatementOfResult", icon: <MdPerson /> },
     ],
   },
+
+    {
+      key: "LogoutPage",
+      label: "Logout",
+      icon: <MdWarning />, // 📖
+    },
 ];
 
 // --- Button component ---
@@ -173,6 +180,7 @@ function CeoPanel() {
       case "UpdateNamesToUppercase": return <UpdateNamesToUppercase />;
       case "NationalResultPage": return <NationalResultPage />;
       case "BECEStatementOfResult": return <BECEStatementOfResult />;
+      case "LogoutPage": return <LogoutPage />;
     
       case "schoolreg": return <SchoolRegistration />;
 

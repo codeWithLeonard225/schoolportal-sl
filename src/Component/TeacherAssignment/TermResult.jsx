@@ -174,150 +174,167 @@ const totalSubjectPercentage = totalNumberOfSubjects * 100;
 ]);
 
   // Print Mode A: Original Layout (Subjects on Left, Students on Top)
-  const handlePrintStandard = () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a3" });
-    const allFilteredPupils = pupils.filter(p => selectedPupil === "all" || p.studentID === selectedPupil);
+ const handlePrintStandard = () => {
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a3" });
+  const allFilteredPupils = pupils.filter(p => selectedPupil === "all" || p.studentID === selectedPupil);
+  
+  // Reduce pupils per page slightly if needed to accommodate larger fonts
+  const pupilsPerPage = 6; 
+  const totalPupils = allFilteredPupils.length;
+
+  for (let i = 0; i < totalPupils; i += pupilsPerPage) {
+    const pupilChunk = allFilteredPupils.slice(i, i + pupilsPerPage);
+    if (i > 0) doc.addPage();
+
+    // 🔹 Increased main title font size
+    doc.setFontSize(28).setFont(undefined, 'bold');
+    doc.text(schoolName.toUpperCase(), doc.internal.pageSize.getWidth() / 2, 50, { align: "center" });
     
-    const pupilsPerPage = 8; 
-    const totalPupils = allFilteredPupils.length;
+    // 🔹 Increased subtitle font size
+    doc.setFontSize(18).setFont(undefined, 'normal');
+    doc.text(
+      `${selectedClass} BROAD SHEET - ${selectedTerm} (${academicYear}) | Page ${Math.floor(i / pupilsPerPage) + 1}`,
+      doc.internal.pageSize.getWidth() / 2, 
+      80, 
+      { align: "center" }
+    );
 
-    for (let i = 0; i < totalPupils; i += pupilsPerPage) {
-      const pupilChunk = allFilteredPupils.slice(i, i + pupilsPerPage);
-      if (i > 0) doc.addPage();
+    const head1 = [
+      { content: "SUBJECTS", styles: { halign: 'left', fillColor: [40, 44, 52], fontSize: 14 } }, 
+      ...pupilChunk.map(p => ({ content: p.studentName.toUpperCase(), colSpan: 4, styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 14 } }))
+    ];
+    const head2 = ["", ...pupilChunk.flatMap(() => ["T1", "T2", "Mn", "RNK"])];
 
-      doc.setFontSize(22).setFont(undefined, 'bold');
-      doc.text(schoolName.toUpperCase(), doc.internal.pageSize.getWidth() / 2, 45, { align: "center" });
-      
-      doc.setFontSize(14).setFont(undefined, 'normal');
-      doc.text(`${selectedClass} BROAD SHEET - ${selectedTerm} (${academicYear}) | Page ${Math.floor(i / pupilsPerPage) + 1}`, doc.internal.pageSize.getWidth() / 2, 70, { align: "center" });
+    const body = broadSheetData.subjects.map(sub => [
+      sub,
+      ...pupilChunk.flatMap(p => {
+        const r = broadSheetData.studentMap[p.studentID]?.[sub] || {};
+        return [r.t1, r.t2, r.mean, r.rank];
+      })
+    ]);
 
-      const head1 = [
-        { content: "SUBJECTS", styles: { halign: 'left', fillColor: [40, 44, 52] } }, 
-        ...pupilChunk.map(p => ({ content: p.studentName.toUpperCase(), colSpan: 4, styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 11 } }))
-      ];
-      const head2 = ["", ...pupilChunk.flatMap(() => ["T1", "T2", "Mn", "RNK"])];
+    const footerStyles = { fontStyle: 'bold', halign: 'center', fontSize: 15 };
+    const totalRow = ["TOTAL MARKS", ...pupilChunk.flatMap(p => [{ content: broadSheetData.summaries[p.studentID].total, colSpan: 4, styles: { ...footerStyles, fillColor: [240, 240, 240] } }])];
+    const percRow = ["PERCENTAGE", ...pupilChunk.flatMap(p => [{ content: broadSheetData.summaries[p.studentID].percentage + "%", colSpan: 4, styles: { ...footerStyles, fillColor: [240, 240, 240] } }])];
+    const rankRow = ["OVERALL RANK", ...pupilChunk.flatMap(p => [{ content: broadSheetData.summaries[p.studentID].rank, colSpan: 4, styles: { ...footerStyles, textColor: [200, 0, 0], fillColor: [230, 230, 250], fontSize: 16 } }])];
 
-      const body = broadSheetData.subjects.map(sub => [
-        sub,
-        ...pupilChunk.flatMap(p => {
-          const r = broadSheetData.studentMap[p.studentID]?.[sub] || {};
-          return [r.t1, r.t2, r.mean, r.rank];
-        })
-      ]);
-
-      const footerStyles = { fontStyle: 'bold', halign: 'center', fontSize: 13 };
-      const totalRow = ["TOTAL MARKS", ...pupilChunk.flatMap(p => [{ content: broadSheetData.summaries[p.studentID].total, colSpan: 4, styles: { ...footerStyles, fillColor: [240, 240, 240] } }])];
-      const percRow = ["PERCENTAGE", ...pupilChunk.flatMap(p => [{ content: broadSheetData.summaries[p.studentID].percentage + "%", colSpan: 4, styles: { ...footerStyles, fillColor: [240, 240, 240] } }])];
-      const rankRow = ["OVERALL RANK", ...pupilChunk.flatMap(p => [{ content: broadSheetData.summaries[p.studentID].rank, colSpan: 4, styles: { ...footerStyles, textColor: [200, 0, 0], fillColor: [230, 230, 250], fontSize: 14 } }])];
-
-      autoTable(doc, {
-        startY: 90,
-        head: [head1, head2],
-        body: [...body, totalRow, percRow, rankRow],
-        theme: 'grid',
-        styles: { fontSize: 12, cellPadding: 6, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150] }, 
-        headStyles: { fillColor: [63, 81, 181], textColor: [255, 255, 255], fontSize: 11, cellPadding: 8 },
-        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 120, fillColor: [245, 245, 245], fontSize: 12 } }, 
-        didParseCell: (data) => {
-          if (data.section === 'body' && typeof data.cell.raw === 'number' && data.cell.raw < 50) {
-            data.cell.styles.textColor = [220, 0, 0];
-          }
-        },
-        margin: { left: 20, right: 20, bottom: 40 },
-      });
-    }
-    doc.save(`${selectedClass}_Standard_BroadSheet_${selectedTerm}.pdf`);
-  };
+    autoTable(doc, {
+      startY: 100,
+      head: [head1, head2],
+      body: [...body, totalRow, percRow, rankRow],
+      theme: 'grid',
+      // 🔹 Increased table body text size and cell padding
+      styles: { fontSize: 14, cellPadding: 8, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150] }, 
+      headStyles: { fillColor: [63, 81, 181], textColor: [255, 255, 255], fontSize: 13, cellPadding: 10 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 160, fillColor: [245, 245, 245], fontSize: 14 } }, 
+      didParseCell: (data) => {
+        if (data.section === 'body' && typeof data.cell.raw === 'number' && data.cell.raw < 50) {
+          data.cell.styles.textColor = [220, 0, 0];
+        }
+      },
+      margin: { left: 20, right: 20, bottom: 40 },
+    });
+  }
+  doc.save(`${selectedClass}_Standard_BroadSheet_${selectedTerm}.pdf`);
+};
 
   // Print Mode B: Transposed Layout (Names on Left, Subjects on Top)
-  const handlePrintTransposed = () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a3" });
-    const allFilteredPupils = pupils.filter(p => selectedPupil === "all" || p.studentID === selectedPupil);
+ const handlePrintTransposed = () => {
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a3" });
+  const allFilteredPupils = pupils.filter(p => selectedPupil === "all" || p.studentID === selectedPupil);
+  
+  // Reduced subjects per page to allow larger font sizing across columns
+  const subjectsPerPage = 4; 
+  const totalSubjects = broadSheetData.subjects.length;
+
+  for (let sIdx = 0; sIdx < totalSubjects; sIdx += subjectsPerPage) {
+    const subjectChunk = broadSheetData.subjects.slice(sIdx, sIdx + subjectsPerPage);
+    const isLastChunk = (sIdx + subjectsPerPage) >= totalSubjects;
+
+    if (sIdx > 0) doc.addPage();
+
+    // 🔹 Increased header title font size
+    doc.setFontSize(26).setFont(undefined, 'bold');
+    doc.text(schoolName.toUpperCase(), doc.internal.pageSize.getWidth() / 2, 50, { align: "center" });
     
-    const subjectsPerPage = 6; 
-    const totalSubjects = broadSheetData.subjects.length;
+    doc.setFontSize(16).setFont(undefined, 'normal');
+    doc.text(
+      `${selectedClass} TRANSPOSED BROAD SHEET - ${selectedTerm} (${academicYear}) | Part ${Math.floor(sIdx / subjectsPerPage) + 1}`, 
+      doc.internal.pageSize.getWidth() / 2, 
+      80, 
+      { align: "center" }
+    );
 
-    for (let sIdx = 0; sIdx < totalSubjects; sIdx += subjectsPerPage) {
-      const subjectChunk = broadSheetData.subjects.slice(sIdx, sIdx + subjectsPerPage);
-      const isLastChunk = (sIdx + subjectsPerPage) >= totalSubjects;
+    const head1 = [
+      { content: "STUDENT NAMES", rowSpan: 2, styles: { valign: 'middle', halign: 'left', fillColor: [40, 44, 52], fontSize: 13 } },
+      ...subjectChunk.map(sub => ({ content: sub.toUpperCase(), colSpan: 4, styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 12 } }))
+    ];
 
-      if (sIdx > 0) doc.addPage();
+    const head2 = [
+      ...subjectChunk.flatMap(() => ["T1", "T2", "AVG", "RANK"])
+    ];
 
-      doc.setFontSize(22).setFont(undefined, 'bold');
-      doc.text(schoolName.toUpperCase(), doc.internal.pageSize.getWidth() / 2, 45, { align: "center" });
+    if (isLastChunk) {
+      head1.push({ content: "OVERALL STATS", colSpan: 3, styles: { halign: 'center', fillColor: [30, 41, 59], fontSize: 12 } });
+      head2.push("TOTAL", "PERC", "OVERALL RANK");
+    }
+
+    const body = allFilteredPupils.map(p => {
+      const studentRow = [p.studentName.toUpperCase()];
       
-      doc.setFontSize(14).setFont(undefined, 'normal');
-      doc.text(`${selectedClass} TRANSPOSED BROAD SHEET - ${selectedTerm} (${academicYear}) | Part ${Math.floor(sIdx / subjectsPerPage) + 1}`, doc.internal.pageSize.getWidth() / 2, 70, { align: "center" });
-
-      const head1 = [
-        { content: "STUDENT NAMES", rowSpan: 2, styles: { valign: 'middle', halign: 'left', fillColor: [40, 44, 52] } },
-        ...subjectChunk.map(sub => ({ content: sub.toUpperCase(), colSpan: 4, styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 9 } }))
-      ];
-
-      const head2 = [
-        ...subjectChunk.flatMap(() => ["T1", "T2", "AVG", "RANK"])
-      ];
+      subjectChunk.forEach(sub => {
+        const r = broadSheetData.studentMap[p.studentID]?.[sub] || {};
+        studentRow.push(r.t1, r.t2, r.mean, r.rank);
+      });
 
       if (isLastChunk) {
-        head1.push({ content: "OVERALL STATS", colSpan: 3, styles: { halign: 'center', fillColor: [30, 41, 59], fontSize: 9 } });
-        head2.push("TOTAL", "PERC", "OVERALL RANK");
+        const summary = broadSheetData.summaries[p.studentID] || {};
+        studentRow.push(summary.total, summary.percentage + "%", summary.rank);
       }
 
-      const body = allFilteredPupils.map(p => {
-        const studentRow = [p.studentName.toUpperCase()];
-        
-        subjectChunk.forEach(sub => {
-          const r = broadSheetData.studentMap[p.studentID]?.[sub] || {};
-          studentRow.push(r.t1, r.t2, r.mean, r.rank);
-        });
+      return studentRow;
+    });
 
-        if (isLastChunk) {
-          const summary = broadSheetData.summaries[p.studentID] || {};
-          studentRow.push(summary.total, summary.percentage + "%", summary.rank);
-        }
-
-        return studentRow;
-      });
-
-      autoTable(doc, {
-        startY: 90,
-        head: [head1, head2],
-        body: body,
-        theme: 'grid',
-        styles: { fontSize: 8.5, cellPadding: 5, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150], halign: 'center' },
-        headStyles: { textColor: [255, 255, 255], fontSize: 8.5, fontStyle: 'bold' },
-        columnStyles: { 
-          0: { fontStyle: 'bold', cellWidth: 150, halign: 'left', fillColor: [245, 245, 245] }
-        },
-        didParseCell: (data) => {
-          if (data.section === 'body') {
-            const subjectsActiveSpan = subjectChunk.length * 4;
-            
-            if (data.column.index > 0 && data.column.index <= subjectsActiveSpan) {
-              const isRankSubCol = data.column.index % 4 === 0;
-              if (isRankSubCol) {
-                data.cell.styles.textColor = [190, 24, 74];
-                data.cell.styles.fontStyle = 'bold';
-              } else {
-                const scoreVal = parseFloat(data.cell.raw);
-                if (!isNaN(scoreVal) && scoreVal < 50) {
-                  data.cell.styles.textColor = [220, 0, 0];
-                }
+    autoTable(doc, {
+      startY: 100,
+      head: [head1, head2],
+      body: body,
+      theme: 'grid',
+      // 🔹 Increased base font size from 8.5 to 12 & increased padding
+      styles: { fontSize: 12, cellPadding: 8, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150], halign: 'center' },
+      headStyles: { textColor: [255, 255, 255], fontSize: 12, fontStyle: 'bold' },
+      columnStyles: { 
+        0: { fontStyle: 'bold', cellWidth: 200, halign: 'left', fillColor: [245, 245, 245] }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body') {
+          const subjectsActiveSpan = subjectChunk.length * 4;
+          
+          if (data.column.index > 0 && data.column.index <= subjectsActiveSpan) {
+            const isRankSubCol = data.column.index % 4 === 0;
+            if (isRankSubCol) {
+              data.cell.styles.textColor = [190, 24, 74];
+              data.cell.styles.fontStyle = 'bold';
+            } else {
+              const scoreVal = parseFloat(data.cell.raw);
+              if (!isNaN(scoreVal) && scoreVal < 50) {
+                data.cell.styles.textColor = [220, 0, 0];
               }
             }
-            
-            if (isLastChunk && data.column.index === subjectsActiveSpan + 3) {
-              data.cell.styles.textColor = [200, 0, 0];
-              data.cell.styles.fontStyle = 'bold';
-              data.cell.styles.fillColor = [240, 240, 253];
-            }
           }
-        },
-        margin: { left: 20, right: 20, bottom: 40 },
-      });
-    }
-    doc.save(`${selectedClass}_Transposed_BroadSheet_${selectedTerm}.pdf`);
-  };
+          
+          if (isLastChunk && data.column.index === subjectsActiveSpan + 3) {
+            data.cell.styles.textColor = [200, 0, 0];
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [240, 240, 253];
+          }
+        }
+      },
+      margin: { left: 20, right: 20, bottom: 40 },
+    });
+  }
+  doc.save(`${selectedClass}_Transposed_BroadSheet_${selectedTerm}.pdf`);
+};
 
   const getGradeColor = (val) => {
     const grade = Number(val);

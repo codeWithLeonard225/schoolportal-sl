@@ -74,118 +74,60 @@ const YearlyResult = () => {
 
   // 3. Yearly Logic Engine (Using Centralized Utilities)
   const yearlyData = useMemo(() => {
+    if (allYearGrades.length === 0 || pupils.length === 0) {
+      return {
+        subjects: [],
+        studentMap: {},
+        summaries: {}
+      };
+    }
 
-  if (allYearGrades.length === 0 || pupils.length === 0) {
-    return {
-      subjects: [],
-      studentMap: {},
-      summaries: {}
-    };
-  }
+    const subjects = [
+      ...new Set(allYearGrades.map(d => d.subject))
+    ].sort();
 
+    const pupilIDs = pupils.map(p => p.studentID);
 
-  const subjects = [
-    ...new Set(allYearGrades.map(d => d.subject))
-  ].sort();
+    const studentMap = {};
+    const summaries = {};
 
-
-  const pupilIDs = pupils.map(
-    p => p.studentID
-  );
-
-
-  const studentMap = {};
-  const summaries = {};
-
-
-  // Subject annual position
-  const subjectAnnualRanks =
-    calculateSubjectAnnualRanks(
+    // Subject annual position
+    const subjectAnnualRanks = calculateSubjectAnnualRanks(
       allYearGrades,
       pupilIDs,
       subjects,
       calcMode
     );
 
+    /* Generate each student's subject results */
+    pupils.forEach(pupil => {
+      const pId = pupil.studentID;
+      studentMap[pId] = {};
 
-  /*
-    Generate each student's subject results
-  */
-  pupils.forEach(pupil => {
+      subjects.forEach(sub => {
+        const t1 = getTermScores(allYearGrades, pId, sub, "Term 1");
+        const t2 = getTermScores(allYearGrades, pId, sub, "Term 2");
+        const t3 = getTermScores(allYearGrades, pId, sub, "Term 3");
 
-    const pId = pupil.studentID;
-
-    studentMap[pId] = {};
-
-
-    subjects.forEach(sub => {
-
-
-      const t1 =
-        getTermScores(
-          allYearGrades,
-          pId,
-          sub,
-          "Term 1"
-        );
-
-
-      const t2 =
-        getTermScores(
-          allYearGrades,
-          pId,
-          sub,
-          "Term 2"
-        );
-
-
-      const t3 =
-        getTermScores(
-          allYearGrades,
-          pId,
-          sub,
-          "Term 3"
-        );
-
-
-      const yearlyMean =
-        calculateAnnualMean(
+        const yearlyMean = calculateAnnualMean(
           t1.mean,
           t2.mean,
           t3.mean,
           calcMode
         );
 
-
-      studentMap[pId][sub] = {
-
-        m1: t1.mean,
-
-        m2: t2.mean,
-
-        m3: t3.mean,
-
-
-        yearlyMean,
-
-
-        subRank:
-          subjectAnnualRanks[sub]?.[pId] || "-"
-      };
-
-
+        studentMap[pId][sub] = {
+          m1: t1.mean,
+          m2: t2.mean,
+          m3: t3.mean,
+          yearlyMean,
+          subRank: subjectAnnualRanks[sub]?.[pId] || "-"
+        };
+      });
     });
 
-  });
-
-
-
-  /*
-    Overall class calculation
-  */
-
-  const metrics =
-    calculateOverallMetrics(
+    /* Overall class calculation */
+    const metrics = calculateOverallMetrics(
       allYearGrades,
       pupilIDs,
       subjects,
@@ -193,79 +135,33 @@ const YearlyResult = () => {
       calcMode
     );
 
+    const allStats = metrics.allStudentsStats;
 
-  const allStats =
-    metrics.allStudentsStats;
+    /* Generate footer summaries */
+    pupils.forEach(p => {
+      const stat = allStats.find(s => s.id === p.studentID);
 
+      if (stat) {
+        const total = stat.annual;
+        const percentage = (total / subjects.length).toFixed(1);
 
+        const sorted = [...allStats].sort((a, b) => b.annual - a.annual);
+        const rank = sorted.findIndex(s => s.id === p.studentID) + 1;
 
-  /*
-    Generate footer summaries
-  */
+        summaries[p.studentID] = {
+          total,
+          percentage,
+          rank
+        };
+      }
+    });
 
-  pupils.forEach(p => {
-
-
-    const stat =
-      allStats.find(
-        s => s.id === p.studentID
-      );
-
-
-    if(stat){
-
-      const total =
-        stat.annual;
-
-
-      const percentage =
-        (
-          total / subjects.length
-        ).toFixed(1);
-
-
-
-      const sorted =
-        [...allStats]
-        .sort(
-          (a,b)=>
-          b.annual - a.annual
-        );
-
-
-      const rank =
-        sorted.findIndex(
-          s=>s.id===p.studentID
-        ) + 1;
-
-
-
-      summaries[p.studentID]={
-        total,
-        percentage,
-        rank
-      };
-
-
-    }
-
-
-  });
-
-
-
-  return {
-    subjects,
-    studentMap,
-    summaries
-  };
-
-
-},[
-  allYearGrades,
-  pupils,
-  calcMode
-]);
+    return {
+      subjects,
+      studentMap,
+      summaries
+    };
+  }, [allYearGrades, pupils, calcMode]);
 
   // 4. Print Mode A: Standard Matrix (AVG & POS only)
   const handleExportPDF = () => {
@@ -290,7 +186,7 @@ const YearlyResult = () => {
         ...chunk.map(p => ({ 
           content: p.studentName.toUpperCase(), 
           colSpan: 2, 
-          styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 10 } 
+          styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 11, fontStyle: 'bold' } 
         }))
       ];
       
@@ -304,22 +200,25 @@ const YearlyResult = () => {
         })
       ]);
 
-      const footerStyles = { fontStyle: 'bold', halign: 'center', fontSize: 11 };
+      const footerStyles = { fontStyle: 'bold', halign: 'center', fontSize: 12 };
       const totalRow = ["TOTAL MARKS", ...chunk.flatMap(p => [{ content: yearlyData.summaries[p.studentID].total, colSpan: 2, styles: { ...footerStyles, fillColor: [240, 240, 240] } }])];
       const percRow = ["PERCENTAGE", ...chunk.flatMap(p => [{ content: yearlyData.summaries[p.studentID].percentage + "%", colSpan: 2, styles: { ...footerStyles, fillColor: [240, 240, 240] } }])];
-      const rankRow = ["ANNUAL RANK", ...chunk.flatMap(p => [{ content: yearlyData.summaries[p.studentID].rank, colSpan: 2, styles: { ...footerStyles, textColor: [200, 0, 0], fillColor: [230, 230, 250], fontSize: 13 } }])];
+      const rankRow = ["ANNUAL RANK", ...chunk.flatMap(p => [{ content: yearlyData.summaries[p.studentID].rank, colSpan: 2, styles: { ...footerStyles, textColor: [200, 0, 0], fillColor: [230, 230, 250], fontSize: 14 } }])];
 
       autoTable(doc, {
         startY: 100,
         head: [head1, head2],
         body: [...body, totalRow, percRow, rankRow],
         theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 6, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150] },
-        headStyles: { fillColor: [63, 81, 181], textColor: [255, 255, 255], fontSize: 10, cellPadding: 8 },
-        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 140, fillColor: [245, 245, 245], fontSize: 11 } },
+        styles: { fontSize: 11, fontStyle: 'bold', cellPadding: 6, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150] },
+        headStyles: { fillColor: [63, 81, 181], textColor: [255, 255, 255], fontSize: 11, fontStyle: 'bold', cellPadding: 8 },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 140, fillColor: [245, 245, 245], fontSize: 12 } },
         didParseCell: (data) => {
-          if (data.section === 'body' && typeof data.cell.raw === 'number' && data.cell.raw < 50) {
-            data.cell.styles.textColor = [220, 0, 0];
+          if (data.section === 'body') {
+            data.cell.styles.fontStyle = 'bold';
+            if (typeof data.cell.raw === 'number' && data.cell.raw < 50) {
+              data.cell.styles.textColor = [220, 0, 0];
+            }
           }
         },
         margin: { left: 20, right: 20, bottom: 40 },
@@ -352,7 +251,7 @@ const YearlyResult = () => {
 
       const head1 = [
         { content: "STUDENT NAMES", rowSpan: 2, styles: { valign: 'middle', halign: 'left', fillColor: [40, 44, 52] } },
-        ...subjectChunk.map(sub => ({ content: sub.toUpperCase(), colSpan: 2, styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 9 } }))
+        ...subjectChunk.map(sub => ({ content: sub.toUpperCase(), colSpan: 2, styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 10, fontStyle: 'bold' } }))
       ];
 
       const head2 = [
@@ -360,7 +259,7 @@ const YearlyResult = () => {
       ];
 
       if (isLastChunk) {
-        head1.push({ content: "YEARLY OVERALLS", colSpan: 3, styles: { halign: 'center', fillColor: [30, 41, 59], fontSize: 9 } });
+        head1.push({ content: "YEARLY OVERALLS", colSpan: 3, styles: { halign: 'center', fillColor: [30, 41, 59], fontSize: 10, fontStyle: 'bold' } });
         head2.push("TOTAL", "PERC", "ANNUAL RANK");
       }
 
@@ -385,13 +284,14 @@ const YearlyResult = () => {
         head: [head1, head2],
         body: body,
         theme: 'grid',
-        styles: { fontSize: 8.5, cellPadding: 5, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150], halign: 'center' },
-        headStyles: { textColor: [255, 255, 255], fontSize: 8.5, fontStyle: 'bold' },
+        styles: { fontSize: 10.5, fontStyle: 'bold', cellPadding: 6, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150], halign: 'center' },
+        headStyles: { textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold' },
         columnStyles: { 
-          0: { fontStyle: 'bold', cellWidth: 160, halign: 'left', fillColor: [245, 245, 245] }
+          0: { fontStyle: 'bold', cellWidth: 160, halign: 'left', fillColor: [245, 245, 245], fontSize: 11 }
         },
         didParseCell: (data) => {
           if (data.section === 'body') {
+            data.cell.styles.fontStyle = 'bold';
             const subjectsActiveSpan = subjectChunk.length * 2;
             
             if (data.column.index > 0 && data.column.index <= subjectsActiveSpan) {
@@ -410,6 +310,7 @@ const YearlyResult = () => {
             if (isLastChunk && data.column.index === subjectsActiveSpan + 3) {
               data.cell.styles.textColor = [200, 0, 0];
               data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fontSize = 11;
               data.cell.styles.fillColor = [240, 240, 253];
             }
           }
@@ -439,7 +340,7 @@ const YearlyResult = () => {
           .no-print { display: none !important; }
           @page { size: A3 landscape; margin: 1cm; }
           table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #ddd !important; padding: 4px !important; font-size: 8px !important; }
+          th, td { border: 1px solid #ddd !important; padding: 6px !important; font-size: 11px !important; font-weight: bold !important; }
           .sticky { position: static !important; }
         }
       `}</style>
@@ -516,66 +417,66 @@ const YearlyResult = () => {
           </div>
 
           <table className="w-full text-center border-collapse">
-            <thead className="bg-gray-900 text-white text-[11px] uppercase print:bg-gray-200 print:text-black">
+            <thead className="bg-gray-900 text-white text-[12px] uppercase print:bg-gray-200 print:text-black">
               <tr>
                 <th className="p-4 border-r sticky left-0 bg-gray-900 z-30 print:bg-white" rowSpan="2">Subject</th>
                 {pupils.map(p => (
-                  <th key={p.studentID} colSpan="5" className="px-4 py-3 border-b border-r min-w-[180px]">
+                  <th key={p.studentID} colSpan="5" className="px-4 py-3 border-b border-r min-w-[180px] font-extrabold text-xs tracking-wide">
                     {p.studentName}
                   </th>
                 ))}
               </tr>
-              <tr className="bg-gray-800 text-[9px] print:bg-gray-100">
+              <tr className="bg-gray-800 text-[10px] font-bold print:bg-gray-100">
                 {pupils.map(p => (
                   <React.Fragment key={`subh-${p.studentID}`}>
                     <th className="p-1 border-r">TM 1</th>
                     <th className="p-1 border-r">TM 2</th>
                     <th className="p-1 border-r">TM 3</th>
-                    <th className="p-1 border-r bg-emerald-900 print:bg-gray-300">AVG</th>
-                    <th className="p-1 border-r text-amber-400 print:text-black font-bold">POS</th>
+                    <th className="p-1 border-r bg-emerald-900 print:bg-gray-300 font-black">AVG</th>
+                    <th className="p-1 border-r text-amber-400 print:text-black font-black">POS</th>
                   </React.Fragment>
                 ))}
               </tr>
             </thead>
-            <tbody className="text-[10px] font-medium text-gray-700">
+            <tbody className="text-[12px] font-bold text-gray-900">
               {yearlyData.subjects.map((sub) => (
                 <tr key={sub} className="border-b hover:bg-gray-50">
-                  <td className="text-left px-4 py-3 font-bold border-r sticky left-0 bg-white shadow-md print:shadow-none">{sub}</td>
+                  <td className="text-left px-4 py-3 font-black text-gray-900 border-r sticky left-0 bg-white shadow-md print:shadow-none">{sub}</td>
                   {pupils.map(p => {
                     const res = yearlyData.studentMap[p.studentID]?.[sub] || {};
                     return (
                       <React.Fragment key={`${p.studentID}-${sub}`}>
-                        <td className="p-1 border-r">{res.m1 || 0}</td>
-                        <td className="p-1 border-r">{res.m2 || 0}</td>
-                        <td className="p-1 border-r">{res.m3 || 0}</td>
-                        <td className="p-1 border-r font-black bg-emerald-50 text-emerald-700 print:text-black">{res.yearlyMean || 0}</td>
-                        <td className="p-1 border-r font-bold text-rose-600 print:text-black">{res.subRank || "-"}</td>
+                        <td className="p-1 border-r font-bold">{res.m1 || 0}</td>
+                        <td className="p-1 border-r font-bold">{res.m2 || 0}</td>
+                        <td className="p-1 border-r font-bold">{res.m3 || 0}</td>
+                        <td className="p-1 border-r text-sm font-extrabold bg-emerald-50 text-emerald-800 print:text-black">{res.yearlyMean || 0}</td>
+                        <td className="p-1 border-r text-xs font-black text-rose-700 print:text-black">{res.subRank || "-"}</td>
                       </React.Fragment>
                     );
                   })}
                 </tr>
               ))}
               
-              <tr className="bg-gray-100 font-bold">
-                <td className="sticky left-0 bg-gray-100 px-4 py-3 border-r">TOTAL SUM</td>
+              <tr className="bg-gray-100 font-extrabold">
+                <td className="sticky left-0 bg-gray-100 px-4 py-3 border-r text-gray-900 font-black">TOTAL SUM</td>
                 {pupils.map(p => (
-                  <td key={`tot-${p.studentID}`} colSpan="5" className="border-r text-emerald-700 print:text-black">
+                  <td key={`tot-${p.studentID}`} colSpan="5" className="border-r text-sm text-emerald-800 print:text-black font-extrabold">
                     {yearlyData.summaries[p.studentID]?.total}
                   </td>
                 ))}
               </tr>
-              <tr className="bg-gray-100 font-bold">
-                <td className="sticky left-0 bg-gray-100 px-4 py-3 border-r">PERCENTAGE (%)</td>
+              <tr className="bg-gray-100 font-extrabold">
+                <td className="sticky left-0 bg-gray-100 px-4 py-3 border-r text-gray-900 font-black">PERCENTAGE (%)</td>
                 {pupils.map(p => (
-                  <td key={`per-${p.studentID}`} colSpan="5" className="border-r text-emerald-700 print:text-black">
+                  <td key={`per-${p.studentID}`} colSpan="5" className="border-r text-sm text-emerald-800 print:text-black font-extrabold">
                     {yearlyData.summaries[p.studentID]?.percentage}%
                   </td>
                 ))}
               </tr>
               <tr className="bg-amber-50 font-black border-t-2 border-amber-200 print:bg-white">
-                <td className="sticky left-0 bg-amber-100 px-4 py-5 border-r text-amber-900 print:text-black">ANNUAL RANK</td>
+                <td className="sticky left-0 bg-amber-100 px-4 py-5 border-r text-amber-900 print:text-black font-black">ANNUAL RANK</td>
                 {pupils.map(p => (
-                  <td key={`rankf-${p.studentID}`} colSpan="5" className="border-r text-xl text-rose-600 italic print:text-black print:text-sm">
+                  <td key={`rankf-${p.studentID}`} colSpan="5" className="border-r text-2xl font-black text-rose-700 italic print:text-black print:text-base">
                     #{yearlyData.summaries[p.studentID]?.rank}
                   </td>
                 ))}

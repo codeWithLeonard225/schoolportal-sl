@@ -68,6 +68,7 @@ const LoginPage = () => {
             case "YahwehExams": return "/YahwehExams";
             case "SheikTais": return "/SheikTais";
             case "Climax": return "/Climax";
+            case "ClimaxCEO": return "/ClimaxCEO";
             default: return "/admin";
         }
     };

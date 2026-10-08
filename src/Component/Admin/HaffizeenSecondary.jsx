@@ -24,6 +24,8 @@ import ClassRegistration from "./ClassRegistration";
 import FeeReceipt from "../FeeReceipt.jsx/FeeReceipt";
 import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
 import FeesDashboard from "../Dashboard/FeesDsahboard";
+import GradeADashboard from "../PupilsPage/GradeADashboard";
+import ResultDashboard from "../PupilsPage/ResultDashboard";
 import SubjectPage from "../SubjectPage/SubjectPage";
 import TeacherAssignmentPage from "../TeacherAssignment/TeacherAssignmentPage";
 import TeacherRegistration from "../Voters/TeacherRegistration";
@@ -79,6 +81,8 @@ import ManualAttendance from "../PupilsPage/ManualAttendance";
 import TeacherPhotoEditor from "../Voters/TeacherPhotoEditor";
 import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
 import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
+import StaffAttendanceReport from "../Staff/StaffAttendanceReport";
+import AttendanceReport from "../Dashboard/AttendanceReports";
 
 
 
@@ -92,6 +96,26 @@ const NAV_ITEMS = [
     label: "Pupil Attendance",
     icon: <MdWarning />, // 📖
   },
+     {
+    key: "attendanceReport",
+    label: "Attendance Report",
+    icon: <MdEdit />,
+    children: [
+      { key: "AttendanceReport", label: " Pupils Attendance", icon: <MdPerson /> },
+      { key: "StaffAttendanceReport", label: " Staff Attendance", icon: <MdPerson /> },
+    ],
+  },
+
+    //  {
+    //   key: "GradeADashboard",
+    //   label: "Grade A Pupils",
+    //   icon: <MdWarning />, // 📖
+    // },
+     {
+      key: "ResultDashboard",
+      label: "Results Dashboard",
+      icon: <MdWarning />, // 📖
+    },
   {
     key: "forms",
     label: "Registeration",
@@ -297,6 +321,10 @@ function AdminPanel() {
     switch (activeTab) {
       case "dashboard": return <RegDashboard />;
       case "AttendanceDashboard": return <AttendanceDashboard />;
+          case "AttendanceReport": return <AttendanceReport />;
+        case "StaffAttendanceReport": return <StaffAttendanceReport />;
+         case "GradeADashboard": return <GradeADashboard />;
+      case "ResultDashboard": return <ResultDashboard />;
       case "Form": return <Registration />;
       case "class": return <ClassRegistration />;
       case "classList": return <StudentFilterPage />;
