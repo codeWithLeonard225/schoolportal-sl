@@ -19,7 +19,7 @@ import {
   MdCheckCircle,
   MdRemoveCircle,
 } from "react-icons/md";
-import Registration from "../Voters/Registration";
+import Registration from "../Voters/RegistrationWahweh";
 import ClassRegistration from "./ClassRegistration";
 import FeeReceipt from "../FeeReceipt.jsx/FeeReceipt";
 import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
@@ -207,7 +207,7 @@ const NAV_ITEMS = [
     label: "Qr code Attendance-Pupil",
     icon: <MdBarChart />,
     children: [
-      // { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
+      { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
       // { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
       { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
       { key: "PupilAttendanceLogs", label: "Pupil Attendance Logs", icon: <MdPerson /> },

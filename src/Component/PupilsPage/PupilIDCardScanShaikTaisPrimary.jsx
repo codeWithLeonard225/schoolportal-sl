@@ -4,15 +4,13 @@ import { QRCodeSVG } from "qrcode.react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../../firebase";
 import { useAuth } from "../Security/AuthContext";
-import { FaArrowLeft, FaArrowRight, FaPrint, FaCheckSquare, FaSquare } from "react-icons/fa";
+import { FaPrint, FaCheckSquare, FaSquare, FaSearch, FaTimes, FaCheck } from "react-icons/fa";
 
 // ---- CARD DIMENSIONS ----
 const CARD_WIDTH = "3.55in";
 const CARD_HEIGHT = "2.25in";
 const GAP_BETWEEN_CARDS = "0.35in";
 const CARDS_PER_ROW = 2;
-const ROWS_PER_PAGE = 4;
-const CARDS_PER_BROWSER_PAGE = CARDS_PER_ROW * ROWS_PER_PAGE;
 
 const formatClassName = (className) => {
     if (!className) return "";
@@ -35,9 +33,9 @@ const PupilIDCard = () => {
     const [pupils, setPupils] = useState([]);
     const [selectedClass, setSelectedClass] = useState("All");
     const [selectedAcademicYear, setSelectedAcademicYear] = useState("All");
-    const [currentPage, setCurrentPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState("");
     
-    // Track selected pupil IDs for selective printing
+    // Track selected pupil IDs (Deselected by default)
     const [selectedPupilIds, setSelectedPupilIds] = useState([]);
 
     useEffect(() => {
@@ -49,27 +47,28 @@ const PupilIDCard = () => {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setPupils(data);
-            // Default selection: select all loaded pupils
-            setSelectedPupilIds(data.map(p => p.id));
         });
         return () => unsubscribe();
     }, [currentSchoolId]);
 
+    // Reset selected pupils ONLY when class changes
+    const handleClassChange = (e) => {
+        setSelectedClass(e.target.value);
+        setSelectedPupilIds([]);
+    };
+
     const classOptions = ["All", ...new Set(pupils.map(p => p.class).filter(Boolean))];
     const academicYearOptions = ["All", ...new Set(pupils.map(p => p.academicYear).filter(Boolean))];
 
+    // Filter pupils by Class, Academic Year, and Name Search
     const filteredPupils = pupils.filter(p => {
         const matchesClass = selectedClass === "All" || p.class === selectedClass;
         const matchesYear = selectedAcademicYear === "All" || p.academicYear === selectedAcademicYear;
-        return matchesClass && matchesYear;
+        const matchesName = !searchQuery.trim() || 
+            (p.studentName && p.studentName.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+        
+        return matchesClass && matchesYear && matchesName;
     });
-
-    const totalPages = Math.ceil(filteredPupils.length / CARDS_PER_BROWSER_PAGE) || 1;
-    const startIndex = (currentPage - 1) * CARDS_PER_BROWSER_PAGE;
-    const visiblePupils = filteredPupils.slice(startIndex, startIndex + CARDS_PER_BROWSER_PAGE);
-
-    const handleNext = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
-    const handlePrevious = () => currentPage > 1 && setCurrentPage(currentPage - 1);
 
     // Toggle individual selection
     const toggleSelectPupil = (id) => {
@@ -78,16 +77,16 @@ const PupilIDCard = () => {
         );
     };
 
-    // Toggle all visible pupils on current view
-    const isAllVisibleSelected = visiblePupils.length > 0 && visiblePupils.every(p => selectedPupilIds.includes(p.id));
-    
-    const toggleSelectAllVisible = () => {
-        const visibleIds = visiblePupils.map(p => p.id);
-        if (isAllVisibleSelected) {
-            setSelectedPupilIds(prev => prev.filter(id => !visibleIds.includes(id)));
-        } else {
-            setSelectedPupilIds(prev => [...new Set([...prev, ...visibleIds])]);
-        }
+    // Select visible cards without losing existing selections from other queries
+    const handleSelectAllVisible = () => {
+        const visibleIds = filteredPupils.map(p => p.id);
+        setSelectedPupilIds(prev => Array.from(new Set([...prev, ...visibleIds])));
+    };
+
+    // Deselect only currently visible cards
+    const handleDeselectAllVisible = () => {
+        const visibleIds = filteredPupils.map(p => p.id);
+        setSelectedPupilIds(prev => prev.filter(id => !visibleIds.includes(id)));
     };
 
     return (
@@ -99,7 +98,7 @@ const PupilIDCard = () => {
                         body * {
                             visibility: hidden !important;
                         }
-                        .printable-card, .printable-card * {
+                        .grid, .grid * {
                             visibility: visible !important;
                         }
                         .grid {
@@ -113,11 +112,9 @@ const PupilIDCard = () => {
                             margin: 0 !important;
                             padding: 0 !important;
                         }
-                        .unselected-card {
-                            display: none !important;
-                        }
                         .print\\:hidden { 
                             display: none !important; 
+                            visibility: hidden !important;
                         }
                         @page { 
                             size: A4 portrait; 
@@ -135,26 +132,42 @@ const PupilIDCard = () => {
             </style>
 
             {/* Action Bar */}
-            <div className="print:hidden" style={{ width: "100%", maxWidth: "800px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px" }}>
+            <div className="print:hidden" style={{ width: "100%", maxWidth: "850px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px" }}>
                 <h2 style={{ fontSize: "24px", fontWeight: "bold", margin: 0, color: "#1f2937" }}>Pupil & Staff ID Cards</h2>
+                
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                    
-                    <button
-                        onClick={toggleSelectAllVisible}
-                        style={{ padding: "6px 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", fontWeight: "600" }}
-                    >
-                        {isAllVisibleSelected ? <FaCheckSquare /> : <FaSquare />}
-                        {isAllVisibleSelected ? "Deselect Page" : "Select Page"}
-                    </button>
+                    {/* Student Name Search Input */}
+                    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                        <FaSearch style={{ position: "absolute", left: "10px", color: "#9ca3af", fontSize: "12px" }} />
+                        <input 
+                            type="text"
+                            placeholder="Search name..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                padding: "6px 28px 6px 30px",
+                                borderRadius: "4px",
+                                border: "1px solid #ccc",
+                                background: "#fff",
+                                fontSize: "14px",
+                                outline: "none",
+                                width: "160px"
+                            }}
+                        />
+                        {searchQuery && (
+                            <FaTimes 
+                                onClick={() => setSearchQuery("")}
+                                style={{ position: "absolute", right: "10px", color: "#9ca3af", cursor: "pointer", fontSize: "12px" }} 
+                            />
+                        )}
+                    </div>
 
+                    {/* Class Filter Dropdown */}
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                         <label style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>Class:</label>
                         <select 
                             value={selectedClass} 
-                            onChange={(e) => {
-                                setSelectedClass(e.target.value);
-                                setCurrentPage(1);
-                            }}
+                            onChange={handleClassChange}
                             style={{ padding: "6px 12px", borderRadius: "4px", border: "1px solid #ccc", background: "#fff" }}
                         >
                             {classOptions.map((cls) => (
@@ -163,14 +176,12 @@ const PupilIDCard = () => {
                         </select>
                     </div>
 
+                    {/* Academic Year Filter Dropdown */}
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                         <label style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>Year:</label>
                         <select 
                             value={selectedAcademicYear} 
-                            onChange={(e) => {
-                                setSelectedAcademicYear(e.target.value);
-                                setCurrentPage(1);
-                            }}
+                            onChange={(e) => setSelectedAcademicYear(e.target.value)}
                             style={{ padding: "6px 12px", borderRadius: "4px", border: "1px solid #ccc", background: "#fff" }}
                         >
                             {academicYearOptions.map((year) => (
@@ -179,16 +190,17 @@ const PupilIDCard = () => {
                         </select>
                     </div>
 
+                    {/* Print Button */}
                     <button 
                         onClick={() => window.print()} 
                         disabled={selectedPupilIds.length === 0}
                         style={{ 
                             padding: "8px 16px", 
-                            background: selectedPupilIds.length === 0 ? "#9ca3af" : "#800000", 
+                            background: selectedPupilIds.length > 0 ? "#800000" : "#9ca3af", 
                             color: "#fff", 
                             border: "none", 
                             borderRadius: "6px", 
-                            cursor: selectedPupilIds.length === 0 ? "not-allowed" : "pointer", 
+                            cursor: selectedPupilIds.length > 0 ? "pointer" : "not-allowed", 
                             display: "flex", 
                             alignItems: "center", 
                             gap: "6px", 
@@ -200,28 +212,26 @@ const PupilIDCard = () => {
                 </div>
             </div>
 
-            {/* Pagination controls */}
-            {totalPages > 1 && (
-                <div className="print:hidden" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "15px", marginBottom: "20px" }}>
-                    <button
-                        onClick={handlePrevious}
-                        disabled={currentPage === 1}
-                        style={{ padding: "6px 12px", background: "#d1d5db", color: "#1f2937", border: "none", borderRadius: "6px", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1, display: "flex", alignItems: "center", gap: "5px" }}
+            {/* Quick Selection Toolbar */}
+            <div className="print:hidden" style={{ width: "100%", maxWidth: "850px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", background: "#fff", padding: "10px 15px", borderRadius: "6px", border: "1px solid #e5e7eb" }}>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#4b5563" }}>
+                    Showing {filteredPupils.length} pupils | <strong style={{ color: "#800000" }}>{selectedPupilIds.length} Total Selected</strong>
+                </span>
+                <div style={{ display: "flex", gap: "12px" }}>
+                    <button 
+                        onClick={handleSelectAllVisible}
+                        style={{ background: "none", border: "none", color: "#800000", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px" }}
                     >
-                        <FaArrowLeft size={12} /> Previous
+                        <FaCheckSquare /> Select Visible
                     </button>
-                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                        onClick={handleNext}
-                        disabled={currentPage === totalPages}
-                        style={{ padding: "6px 12px", background: "#d1d5db", color: "#1f2937", border: "none", borderRadius: "6px", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1, display: "flex", alignItems: "center", gap: "5px" }}
+                    <button 
+                        onClick={handleDeselectAllVisible}
+                        style={{ background: "none", border: "none", color: "#6b7280", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px" }}
                     >
-                        Next <FaArrowRight size={12} />
+                        <FaSquare /> Deselect Visible
                     </button>
                 </div>
-            )}
+            </div>
 
             {/* ID Cards Grid */}
             <div 
@@ -232,63 +242,65 @@ const PupilIDCard = () => {
                     gap: GAP_BETWEEN_CARDS, 
                     justifyContent: "center",
                     width: "100%",
-                    maxWidth: "800px"
+                    maxWidth: "850px"
                 }}
             >
-                {visiblePupils.length > 0 ? (
-                    visiblePupils.map((pupil) => {
+                {filteredPupils.length > 0 ? (
+                    filteredPupils.map((pupil) => {
                         const isSelected = selectedPupilIds.includes(pupil.id);
+
                         return (
                             <div 
                                 key={pupil.id} 
-                                className={isSelected ? "printable-card" : "unselected-card"}
+                                className={!isSelected ? "print:hidden" : ""}
+                                onClick={() => toggleSelectPupil(pupil.id)}
                                 style={{
                                     width: CARD_WIDTH,
                                     height: CARD_HEIGHT,
-                                    border: isSelected ? "2px solid #800000" : "1px dashed #9ca3af",
+                                    border: isSelected ? "3px solid #800000" : "1px dashed #9ca3af",
                                     borderRadius: "8px",
                                     overflow: "hidden",
                                     boxSizing: "border-box",
                                     display: "flex",
                                     flexDirection: "column",
                                     justifyContent: "space-between",
-                                    background: isSelected ? "linear-gradient(135deg, #fffde7 0%, #fff9c4 100%)" : "#f9fafb",
-                                    boxShadow: isSelected ? "0 2px 6px rgba(0,0,0,0.12)" : "none",
+                                    background: isSelected 
+                                        ? "linear-gradient(135deg, #fffde7 0%, #fff9c4 100%)" 
+                                        : "#ffffff",
+                                    boxShadow: isSelected ? "0 4px 12px rgba(128, 0, 0, 0.25)" : "none",
+                                    opacity: isSelected ? 1 : 0.55,
                                     pageBreakInside: "avoid",
                                     position: "relative",
-                                    opacity: isSelected ? 1 : 0.6
+                                    cursor: "pointer",
+                                    transition: "all 0.15s ease"
                                 }}
                             >
-                                {/* Checkbox Selector (Hidden on print) */}
+                                {/* Selection Badge / Tag */}
                                 <div 
                                     className="print:hidden"
-                                    onClick={() => toggleSelectPupil(pupil.id)}
                                     style={{
                                         position: "absolute",
                                         top: "4px",
                                         right: "4px",
                                         zIndex: 10,
-                                        background: "rgba(255, 255, 255, 0.9)",
+                                        background: isSelected ? "#16a34a" : "#e5e7eb",
+                                        color: isSelected ? "#ffffff" : "#4b5563",
                                         borderRadius: "4px",
-                                        padding: "2px 4px",
-                                        cursor: "pointer",
+                                        padding: "3px 6px",
                                         display: "flex",
                                         alignItems: "center",
-                                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
+                                        gap: "4px",
+                                        fontSize: "10px",
+                                        fontWeight: "bold",
+                                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
                                     }}
                                 >
-                                    <input 
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={() => {}} // Handled by parent div click
-                                        style={{ cursor: "pointer" }}
-                                    />
+                                    {isSelected ? <><FaCheck size={10} /> Selected</> : "Click to Select"}
                                 </div>
 
                                 {/* Header */}
                                 <div style={{ 
-                                //   background: "linear-gradient(135deg, #00562d 0%, #007a41 100%)", green
-                                   background: "linear-gradient(90deg, #800000 0%, #4a0000 100%)", 
+                                    background: "linear-gradient(90deg, #800000 0%, #4a0000 100%)", 
                                     padding: "4px 8px", 
                                     display: "flex", 
                                     alignItems: "center", 
@@ -314,7 +326,6 @@ const PupilIDCard = () => {
                                             WebkitBoxOrient: "vertical",
                                             overflow: "hidden"
                                         }}>
-                                            {/* {schoolName || "STUDENT ID CARD"} */}
                                             {"SHEIKH TAIS ACADEMY PRIMARY"}
                                         </div>
                                         {schoolMotto && (
@@ -322,7 +333,6 @@ const PupilIDCard = () => {
                                                 {schoolMotto}
                                             </div>
                                         )}
-                                    
                                     </div>
                                 </div>
 
@@ -337,8 +347,8 @@ const PupilIDCard = () => {
                                         <div style={{ fontWeight: "bold", fontSize: "15px", color: "#800000", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                             {pupil.studentName}
                                         </div>
-                                        <div style={{fontSize: "15px"}}><strong>ID:</strong> {pupil.studentID}</div>
-                                        <div style={{fontSize:"15px"}}><strong>Level:</strong> {formatClassName(pupil.class)}</div>
+                                        <div style={{ fontSize: "15px" }}><strong>ID:</strong> {pupil.registrationFormNo}</div>
+                                        <div style={{ fontSize: "15px" }}><strong>Level:</strong> {formatClassName(pupil.class)}</div>
                                     </div>
                                 </div>
 
@@ -368,16 +378,14 @@ const PupilIDCard = () => {
                                 <div style={{ 
                                     display: "flex", 
                                     alignItems: "center", 
-                                    // background: "linear-gradient(135deg, #00562d 0%, #007a41 100%)", green
-                                     background: "linear-gradient(90deg, #800000 0%, #4a0000 100%)", 
+                                    background: "linear-gradient(90deg, #800000 0%, #4a0000 100%)", 
                                     padding: "4px 8px",
                                     minHeight: "36px",
                                     paddingRight: "60px"
                                 }}>
                                     <div style={{ fontSize: "10px", color: "#ffd700", lineHeight: "1.1", overflow: "hidden" }}>
                                         {schoolAddress && <div style={{ fontStyle: "italic", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>"{schoolAddress}"</div>}
-                                        {/* {schoolMotto && <div style={{ fontStyle: "italic", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>"{schoolMotto}"</div>} */}
-                                        {schoolContact && <div style={{ whiteSpace: "nowrap", overflow: "hidden",fontWeight: "500", textOverflow: "ellipsis" }}>Tel: {schoolContact}</div>}
+                                        {schoolContact && <div style={{ whiteSpace: "nowrap", overflow: "hidden", fontWeight: "500", textOverflow: "ellipsis" }}>Tel: {schoolContact}</div>}
                                         {!schoolAddress && !schoolContact && <div>Official School Pass</div>}
                                     </div>
                                 </div>
@@ -386,7 +394,7 @@ const PupilIDCard = () => {
                     })
                 ) : (
                     <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "#6b7280", padding: "40px" }}>
-                        No pupils found for the selected filters.
+                        No pupils found matching your search and filter criteria.
                     </div>
                 )}
             </div>

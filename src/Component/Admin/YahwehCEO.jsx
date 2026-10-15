@@ -28,7 +28,7 @@ import GradeADashboard from "../PupilsPage/GradeADashboard";
 import ResultDashboard from "../PupilsPage/ResultDashboard";
 import SubjectPage from "../SubjectPage/SubjectPage";
 import TeacherAssignmentPage from "../TeacherAssignment/TeacherAssignmentPage";
-import TeacherRegistration from "../Voters/TeacherRegistration";
+import TeacherRegistration from "../Voters/TeacherRegistrationWahwehIT";
 import TeacherPupilsPage from "../TeacherAssignment/TeacherPupilsPage";
 import GradeSheetPage from "../TeacherAssignment/GradeSheetPage";
 import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPage";

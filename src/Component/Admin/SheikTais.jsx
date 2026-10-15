@@ -125,7 +125,7 @@ const NAV_ITEMS = [
       { key: "classList", label: "Class List", icon: <MdPerson /> },
     //   { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
     //   { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
-    //   { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
+      { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
       // { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
       // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
 
@@ -206,7 +206,7 @@ const NAV_ITEMS = [
     label: "Qr code Attendance-Pupil",
     icon: <MdBarChart />,
     children: [
-      // { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
+      { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
       // { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
       { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
       { key: "PupilAttendanceLogs", label: "Pupil Attendance Logs", icon: <MdPerson /> },

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import CameraCapture from "../CaptureCamera/CameraCapture";
-import CloudinaryImageUploader from "../CaptureCamera/CloudinaryImageUploader";
+import CameraCapture from "../CaptureCameraYahweh/CameraCapture";
+import CloudinaryImageUploader from "../CaptureCameraYahweh/CloudinaryImageUploader";
 import { toast } from "react-toastify";
 import { db } from "../../../firebase";
 import {

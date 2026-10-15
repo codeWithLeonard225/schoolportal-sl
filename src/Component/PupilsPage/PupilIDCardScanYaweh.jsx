@@ -4,15 +4,13 @@ import { QRCodeSVG } from "qrcode.react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../../firebase";
 import { useAuth } from "../Security/AuthContext";
-import { FaArrowLeft, FaArrowRight, FaPrint } from "react-icons/fa";
+import { FaPrint, FaCheckSquare, FaSquare, FaSearch, FaTimes, FaCheck } from "react-icons/fa";
 
 // ---- CARD DIMENSIONS ----
 const CARD_WIDTH = "3.55in";
 const CARD_HEIGHT = "2.25in";
 const GAP_BETWEEN_CARDS = "0.35in";
 const CARDS_PER_ROW = 2;
-const ROWS_PER_PAGE = 4;
-const CARDS_PER_BROWSER_PAGE = CARDS_PER_ROW * ROWS_PER_PAGE;
 
 const PupilIDCard = () => {
     const location = useLocation();
@@ -30,10 +28,10 @@ const PupilIDCard = () => {
     const [pupils, setPupils] = useState([]);
     const [selectedClass, setSelectedClass] = useState("All");
     const [selectedAcademicYear, setSelectedAcademicYear] = useState("All");
-    const [currentPage, setCurrentPage] = useState(1);
-
-    // Track print mode: "page" or "all"
-    const [printMode, setPrintMode] = useState("page");
+    const [searchQuery, setSearchQuery] = useState("");
+    
+    // Track selected IDs (Deselected by default)
+    const [selectedPupilIds, setSelectedPupilIds] = useState([]);
 
     useEffect(() => {
         if (!currentSchoolId) return;
@@ -48,39 +46,48 @@ const PupilIDCard = () => {
         return () => unsubscribe();
     }, [currentSchoolId]);
 
+    // Reset selections ONLY when a new class is selected
+    const handleClassChange = (e) => {
+        setSelectedClass(e.target.value);
+        setSelectedPupilIds([]);
+    };
+
+    // Extract unique classes and academic years for dropdown filters
     const classOptions = ["All", ...new Set(pupils.map(p => p.class).filter(Boolean))];
     const academicYearOptions = ["All", ...new Set(pupils.map(p => p.academicYear).filter(Boolean))];
 
+    // Filter pupils by Class, Academic Year, and Name Search
     const filteredPupils = pupils.filter(p => {
         const matchesClass = selectedClass === "All" || p.class === selectedClass;
         const matchesYear = selectedAcademicYear === "All" || p.academicYear === selectedAcademicYear;
-        return matchesClass && matchesYear;
+        const matchesName = !searchQuery.trim() || 
+            (p.studentName && p.studentName.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+        
+        return matchesClass && matchesYear && matchesName;
     });
 
-    const totalPages = Math.ceil(filteredPupils.length / CARDS_PER_BROWSER_PAGE) || 1;
-    const startIndex = (currentPage - 1) * CARDS_PER_BROWSER_PAGE;
-    const visiblePupils = filteredPupils.slice(startIndex, startIndex + CARDS_PER_BROWSER_PAGE);
-
-    // Determine which list to render based on print state
-    const pupilsToRender = printMode === "all" ? filteredPupils : visiblePupils;
-
-    const handleNext = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
-    const handlePrevious = () => currentPage > 1 && setCurrentPage(currentPage - 1);
-
-    // Print handlers
-    const handlePrintPage = () => {
-        setPrintMode("page");
-        setTimeout(() => window.print(), 100);
+    // Selection handlers
+    const toggleSelectPupil = (id) => {
+        setSelectedPupilIds(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
     };
 
-    const handlePrintAll = () => {
-        setPrintMode("all");
-        setTimeout(() => window.print(), 100);
+    // Select visible cards without clearing prior selections from other searches/years
+    const handleSelectAllVisible = () => {
+        const visibleIds = filteredPupils.map(p => p.id);
+        setSelectedPupilIds(prev => Array.from(new Set([...prev, ...visibleIds])));
+    };
+
+    // Deselect only currently visible cards
+    const handleDeselectAllVisible = () => {
+        const visibleIds = filteredPupils.map(p => p.id);
+        setSelectedPupilIds(prev => prev.filter(id => !visibleIds.includes(id)));
     };
 
     return (
         <div style={{ padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", minHeight: "100vh", background: "#f3f4f6" }}>
-            {/* PRINT CSS */}
+            {/* STRICT PRINT CSS TO HIDE UNSELECTED CARDS & LAYOUT */}
             <style>
                 {`
                     @media print {
@@ -101,13 +108,9 @@ const PupilIDCard = () => {
                             margin: 0 !important;
                             padding: 0 !important;
                         }
-                        /* Page break for printing all cards in batches of 8 */
-                        .card-item:nth-child(8n) {
-                            break-after: page;
-                            page-break-after: always;
-                        }
                         .print\\:hidden { 
                             display: none !important; 
+                            visibility: hidden !important;
                         }
                         @page { 
                             size: A4 portrait; 
@@ -125,17 +128,42 @@ const PupilIDCard = () => {
             </style>
 
             {/* Action Bar */}
-            <div className="print:hidden" style={{ width: "100%", maxWidth: "800px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px" }}>
+            <div className="print:hidden" style={{ width: "100%", maxWidth: "850px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px" }}>
                 <h2 style={{ fontSize: "24px", fontWeight: "bold", margin: 0, color: "#1f2937" }}>Pupil & Staff ID Cards</h2>
+                
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                    {/* Student Name Search Input */}
+                    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                        <FaSearch style={{ position: "absolute", left: "10px", color: "#9ca3af", fontSize: "12px" }} />
+                        <input 
+                            type="text"
+                            placeholder="Search name..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                padding: "6px 28px 6px 30px",
+                                borderRadius: "4px",
+                                border: "1px solid #ccc",
+                                background: "#fff",
+                                fontSize: "14px",
+                                outline: "none",
+                                width: "160px"
+                            }}
+                        />
+                        {searchQuery && (
+                            <FaTimes 
+                                onClick={() => setSearchQuery("")}
+                                style={{ position: "absolute", right: "10px", color: "#9ca3af", cursor: "pointer", fontSize: "12px" }} 
+                            />
+                        )}
+                    </div>
+
+                    {/* Class Filter Dropdown */}
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                         <label style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>Class:</label>
-                        <select
-                            value={selectedClass}
-                            onChange={(e) => {
-                                setSelectedClass(e.target.value);
-                                setCurrentPage(1);
-                            }}
+                        <select 
+                            value={selectedClass} 
+                            onChange={handleClassChange}
                             style={{ padding: "6px 12px", borderRadius: "4px", border: "1px solid #ccc", background: "#fff" }}
                         >
                             {classOptions.map((cls) => (
@@ -144,14 +172,12 @@ const PupilIDCard = () => {
                         </select>
                     </div>
 
+                    {/* Academic Year Filter Dropdown */}
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                         <label style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>Year:</label>
-                        <select
-                            value={selectedAcademicYear}
-                            onChange={(e) => {
-                                setSelectedAcademicYear(e.target.value);
-                                setCurrentPage(1);
-                            }}
+                        <select 
+                            value={selectedAcademicYear} 
+                            onChange={(e) => setSelectedAcademicYear(e.target.value)}
                             style={{ padding: "6px 12px", borderRadius: "4px", border: "1px solid #ccc", background: "#fff" }}
                         >
                             {academicYearOptions.map((year) => (
@@ -160,179 +186,214 @@ const PupilIDCard = () => {
                         </select>
                     </div>
 
-                    {/* Print Current Page */}
-                    <button
-                        onClick={handlePrintPage}
-                        style={{ padding: "8px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontWeight: "600" }}
+                    {/* Print Button */}
+                    <button 
+                        onClick={() => window.print()} 
+                        disabled={selectedPupilIds.length === 0}
+                        style={{ 
+                            padding: "8px 16px", 
+                            background: selectedPupilIds.length > 0 ? "#0D47A1" : "#9ca3af", 
+                            color: "#fff", 
+                            border: "none", 
+                            borderRadius: "6px", 
+                            cursor: selectedPupilIds.length > 0 ? "pointer" : "not-allowed", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            gap: "6px", 
+                            fontWeight: "600" 
+                        }}
                     >
-                        <FaPrint /> Print Page ({currentPage})
-                    </button>
-
-                    {/* Print All Document */}
-                    <button
-                        onClick={handlePrintAll}
-                        style={{ padding: "8px 14px", background: "#800000", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontWeight: "600" }}
-                    >
-                        <FaPrint /> Print All ({filteredPupils.length})
+                        <FaPrint /> Print Selected ({selectedPupilIds.length})
                     </button>
                 </div>
             </div>
 
-            {/* Pagination controls */}
-            {totalPages > 1 && (
-                <div className="print:hidden" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "15px", marginBottom: "20px" }}>
-                    <button
-                        onClick={handlePrevious}
-                        disabled={currentPage === 1}
-                        style={{ padding: "6px 12px", background: "#d1d5db", color: "#1f2937", border: "none", borderRadius: "6px", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1, display: "flex", alignItems: "center", gap: "5px" }}
+            {/* Quick Selection Toolbar */}
+            <div className="print:hidden" style={{ width: "100%", maxWidth: "850px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", background: "#fff", padding: "10px 15px", borderRadius: "6px", border: "1px solid #e5e7eb" }}>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#4b5563" }}>
+                    Showing {filteredPupils.length} pupils | <strong style={{ color: "#0D47A1" }}>{selectedPupilIds.length} Total Selected</strong>
+                </span>
+                <div style={{ display: "flex", gap: "12px" }}>
+                    <button 
+                        onClick={handleSelectAllVisible}
+                        style={{ background: "none", border: "none", color: "#0D47A1", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px" }}
                     >
-                        <FaArrowLeft size={12} /> Previous
+                        <FaCheckSquare /> Select Visible
                     </button>
-                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                        onClick={handleNext}
-                        disabled={currentPage === totalPages}
-                        style={{ padding: "6px 12px", background: "#d1d5db", color: "#1f2937", border: "none", borderRadius: "6px", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1, display: "flex", alignItems: "center", gap: "5px" }}
+                    <button 
+                        onClick={handleDeselectAllVisible}
+                        style={{ background: "none", border: "none", color: "#6b7280", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px" }}
                     >
-                        Next <FaArrowRight size={12} />
+                        <FaSquare /> Deselect Visible
                     </button>
                 </div>
-            )}
+            </div>
 
             {/* ID Cards Grid */}
-            <div
-                className="grid"
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: `repeat(${CARDS_PER_ROW}, ${CARD_WIDTH})`,
-                    gap: GAP_BETWEEN_CARDS,
+            <div 
+                className="grid" 
+                style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: `repeat(${CARDS_PER_ROW}, ${CARD_WIDTH})`, 
+                    gap: GAP_BETWEEN_CARDS, 
                     justifyContent: "center",
                     width: "100%",
-                    maxWidth: "800px"
+                    maxWidth: "850px"
                 }}
             >
-                {pupilsToRender.length > 0 ? (
-                    pupilsToRender.map((pupil) => (
-                        <div
-                            key={pupil.id}
-                            className="card-item"
-                            style={{
-                                width: CARD_WIDTH,
-                                height: CARD_HEIGHT,
-                                border: "1px solid #0D47A1",
-                                borderRadius: "8px",
-                                overflow: "hidden",
-                                boxSizing: "border-box",
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "space-between",
-                                background: "linear-gradient(135deg, #ffffff 0%, #fffde7 100%)",
-                                boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
-                                pageBreakInside: "avoid",
-                                position: "relative"
-                            }}
-                        >
-                            {/* Header */}
-                            <div style={{
-                                background: "linear-gradient(90deg, #1E88E5 0%, #0D47A1 100%)",
-                                padding: "4px 8px",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                minHeight: "36px"
-                            }}>
-                                {schoolLogoUrl && (
-                                    <img
-                                        src={schoolLogoUrl}
-                                        alt="School Logo"
-                                        style={{ width: "26px", height: "26px", objectFit: "contain", borderRadius: "3px", background: "#fff", padding: "1px", flexShrink: 0 }}
-                                    />
-                                )}
-                                <div style={{ flex: 1, overflow: "hidden", lineHeight: "1.1" }}>
-                                    <div style={{
+                {filteredPupils.length > 0 ? (
+                    filteredPupils.map((pupil) => {
+                        const isSelected = selectedPupilIds.includes(pupil.id);
+
+                        return (
+                            <div 
+                                key={pupil.id} 
+                                className={!isSelected ? "print:hidden" : ""}
+                                onClick={() => toggleSelectPupil(pupil.id)}
+                                style={{
+                                    width: CARD_WIDTH,
+                                    height: CARD_HEIGHT,
+                                    border: isSelected ? "3px solid #0D47A1" : "1px dashed #9ca3af",
+                                    borderRadius: "8px",
+                                    overflow: "hidden",
+                                    boxSizing: "border-box",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    justifyContent: "space-between",
+                                    background: isSelected 
+                                        ? "linear-gradient(135deg, #ffffff 0%, #fffde7 100%)" 
+                                        : "#ffffff",
+                                    boxShadow: isSelected ? "0 4px 12px rgba(13, 71, 161, 0.25)" : "none",
+                                    opacity: isSelected ? 1 : 0.55,
+                                    pageBreakInside: "avoid",
+                                    position: "relative",
+                                    cursor: "pointer",
+                                    transition: "all 0.15s ease"
+                                }}
+                            >
+                                {/* Selection Badge / Tag */}
+                                <div 
+                                    className="print:hidden"
+                                    style={{
+                                        position: "absolute",
+                                        top: "4px",
+                                        right: "4px",
+                                        zIndex: 10,
+                                        background: isSelected ? "#16a34a" : "#e5e7eb",
+                                        color: isSelected ? "#ffffff" : "#4b5563",
+                                        borderRadius: "4px",
+                                        padding: "3px 6px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "4px",
+                                        fontSize: "10px",
                                         fontWeight: "bold",
-                                        fontSize: "9.5px",
-                                        color: "#ffffff",
-                                        textTransform: "uppercase",
-                                        wordBreak: "break-word",
-                                        display: "-webkit-box",
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: "vertical",
-                                        overflow: "hidden"
-                                    }}>
-                                        {schoolName || "STUDENT ID CARD"}
-                                    </div>
-                                    {schoolAddress && (
-                                        <div style={{ fontSize: "6.5px", color: "#e0f7fa", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                            {schoolAddress}
-                                        </div>
+                                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+                                    }}
+                                >
+                                    {isSelected ? <><FaCheck size={10} /> Selected</> : "Click to Select"}
+                                </div>
+
+                                {/* Header */}
+                                <div style={{ 
+                                    background: "linear-gradient(90deg, #1E88E5 0%, #0D47A1 100%)", 
+                                    padding: "4px 8px", 
+                                    display: "flex", 
+                                    alignItems: "center", 
+                                    gap: "6px",
+                                    minHeight: "36px"
+                                }}>
+                                    {schoolLogoUrl && (
+                                        <img 
+                                            src={schoolLogoUrl} 
+                                            alt="School Logo" 
+                                            style={{ width: "26px", height: "26px", objectFit: "contain", borderRadius: "3px", background: "#fff", padding: "1px", flexShrink: 0 }} 
+                                        />
                                     )}
-                                </div>
-                                <span style={{ fontSize: "8.5px", fontWeight: "600", color: "#fff9c4", whiteSpace: "nowrap", flexShrink: 0 }}>
-                                    {pupil.academicYear || ""}
-                                </span>
-                            </div>
-
-                            {/* Card Body */}
-                            <div style={{ display: "flex", gap: "8px", alignItems: "center", padding: "0 8px", margin: "2px 0" }}>
-                                <img
-                                    src={pupil.userPhotoUrl || "https://via.placeholder.com/80"}
-                                    alt={pupil.studentName}
-                                    style={{ width: "100px", height: "100px", borderRadius: "5px", objectFit: "cover", border: "1px solid #0D47A1", flexShrink: 0 }}
-                                />
-                                <div style={{ fontSize: "10px", lineHeight: "1.3", flex: 1, overflow: "hidden", color: "#1A237E" }}>
-                                    <div style={{ fontWeight: "bold", fontSize: "11px", color: "#0D47A1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                        {pupil.studentName}
+                                    <div style={{ flex: 1, overflow: "hidden", lineHeight: "1.1", paddingRight: "60px" }}>
+                                        <div style={{ 
+                                            fontWeight: "bold", 
+                                            fontSize: "9.5px", 
+                                            color: "#ffffff", 
+                                            textTransform: "uppercase", 
+                                            wordBreak: "break-word",
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: "vertical",
+                                            overflow: "hidden"
+                                        }}>
+                                            {schoolName || "STUDENT ID CARD"}
+                                        </div>
+                                        {schoolAddress && (
+                                            <div style={{ fontSize: "6.5px", color: "#e0f7fa", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                                {schoolAddress}
+                                            </div>
+                                        )}
                                     </div>
-                                    <div><strong>ID:</strong> {pupil.studentID}</div>
-                                    <div><strong>Class:</strong> {pupil.class}</div>
+                                    <span style={{ fontSize: "8.5px", fontWeight: "600", color: "#fff9c4", whiteSpace: "nowrap", flexShrink: 0, paddingRight: "18px" }}>
+                                        {pupil.academicYear || ""}
+                                    </span>
+                                </div>
+
+                                {/* Card Body */}
+                                <div style={{ display: "flex", gap: "8px", alignItems: "center", padding: "0 8px", margin: "2px 0" }}>
+                                    <img 
+                                        src={pupil.userPhotoUrl || "https://via.placeholder.com/80"} 
+                                        alt={pupil.studentName} 
+                                        style={{ width: "100px", height: "100px", borderRadius: "5px", objectFit: "cover", border: "1px solid #0D47A1", flexShrink: 0 }}
+                                    />
+                                    <div style={{ fontSize: "10px", lineHeight: "1.3", flex: 1, overflow: "hidden", color: "#1A237E" }}>
+                                        <div style={{ fontWeight: "bold", fontSize: "11px", color: "#0D47A1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                            {pupil.studentName}
+                                        </div>
+                                        <div><strong>ID:</strong> {pupil.studentID}</div>
+                                        <div><strong>Class:</strong> {pupil.class}</div>
+                                    </div>
+                                </div>
+
+                                {/* Floating QR Code */}
+                                <div style={{ 
+                                    position: "absolute",
+                                    bottom: "30px",
+                                    right: "35px",
+                                    background: "#fff", 
+                                    padding: "2px", 
+                                    borderRadius: "4px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+                                    zIndex: 2
+                                }}>
+                                    <QRCodeSVG 
+                                        value={pupil.studentID} 
+                                        size={42}
+                                        level="M"
+                                        includeMargin={false}
+                                    />
+                                </div>
+
+                                {/* Card Footer */}
+                                <div style={{ 
+                                    display: "flex", 
+                                    alignItems: "center", 
+                                    background: "linear-gradient(90deg, #0D47A1 0%, #1A237E 100%)", 
+                                    padding: "4px 8px",
+                                    minHeight: "36px",
+                                    paddingRight: "60px"
+                                }}>
+                                    <div style={{ fontSize: "10px", color: "#fff9c4", lineHeight: "1.1", overflow: "hidden" }}>
+                                        {schoolMotto && <div style={{ fontStyle: "italic", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>"{schoolMotto}"</div>}
+                                        {schoolContact && <div style={{ whiteSpace: "nowrap", overflow: "hidden", fontWeight: "500", textOverflow: "ellipsis" }}>Tel: {schoolContact}</div>}
+                                        {!schoolMotto && !schoolContact && <div>Official School Pass</div>}
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Floating QR Code */}
-                            <div style={{
-                                position: "absolute",
-                                bottom: "30px",
-                                right: "35px",
-                                background: "#fff",
-                                padding: "2px",
-                                borderRadius: "4px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
-                                zIndex: 2
-                            }}>
-                                <QRCodeSVG
-                                    value={pupil.studentID}
-                                    size={42}
-                                    level="M"
-                                    includeMargin={false}
-                                />
-                            </div>
-
-                            {/* Card Footer */}
-                            <div style={{
-                                display: "flex",
-                                alignItems: "center",
-                                background: "linear-gradient(90deg, #0D47A1 0%, #1A237E 100%)",
-                                padding: "4px 8px",
-                                minHeight: "36px",
-                                paddingRight: "60px"
-                            }}>
-                                <div style={{ fontSize: "10px", color: "#fff9c4", lineHeight: "1.1", overflow: "hidden" }}>
-                                    {schoolMotto && <div style={{ fontStyle: "italic", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>"{schoolMotto}"</div>}
-                                    {schoolContact && <div style={{ whiteSpace: "nowrap", overflow: "hidden", fontWeight: "500", textOverflow: "ellipsis" }}>Tel: {schoolContact}</div>}
-                                    {!schoolMotto && !schoolContact && <div>Official School Pass</div>}
-                                </div>
-                            </div>
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
                     <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "#6b7280", padding: "40px" }}>
-                        No pupils found for the selected filters.
+                        No pupils found matching your search and filter criteria.
                     </div>
                 )}
             </div>
