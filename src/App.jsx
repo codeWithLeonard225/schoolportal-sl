@@ -39,6 +39,11 @@ import YahwehExams from "./Component/Admin/YahwehExams";
 import SheikTais from "./Component/Admin/SheikTais";
 import Climax from "./Component/Admin/Climax";
 import ClimaxCEO from "./Component/Admin/ClimaxCEO";
+import Henmat from "./Component/Admin/Henmat";
+import HenmatUmu from "./Component/Admin/HenmatUmu";
+import HenmatHenery from "./Component/Admin/HenmatHenery";
+import HenmatSupervisor from "./Component/Admin/HenmatSupervisor";
+import HenmatFinance from "./Component/Admin/HenmatFinance";
 import PreviousFees from "./Component/FeeReceipt.jsx/PreviousFees";
 
 
@@ -279,6 +284,46 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <YahwehCEO />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/Henmat"
+            element={
+              <ProtectedRoute role="admin">
+                <Henmat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HenmatUmu"
+            element={
+              <ProtectedRoute role="admin">
+                <HenmatUmu/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HenmatHenery"
+            element={
+              <ProtectedRoute role="admin">
+                <HenmatHenery/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HenmatSupervisor"
+            element={
+              <ProtectedRoute role="admin">
+                <HenmatSupervisor/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HenmatFinance"
+            element={
+              <ProtectedRoute role="admin">
+                <HenmatFinance/>
               </ProtectedRoute>
             }
           />

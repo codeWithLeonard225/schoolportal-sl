@@ -24,8 +24,8 @@ import { useAuth } from "../Security/AuthContext";
 import localforage from "localforage";
 
 // Cloudinary config
-const CLOUD_NAME = "dxcrlpike";
-const UPLOAD_PRESET = "LeoTechSl Projects";
+const CLOUD_NAME = "doucdnzij"; // Cloudinary Cloud Name        nardoneleonard407@gmail.com
+const UPLOAD_PRESET = "Nardone"; // Cloudinary Upload Preset
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 // Define your admin password. For a real app, this should be in an environment variable.
@@ -337,11 +337,7 @@ const Registration = () => {
         return newId;
     };
 
-    useEffect(() => {
-        if (!formData.id) {
-            setFormData((prev) => ({ ...prev, studentID: generateUniqueId() }));
-        }
-    }, [users, formData.id]);
+   
 
 
     const handleInputChange = (e) => {
@@ -403,7 +399,7 @@ const Registration = () => {
                 }
             };
 
-            const folderName = `SchoolAppPupils/${formData.schoolId || "UnknownSchool"}`;
+           const folderName = `SchoolAppPupils/${formData.schoolId || "UnknownSchool"}/${formData.class || "UnassignedClass"}/${formData.studentID || "UnknownPupil"}`;
 
             const formDataObj = new FormData();
             formDataObj.append("file", blob);
@@ -487,23 +483,26 @@ const Registration = () => {
             // IF CREATING NEW STUDENT
             // -------------------------
             else {
-                const newId = generateUniqueId();
+    // Keep the same ID used when uploading the pupil's photo.
+    const finalData = {
+        ...studentData,
+        timestamp: new Date(),
+    };
 
-                const finalData = {
-                    ...studentData,
-                    studentID: newId,
-                    timestamp: new Date(),
-                };
+    // 1. Create in MAIN database
+    const docRef = await addDoc(
+        collection(db, "PupilsReg"),
+        finalData
+    );
 
-                // 1️⃣ Create in MAIN database
-                const docRef = await addDoc(collection(db, "PupilsReg"), finalData);
+    // 2. Mirror in LOGIN database
+    await setDoc(
+        doc(pupilLoginFetch, "PupilsReg", docRef.id),
+        finalData
+    );
 
-                // 2️⃣ Mirror in LOGIN database (same ID)
-                await setDoc(doc(pupilLoginFetch, "PupilsReg", docRef.id), finalData);
-
-
-                toast.success("Student registered successfully!");
-            }
+    toast.success("Student registered successfully!");
+}
 
             // -------------------------
             // RESET FORM
@@ -990,8 +989,9 @@ const Registration = () => {
                             </span>
                         )}
                     </div>
+
                     <CloudinaryImageUploader
-                        folder="SchoolAppPupils/Uploads"
+                        folder={`SchoolAppPupils/${formData.schoolId || "UnknownSchool"}/${formData.class || "UnassignedClass"}/${formData.studentID || "UnknownPupil"}`}
                         onUploadSuccess={handleUploadSuccess}
                         onUploadStart={() => {
                             setIsUploading(true);
@@ -1002,6 +1002,7 @@ const Registration = () => {
                             setIsUploading(false);
                         }}
                     />
+
                     <button type="button" onClick={() => setShowCamera(true)} className="w-full sm:w-auto bg-green-600 text-white py-2 px-6 rounded-md text-sm font-semibold mt-2" disabled={isUploading}>
                         Use Camera
                     </button>

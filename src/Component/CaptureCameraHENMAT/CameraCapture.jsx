@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState } from "react";
 
 // Use the SAME Cloudinary configuration as CloudinaryImageUploader.js
-const CLOUD_NAME = "doucdnzij";
-const UPLOAD_PRESET = "Nardone";
-const UPLOAD_FOLDER = "Wahweh/Uploads";
+const CLOUD_NAME = "dyt1xzrcv";  // leonardskargbo@gmail.com
+const UPLOAD_PRESET = "firstTime";
+const UPLOAD_FOLDER = "HENMAT/Uploads";
 
 const CameraCapture = ({
   setPhoto,

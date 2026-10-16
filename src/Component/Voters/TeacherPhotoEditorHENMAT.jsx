@@ -14,14 +14,14 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../../../firebase";
-import CameraCapture from "../CaptureCamera/CameraCapture";
+import CameraCapture from "../CaptureCameraHENMAT/CameraCapture";
 
 // ======================================================
 // CLOUDINARY CONFIG
 // ======================================================
 
-const CLOUD_NAME = "dxcrlpike";
-const UPLOAD_PRESET = "LeoTech Sl Projects";
+const CLOUD_NAME = "dyt1xzrcv";  // leonardskargbo@gmail.com
+const UPLOAD_PRESET = "firstTime";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 // ======================================================

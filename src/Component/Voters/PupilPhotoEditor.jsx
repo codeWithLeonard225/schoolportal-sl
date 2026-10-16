@@ -20,8 +20,8 @@ import CameraCapture from "../CaptureCamera/CameraCapture";
 // CLOUDINARY CONFIG
 // ======================================================
 
-const CLOUD_NAME = "dxcrlpike";
-const UPLOAD_PRESET = "LeoTech Sl Projects";
+const CLOUD_NAME = "doucdnzij"; // Cloudinary Cloud Name        nardoneleonard407@gmail.com
+const UPLOAD_PRESET = "Nardone"; // Cloudinary Upload Preset
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 // ======================================================
@@ -711,86 +711,62 @@ const PupilPhotoEditor = () => {
     // UPLOAD TO CLOUDINARY
     // ==================================================
 
-    const uploadToCloudinary =
-        async (blob) => {
+   
+const uploadToCloudinary = async (blob) => {
+    if (!blob) {
+        throw new Error("No image available for upload.");
+    }
 
-            if (!blob) {
+    if (blob.size > MAX_FILE_SIZE) {
+        throw new Error("Image is larger than 5MB.");
+    }
 
-                throw new Error(
-                    "No image available for upload."
-                );
-            }
+    if (!selectedPupil?.studentID) {
+        throw new Error("Pupil Student ID is missing.");
+    }
 
-            if (
-                blob.size >
-                MAX_FILE_SIZE
-            ) {
+    if (!schoolId || schoolId === "N/A") {
+        throw new Error("School ID is missing.");
+    }
 
-                throw new Error(
-                    "Image is larger than 5MB."
-                );
-            }
+    const className = selectedPupil.class || "Unassigned";
 
-            const formData =
-                new FormData();
+    const folder = [
+        "SchoolAppPupils",
+        schoolId,
+        className,
+        selectedPupil.studentID,
+    ].join("/");
 
-            formData.append(
-                "file",
-                blob,
-                "pupil-photo.jpg"
-            );
+    const formData = new FormData();
 
-            formData.append(
-                "upload_preset",
-                UPLOAD_PRESET
-            );
+    formData.append("file", blob, "pupil-photo.jpg");
+    formData.append("upload_preset", UPLOAD_PRESET);
+    formData.append("folder", folder);
 
-            formData.append(
-                "folder",
-                `SchoolAppPupils/${schoolId}`
-            );
+    setUploadProgress(10);
 
-            setUploadProgress(
-                10
-            );
+    const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+            method: "POST",
+            body: formData,
+        }
+    );
 
-            const response =
-                await fetch(
-                    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-                    {
-                        method: "POST",
-                        body: formData,
-                    }
-                );
+    const result = await response.json();
 
-            setUploadProgress(
-                80
-            );
+    if (!response.ok) {
+        throw new Error(
+            result?.error?.message || "Cloudinary upload failed."
+        );
+    }
 
-            const result =
-                await response.json();
+    setUploadProgress(100);
 
-            console.log(
-                "Cloudinary response:",
-                result
-            );
+    return result;
+};
 
-            if (
-                !response.ok
-            ) {
-
-                throw new Error(
-                    result?.error?.message ||
-                        "Cloudinary upload failed."
-                );
-            }
-
-            setUploadProgress(
-                100
-            );
-
-            return result;
-        };
 
     // ==================================================
     // UPLOAD PHOTO

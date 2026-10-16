@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import imageCompression from "browser-image-compression";
 
-const CLOUD_NAME = "dxcrlpike";
-const UPLOAD_PRESET = "LeoTechSl Projects";
+const CLOUD_NAME = "doucdnzij"; // Cloudinary Cloud Name        nardoneleonard407@gmail.com
+const UPLOAD_PRESET = "Nardone"; // Cloudinary Upload Preset
 
 const MAX_FILE_SIZE_MB = 5;
 
@@ -22,7 +22,7 @@ const CloudinaryImageUploader = ({
     onUploadStart,
     onUploadProgress,
     onUploadComplete,
-     folder = "SchoolApp/Uploads",
+     folder = "Wahweh/Uploads",
 }) => {
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);

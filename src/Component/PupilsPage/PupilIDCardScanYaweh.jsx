@@ -343,11 +343,12 @@ const PupilIDCard = () => {
                                         style={{ width: "100px", height: "100px", borderRadius: "5px", objectFit: "cover", border: "1px solid #0D47A1", flexShrink: 0 }}
                                     />
                                     <div style={{ fontSize: "10px", lineHeight: "1.3", flex: 1, overflow: "hidden", color: "#1A237E" }}>
-                                        <div style={{ fontWeight: "bold", fontSize: "11px", color: "#0D47A1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                        <div style={{ fontWeight: "bold", fontSize: "15px", color: "#0D47A1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                             {pupil.studentName}
                                         </div>
-                                        <div><strong>ID:</strong> {pupil.studentID}</div>
-                                        <div><strong>Class:</strong> {pupil.class}</div>
+                                        <div style={{ fontSize: "15px" }}><strong>ID:</strong> {pupil.studentID}</div>
+                                        <div style={{ fontSize: "15px" }}><strong>Class:</strong> {pupil.class}</div>
+                                      
                                     </div>
                                 </div>
 

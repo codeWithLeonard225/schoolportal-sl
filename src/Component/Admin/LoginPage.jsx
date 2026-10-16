@@ -69,6 +69,11 @@ const LoginPage = () => {
             case "SheikTais": return "/SheikTais";
             case "Climax": return "/Climax";
             case "ClimaxCEO": return "/ClimaxCEO";
+            case "Henmat": return "/Henmat";
+            case "HenmatUmu": return "/HenmatUmu";
+            case "HenmatHenery": return "/HenmatHenery";
+            case "HenmatSupervisor": return "/HenmatSupervisor";
+            case "HenmatFinance": return "/HenmatFinance";
             default: return "/admin";
         }
     };

@@ -30,8 +30,8 @@ import localforage from "localforage";
 // CLOUDINARY CONFIGURATION
 // ========================================================
 
-const CLOUD_NAME = "dxcrlpike";
-const UPLOAD_PRESET = "LeoTechSl Projects";
+const CLOUD_NAME = "doucdnzij"; // Cloudinary Cloud Name        nardoneleonard407@gmail.com
+const UPLOAD_PRESET = "Nardone"; // Cloudinary Upload Preset
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -724,16 +724,21 @@ const PupilPhotoManager = () => {
                 );
 
                 // SAME STRUCTURE AS YOUR REGISTRATION
-                const folderName =
-                    `SchoolAppPupils/${
-                        currentSchoolId ||
-                        "UnknownSchool"
-                    }`;
+             
+const schoolId =
+    selectedPupil.schoolId || currentSchoolId;
 
-                uploadData.append(
-                    "folder",
-                    folderName
-                );
+const className =
+    selectedPupil.class || "UnassignedClass";
+
+const pupilId =
+    selectedPupil.studentID || selectedPupil.id;
+
+const folderName =
+    `SchoolAppPupils/${schoolId}/${className}/${pupilId}`;
+
+uploadData.append("folder", folderName);
+
 
                 // ----------------------------------------
                 // 3. CLOUDINARY UPLOAD

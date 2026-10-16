@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import imageCompression from "browser-image-compression";
 
-const CLOUD_NAME = "doucdnzij"; // Cloudinary Cloud Name        nardoneleonard407@gmail.com
-const UPLOAD_PRESET = "Nardone"; // Cloudinary Upload Preset
+const CLOUD_NAME = "dyt1xzrcv";  // leonardskargbo@gmail.com
+const UPLOAD_PRESET = "firstTime";
 
 const MAX_FILE_SIZE_MB = 5;
 

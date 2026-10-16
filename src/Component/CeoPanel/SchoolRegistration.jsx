@@ -12,8 +12,8 @@ import {
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
-import CloudinaryImageUploader from "../CaptureCamera/CloudinaryImageUploader";
-import CameraCapture from "../CaptureCamera/CameraCapture";
+import CloudinaryImageUploader from "../CaptureCameraHENMAT/CloudinaryImageUploader";
+import CameraCapture from "../CaptureCameraHENMAT/CameraCapture";
 
 const CLOUD_NAME = "doucdnzij";
 const UPLOAD_PRESET = "Nardone";
