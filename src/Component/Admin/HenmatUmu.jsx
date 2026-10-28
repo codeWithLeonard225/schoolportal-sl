@@ -73,7 +73,7 @@ import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffPayroll from "../Staff/StaffPayroll";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScanShaikTaisPrimary";
 import PupilIDCardBack from "../PupilsPage/PupilIDCardBackSheikhPrimary";
-import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerHaffizeenSenior";
+import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerHenmat";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
 import PupilPhotoManager from "../Voters/PupilPhotoManager";
 import PupilPhotoEditor from "../Voters/PupilPhotoEditor";

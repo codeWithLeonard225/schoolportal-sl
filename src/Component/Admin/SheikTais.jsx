@@ -126,8 +126,8 @@ const NAV_ITEMS = [
     //   { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
     //   { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
       { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
-      // { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
-      // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+      { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
+      { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
 
 
     ],
@@ -190,17 +190,17 @@ const NAV_ITEMS = [
 
     ],
   },
-  // {
-  //   key: "editPhotos",
-  //   label: "Edit id card photos",
-  //   icon: <MdBarChart />,
-  //   children: [
-  //     { key: "TeacherPhotoManager", label: "Teacher Zoom & Crop", icon: <MdPerson /> },
-  //     { key: "TeacherPhotoEditor", label: "Remove Bg", icon: <MdPerson /> },
-  //     { key: "PupilPhotoManager", label: "Pupil Zoom & Crop", icon: <MdPerson /> },
-  //     { key: "PupilPhotoEditor", label: "Remove Bg pupil", icon: <MdPerson /> },
-  //   ],
-  // },
+  {
+    key: "editPhotos",
+    label: "Edit id card photos",
+    icon: <MdBarChart />,
+    children: [
+      { key: "TeacherPhotoManager", label: "Teacher Zoom & Crop", icon: <MdPerson /> },
+      { key: "TeacherPhotoEditor", label: "Remove Bg", icon: <MdPerson /> },
+      { key: "PupilPhotoManager", label: "Pupil Zoom & Crop", icon: <MdPerson /> },
+      { key: "PupilPhotoEditor", label: "Remove Bg pupil", icon: <MdPerson /> },
+    ],
+  },
   {
     key: "qrcode-Pupil",
     label: "Qr code Attendance-Pupil",

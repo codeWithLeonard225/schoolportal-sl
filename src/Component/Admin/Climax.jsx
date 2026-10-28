@@ -194,23 +194,23 @@ const NAV_ITEMS = [
 
     ],
   },
-  // {
-  //   key: "editPhotos",
-  //   label: "Edit id card photos",
-  //   icon: <MdBarChart />,
-  //   children: [
-  //     { key: "TeacherPhotoManager", label: "Teacher Zoom & Crop", icon: <MdPerson /> },
-  //     { key: "TeacherPhotoEditor", label: "Remove Bg", icon: <MdPerson /> },
-  //     { key: "PupilPhotoManager", label: "Pupil Zoom & Crop", icon: <MdPerson /> },
-  //     { key: "PupilPhotoEditor", label: "Remove Bg pupil", icon: <MdPerson /> },
-  //   ],
-  // },
+  {
+    key: "editPhotos",
+    label: "Edit id card photos",
+    icon: <MdBarChart />,
+    children: [
+      { key: "TeacherPhotoManager", label: "Teacher Zoom & Crop", icon: <MdPerson /> },
+      { key: "TeacherPhotoEditor", label: "Remove Bg", icon: <MdPerson /> },
+      { key: "PupilPhotoManager", label: "Pupil Zoom & Crop", icon: <MdPerson /> },
+      { key: "PupilPhotoEditor", label: "Remove Bg pupil", icon: <MdPerson /> },
+    ],
+  },
   {
     key: "qrcode-Pupil",
     label: "Qr code Attendance-Pupil",
     icon: <MdBarChart />,
     children: [
-      // { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
+      { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
       // { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
       { key: "PupilAttendanceScanner", label: "Primary Scanner", icon: <MdPerson /> },
       { key: "PupilAttendanceScannerClimaxSec", label: "Secondary Scanner", icon: <MdPerson /> },

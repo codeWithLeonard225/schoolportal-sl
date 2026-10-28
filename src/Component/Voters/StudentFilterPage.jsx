@@ -14,11 +14,7 @@ const studentsStore = localforage.createInstance({
     storeName: "pupilRegistration",
 });
 
-// --- Configuration ---
-// Key for localforage storage (using a key for the specific student store)
 const LOCALFORAGE_KEY = "allStudentsData";
-// STALE_TIME_MS is removed as per request
-// ---------------------
 
 const StudentFilterPage = () => {
   const { user } = useAuth();
@@ -29,6 +25,7 @@ const StudentFilterPage = () => {
   const [yearOptions, setYearOptions] = useState([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   // --- Utility Functions ---
@@ -44,7 +41,6 @@ const StudentFilterPage = () => {
     setStudents(sortedData);
     extractAndSetOptions(sortedData);
   };
-  // -------------------------
 
   // 1. Initial Load from Cache and Real-Time Subscription
   useEffect(() => {
@@ -54,25 +50,19 @@ const StudentFilterPage = () => {
     }
 
     const loadAndListen = async () => {
-      // 🚀 Step 1: Attempt to load from localforage cache (FAST initial load)
       try {
         const cachedData = await studentsStore.getItem(LOCALFORAGE_KEY);
         if (cachedData && cachedData.data && cachedData.data.length > 0) {
-          // Use the cached data immediately
           processAndSetStudents(cachedData.data);
-          setLoading(false); // Finished initial load from cache
-          console.log("Loaded initial student data from localforage cache.");
+          setLoading(false);
         } else {
-          // If cache is empty, ensure loading state remains true until Firebase provides data
-          setLoading(true); 
+          setLoading(true);
         }
       } catch (e) {
-        console.error("Failed to retrieve or parse cached data from localforage:", e);
-        // Fallback: keep loading state true, rely on Firestore listener
+        console.error("Failed to retrieve cached data:", e);
         setLoading(true);
       }
 
-      // 🚀 Step 2: Set up Firestore Listener (Always running for real-time updates)
       const q = query(
         collection(pupilLoginFetch, "PupilsReg"),
         where("schoolId", "==", currentSchoolId)
@@ -82,23 +72,16 @@ const StudentFilterPage = () => {
         q,
         (snapshot) => {
           const fetchedData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-
-          // Update UI state with new data
           processAndSetStudents(fetchedData);
           
-          // 🚀 Step 3: Save fresh data to localforage (Overwrite cache)
           const dataToStore = {
-            timestamp: Date.now(), // Still useful for logging/future staling logic
+            timestamp: Date.now(),
             data: fetchedData,
           };
           studentsStore.setItem(LOCALFORAGE_KEY, dataToStore)
-            .catch(e => console.error("Failed to save data to localforage:", e));
+            .catch(e => console.error("Failed to save to localforage:", e));
           
-          // Data is now loaded/updated, turn off loading indicator
           setLoading(false);
-          if (fetchedData.length > 0) {
-              console.log("Students updated via real-time Firestore listener and cached.");
-          }
         },
         (error) => {
           console.error("Failed to fetch students from Firestore:", error);
@@ -107,69 +90,60 @@ const StudentFilterPage = () => {
         }
       );
 
-      return () => unsubscribe(); // Cleanup listener on unmount
+      return () => unsubscribe();
     };
 
     loadAndListen();
   }, [currentSchoolId]);
 
-  // Filter students (remains the same)
+  // Filter students by class, academic year, and search query
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
-      return (
-        (!selectedClass || s.class === selectedClass) &&
-        (!selectedYear || s.academicYear === selectedYear)
-      );
-    });
-  }, [students, selectedClass, selectedYear]);
+      const matchesClass = !selectedClass || s.class === selectedClass;
+      const matchesYear = !selectedYear || s.academicYear === selectedYear;
+      
+      const queryText = searchQuery.toLowerCase().trim();
+      const matchesSearch = !queryText || 
+        s.studentName?.toLowerCase().includes(queryText) ||
+        s.studentID?.toLowerCase().includes(queryText) ||
+        s.registrationFormNo?.toLowerCase().includes(queryText);
 
-  // Download PDF (remains the same)
+      return matchesClass && matchesYear && matchesSearch;
+    });
+  }, [students, selectedClass, selectedYear, searchQuery]);
+
+  // Download PDF with simplified columns
   const downloadPDF = () => {
-    const doc = new jsPDF('l', 'mm', 'a4'); 
+    const doc = new jsPDF('p', 'mm', 'a4'); // Portrait mode fits these 3 columns nicely
     doc.text("Student List - Filtered", 14, 10);
     doc.setFontSize(10);
     doc.text(`School ID: ${currentSchoolId}`, 14, 15);
     doc.text(`Filter: Class=${selectedClass || 'All'}, Year=${selectedYear || 'All'}`, 14, 20);
 
-    const tableHeaders = [
-      "#", "ID", "Name", "Class", "Year", "DOB", "Age", "Gender", "Parent Name", "Parent Phone", "Reg Date"
-    ];
+    const tableHeaders = ["#", "Reg No / ID", "Name", "Class"];
 
     const tableData = filteredStudents.map((student, index) => [
       index + 1,
-      student.studentID,
-      student.studentName,
-      student.class,
-      student.academicYear,
-      student.dob,
-      student.age,
-      student.gender,
-      student.parentName,
-      student.parentPhone,
-      student.registrationDate,
+      student.registrationFormNo || student.studentID || 'N/A',
+      student.studentName || 'N/A',
+      student.class || 'N/A',
     ]);
 
     autoTable(doc, {
       startY: 25, 
       head: [tableHeaders],
       body: tableData,
-      styles: { fontSize: 8, cellPadding: 2, overflow: 'ellipsize' },
+      styles: { fontSize: 10, cellPadding: 3, overflow: 'ellipsize' },
       headStyles: { fillColor: [22, 163, 74] },
-      columnStyles: {
-        0: { cellWidth: 8 }, 1: { cellWidth: 20 }, 2: { cellWidth: 35 },
-        3: { cellWidth: 20 }, 4: { cellWidth: 20 }, 5: { cellWidth: 20 },
-        6: { cellWidth: 10 }, 7: { cellWidth: 15 }, 8: { cellWidth: 30 },
-        9: { cellWidth: 25 }, 10: { cellWidth: 20 },
-      }
     });
 
-    doc.save("Filtered_Student_List_Landscape.pdf");
+    doc.save("Filtered_Student_List.pdf");
   };
 
-  // Print Preview (remains the same)
+  // Print Preview configuration
   const printPreview = () => {
     const printContent = document.getElementById("printableArea");
-    const WinPrint = window.open("", "", "width=1200,height=800"); 
+    const WinPrint = window.open("", "", "width=800,height=600"); 
     WinPrint.document.write(`
       <html>
         <head>
@@ -178,23 +152,15 @@ const StudentFilterPage = () => {
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
             th, td { 
               border: 1px solid #000; 
-              padding: 6px; 
+              padding: 8px; 
               text-align: left; 
-              font-size: 10px; 
+              font-size: 12px; 
               word-wrap: break-word;
             }
             th { background-color: #f0f0f0; }
-            body { 
-              font-family: Arial, sans-serif; 
-              padding: 20px; 
-            }
-            @page { 
-              size: landscape; 
-              margin: 10mm; 
-            }
-            @media print {
-              button { display: none; }
-            }
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            @page { size: portrait; margin: 10mm; }
+            @media print { button { display: none; } }
           </style>
         </head>
         <body>
@@ -202,9 +168,7 @@ const StudentFilterPage = () => {
           ${printContent.innerHTML}
           <script>
             window.onload = () => {
-              setTimeout(() => {
-                window.print();
-              }, 500); 
+              setTimeout(() => { window.print(); }, 500);
             }
           </script>
         </body>
@@ -213,31 +177,26 @@ const StudentFilterPage = () => {
     WinPrint.document.close();
   };
 
-  // UI Table configuration (remains the same)
-  const tableHeaders = [
-    "#", "ID", "Name", "Class", "Year", "DOB", "Age", "Gender", "Parent Name", "Parent Phone", "Reg Date"
-  ];
-  const studentFields = [
-    'studentID', 'studentName', 'class', 'academicYear', 'dob', 'age', 'gender', 'parentName', 'parentPhone', 'registrationDate'
-  ];
+  const tableHeaders = ["#", "Reg No / ID", "Name", "Class"];
 
   if (loading && students.length === 0) {
     return (
       <div className="p-6 text-center">
         <p className="text-xl font-medium text-gray-700">Loading student data...</p>
-        <p className="text-sm text-gray-500 mt-2">Attempting to load from IndexDB or fetching live from database.</p>
+        <p className="text-sm text-gray-500 mt-2">Attempting to load from local storage or fetching live from database.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 min-h-screen bg-gray-100">
+    <div className="p-6 min-h-screen bg-gray-100 max-w-4xl mx-auto">
       <h1 className="text-3xl font-extrabold mb-6 text-center text-gray-800">
         Filter & Export Student Data 📊
       </h1>
 
-      <div className="flex flex-col md:flex-row md:space-x-4 bg-white p-4 rounded-lg shadow-md mb-6">
-        <div className="flex-1 mb-4 md:mb-0">
+      {/* Filters & Search Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-lg shadow-md mb-6">
+        <div>
           <label className="block mb-2 font-semibold text-gray-700">Filter by Class</label>
           <select
             value={selectedClass}
@@ -246,14 +205,12 @@ const StudentFilterPage = () => {
           >
             <option value="">All Classes ({classOptions.length})</option>
             {classOptions.map((cls) => (
-              <option key={cls} value={cls}>
-                {cls}
-              </option>
+              <option key={cls} value={cls}>{cls}</option>
             ))}
           </select>
         </div>
 
-        <div className="flex-1">
+        <div>
           <label className="block mb-2 font-semibold text-gray-700">Filter by Academic Year</label>
           <select
             value={selectedYear}
@@ -262,11 +219,20 @@ const StudentFilterPage = () => {
           >
             <option value="">All Years ({yearOptions.length})</option>
             {yearOptions.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
+              <option key={year} value={year}>{year}</option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="block mb-2 font-semibold text-gray-700">Search Name, ID, or Form No</label>
+          <input
+            type="text"
+            placeholder="Type to search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
       </div>
 
@@ -275,7 +241,7 @@ const StudentFilterPage = () => {
           onClick={downloadPDF}
           className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition shadow-lg"
         >
-          ⬇️ Download Landscape PDF
+          ⬇️ Download PDF
         </button>
         <button
           onClick={printPreview}
@@ -291,7 +257,7 @@ const StudentFilterPage = () => {
           <thead className="bg-gray-50">
             <tr>
               {tableHeaders.map((header) => (
-                <th key={header} className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th key={header} className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                   {header}
                 </th>
               ))}
@@ -300,12 +266,12 @@ const StudentFilterPage = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredStudents.map((student, index) => (
               <tr key={student.id} className="hover:bg-gray-50">
-                <td className="px-3 py-2 text-sm text-gray-700">{index + 1}</td>
-                {studentFields.map((field) => (
-                    <td key={field} className="px-3 py-2 text-sm text-gray-700 whitespace-nowrap">
-                        {student[field]}
-                    </td>
-                ))}
+                <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
+                <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                  {student.registrationFormNo || student.studentID || '-'}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-700">{student.studentName || '-'}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">{student.class || '-'}</td>
               </tr>
             ))}
             {filteredStudents.length === 0 && (

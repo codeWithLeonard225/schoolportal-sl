@@ -71,9 +71,9 @@ import StaffIDCardBackYaweh from "../Staff/StaffIDCardBackYaweh";
 import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerHaffizeenSecondary";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffPayroll from "../Staff/StaffPayroll";
-import PupilIDCardScan from "../PupilsPage/PupilIDCardScanShaikTaisPrimary";
+import PupilIDCardScan from "../PupilsPage/PupilIDCardScanHenemat";
 import PupilIDCardBack from "../PupilsPage/PupilIDCardBackSheikhPrimary";
-import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerHaffizeenSenior";
+import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerHenmat";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
 import PupilPhotoManager from "../Voters/PupilPhotoManager";
 import PupilPhotoEditor from "../Voters/PupilPhotoEditor";
@@ -206,7 +206,7 @@ const NAV_ITEMS = [
     label: "Qr code Attendance-Pupil",
     icon: <MdBarChart />,
     children: [
-      { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
+      // { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
       // { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
       { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
       { key: "PupilAttendanceLogs", label: "Pupil Attendance Logs", icon: <MdPerson /> },
