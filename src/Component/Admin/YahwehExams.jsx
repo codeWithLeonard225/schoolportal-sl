@@ -114,6 +114,24 @@ const NAV_ITEMS = [
       label: "Results Dashboard",
       icon: <MdWarning />, // 📖
     },
+
+    {
+        key: "forms",
+        label: "Registeration",
+        icon: <MdEdit />,
+        children: [
+          { key: "Form", label: " Pupils", icon: <MdPerson /> },
+          { key: "class", label: "Class", icon: <MdPerson /> },
+          { key: "classList", label: "Class List", icon: <MdPerson /> },
+        //   { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
+        //   { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
+        //   { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
+          // { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
+          // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+    
+    
+        ],
+      },
  
  
   {
@@ -121,8 +139,8 @@ const NAV_ITEMS = [
     label: "Pupils Results",
     icon: <MdBarChart />,
     children: [
-      // { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
-      // { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
+      { key: "classList", label: "Class List", icon: <MdPerson /> },
+      { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
       { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
       // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
       { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },

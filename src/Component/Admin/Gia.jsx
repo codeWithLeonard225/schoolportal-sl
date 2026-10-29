@@ -31,6 +31,7 @@ import TeacherAssignmentPage from "../TeacherAssignment/TeacherAssignmentPage";
 import TeacherRegistration from "../Voters/TeacherRegistration";
 import TeacherPupilsPage from "../TeacherAssignment/TeacherPupilsPage";
 import GradeSheetPage from "../TeacherAssignment/GradeSheetPage";
+import BulkDeleteClassGrades from "../TeacherAssignment/BulkDeleteClassGrades";
 import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPage";
 import ClassFullTermMatrixPage from "../TeacherAssignment/ClassFullTermMatrixPage";
 import ReportCardTermly from "../PupilsPage/ReportCardTermly";
@@ -89,12 +90,12 @@ import AttendanceReport from "../Dashboard/AttendanceReports";
 
 // --- Navigation Items ---
 const NAV_ITEMS = [
-   {
+  {
     key: "AttendanceDashboard",
     label: "Pupil Attendance",
     icon: <MdWarning />, // 📖
   },
-     {
+  {
     key: "attendanceReport",
     label: "Attendance Report",
     icon: <MdEdit />,
@@ -104,18 +105,18 @@ const NAV_ITEMS = [
     ],
   },
 
-    //  {
-    //   key: "GradeADashboard",
-    //   label: "Grade A Pupils",
-    //   icon: <MdWarning />, // 📖
-    // },
-     {
-      key: "ResultDashboard",
-      label: "Results Dashboard",
-      icon: <MdWarning />, // 📖
-    },
- 
- 
+  //  {
+  //   key: "GradeADashboard",
+  //   label: "Grade A Pupils",
+  //   icon: <MdWarning />, // 📖
+  // },
+  {
+    key: "ResultDashboard",
+    label: "Results Dashboard",
+    icon: <MdWarning />, // 📖
+  },
+
+
   {
     key: "forms",
     label: "Registeration",
@@ -124,9 +125,9 @@ const NAV_ITEMS = [
       { key: "Form", label: " Pupils", icon: <MdPerson /> },
       { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
-    //   { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
-    //   { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
-    //   { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
+      //   { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
+      //   { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
+      //   { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
       // { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
       // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
 
@@ -167,7 +168,7 @@ const NAV_ITEMS = [
     label: "Pupils Results",
     icon: <MdBarChart />,
     children: [
-      { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
+      // { key: "BulkDeleteClassGrades", label: "BulkDeleteClassGrades", icon: <MdPerson /> },
       { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
       { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
       // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
@@ -321,9 +322,9 @@ function AdminPanel() {
     switch (activeTab) {
       case "dashboard": return <RegDashboard />;
       case "AttendanceDashboard": return <AttendanceDashboard />;
-          case "AttendanceReport": return <AttendanceReport />;
-        case "StaffAttendanceReport": return <StaffAttendanceReport />;
-         case "GradeADashboard": return <GradeADashboard />;
+      case "AttendanceReport": return <AttendanceReport />;
+      case "StaffAttendanceReport": return <StaffAttendanceReport />;
+      case "GradeADashboard": return <GradeADashboard />;
       case "ResultDashboard": return <ResultDashboard />;
       case "Form": return <Registration />;
       case "class": return <ClassRegistration />;
@@ -336,6 +337,7 @@ function AdminPanel() {
       case "TeacherAssignment": return <TeacherAssignmentPage />;
       case "TeacherPupilsPage": return <TeacherPupilsPage />;
       case "SubGradeMatrixPage": return <SubGradeMatrixPage />;
+      case "BulkDeleteClassGrades": return <BulkDeleteClassGrades />;
       case "ClassFullTermMatrixPage": return <ClassFullTermMatrixPage />;
       case "TermResult": return <TermResult />;
       case "YearlyResult": return <YearlyResult />;
@@ -378,10 +380,10 @@ function AdminPanel() {
       case "PupilIDCardBack": return <PupilIDCardBack />;
       case "PupilAttendanceScanner": return <PupilAttendanceScanner />;
       case "PupilAttendanceLogs": return <PupilAttendanceLogs />;
-            case "ManualAttendance": return <ManualAttendance />;
+      case "ManualAttendance": return <ManualAttendance />;
       case "TeacherPhotoManager": return <TeacherPhotoManager />;
       case "TeacherPhotoEditor": return <TeacherPhotoEditor />;
-        case "PupilPhotoManager": return <PupilPhotoManager />;
+      case "PupilPhotoManager": return <PupilPhotoManager />;
       case "PupilPhotoEditor": return <PupilPhotoEditor />;
 
 

@@ -163,10 +163,10 @@ const AttendanceReports = () => {
   const getPupilId = (pupil) =>
     String(
       pupil.studentID ||
-        pupil.pupilID ||
-        pupil.studentId ||
-        pupil.id ||
-        ""
+      pupil.pupilID ||
+      pupil.studentId ||
+      pupil.id ||
+      ""
     );
 
   const getPupilName = (pupil) =>
@@ -258,6 +258,8 @@ const AttendanceReports = () => {
     dateRangeIsValid,
   ]);
 
+  
+
   // ==========================================================
   // ATTENDANCE ACTIVE DAYS
   // ==========================================================
@@ -272,6 +274,129 @@ const AttendanceReports = () => {
 
     return Array.from(days).sort();
   }, [filteredLogs]);
+
+
+ 
+  
+  // ==========================================================
+  // BOYS AND GIRLS ATTENDANCE SUMMARY
+  // ==========================================================
+  const genderAttendanceSummary = useMemo(() => {
+    const summary = {
+      boysPresent: 0,
+      boysLate: 0,
+      boysAbsent: 0,
+      boysExcused: 0,
+      girlsPresent: 0,
+      girlsLate: 0,
+      girlsAbsent: 0,
+      girlsExcused: 0,
+      boysAttendancePercentage: 0,
+      girlsAttendancePercentage: 0,
+    };
+
+    const genderMap = new Map();
+
+    filteredPupils.forEach((pupil) => {
+      const pupilId = getPupilId(pupil);
+      const gender = String(pupil.gender || "")
+        .trim()
+        .toLowerCase();
+
+      if (pupilId) {
+        genderMap.set(pupilId, gender);
+      }
+    });
+
+    const logsMap = new Map();
+
+    filteredLogs.forEach((log) => {
+      const studentId = String(
+        log.studentID ||
+        log.pupilID ||
+        log.studentId ||
+        ""
+      );
+
+      if (!studentId || !genderMap.has(studentId)) {
+        return;
+      }
+
+      const logClass = log.class || log.className || "";
+
+      if (
+        selectedClass !== "ALL" &&
+        logClass !== selectedClass
+      ) {
+        return;
+      }
+
+      logsMap.set(`${log.date}_${studentId}`, log);
+    });
+
+    let boysAttendanceDays = 0;
+    let girlsAttendanceDays = 0;
+
+    activeAttendanceDays.forEach((date) => {
+      filteredPupils.forEach((pupil) => {
+        const studentId = getPupilId(pupil);
+        const gender = genderMap.get(studentId);
+
+        const isBoy = gender === "male" || gender === "m";
+        const isGirl = gender === "female" || gender === "f";
+
+        if (!isBoy && !isGirl) return;
+
+        const log = logsMap.get(`${date}_${studentId}`);
+        const status = String(log?.status || "")
+          .trim()
+          .toLowerCase();
+
+        if (isBoy) boysAttendanceDays++;
+        if (isGirl) girlsAttendanceDays++;
+
+        if (status === "present") {
+          if (isBoy) summary.boysPresent++;
+          if (isGirl) summary.girlsPresent++;
+        } else if (status === "late") {
+          if (isBoy) summary.boysLate++;
+          if (isGirl) summary.girlsLate++;
+        } else if (status === "excused" || status === "excuse") {
+          if (isBoy) summary.boysExcused++;
+          if (isGirl) summary.girlsExcused++;
+        } else {
+          if (isBoy) summary.boysAbsent++;
+          if (isGirl) summary.girlsAbsent++;
+        }
+      });
+    });
+
+    const boysCountedDays =
+      boysAttendanceDays - summary.boysExcused;
+
+    const girlsCountedDays =
+      girlsAttendanceDays - summary.girlsExcused;
+
+    summary.boysAttendancePercentage =
+      boysCountedDays > 0
+        ? ((summary.boysPresent + summary.boysLate) /
+            boysCountedDays) * 100
+        : 0;
+
+    summary.girlsAttendancePercentage =
+      girlsCountedDays > 0
+        ? ((summary.girlsPresent + summary.girlsLate) /
+            girlsCountedDays) * 100
+        : 0;
+
+    return summary;
+  }, [
+    filteredPupils,
+    filteredLogs,
+    activeAttendanceDays,
+    selectedClass,
+  ]);
+
 
   // ==========================================================
   // BUILD PUPIL REPORT
@@ -313,9 +438,9 @@ const AttendanceReports = () => {
     filteredLogs.forEach((log) => {
       const studentId = String(
         log.studentID ||
-          log.pupilID ||
-          log.studentId ||
-          ""
+        log.pupilID ||
+        log.studentId ||
+        ""
       );
 
       if (!studentId) return;
@@ -449,9 +574,9 @@ const AttendanceReports = () => {
   const overallAttendancePercentage =
     overallSummary.attendanceDays > 0
       ? ((overallSummary.present +
-          overallSummary.late) /
-          overallSummary.attendanceDays) *
-        100
+        overallSummary.late) /
+        overallSummary.attendanceDays) *
+      100
       : 0;
 
   // ==========================================================
@@ -551,9 +676,9 @@ const AttendanceReports = () => {
         attendancePercentage:
           item.attendanceDays > 0
             ? ((item.present +
-                item.late) /
-                item.attendanceDays) *
-              100
+              item.late) /
+              item.attendanceDays) *
+            100
             : 0,
       }))
       .sort(
@@ -585,9 +710,9 @@ const AttendanceReports = () => {
                   const studentId =
                     String(
                       item.studentID ||
-                        item.pupilID ||
-                        item.studentId ||
-                        ""
+                      item.pupilID ||
+                      item.studentId ||
+                      ""
                     );
 
                   const logClass =
@@ -598,11 +723,11 @@ const AttendanceReports = () => {
                   return (
                     item.date === date &&
                     studentId ===
-                      pupil.id &&
+                    pupil.id &&
                     (selectedClass ===
                       "ALL" ||
                       logClass ===
-                        selectedClass)
+                      selectedClass)
                   );
                 }
               );
@@ -629,7 +754,7 @@ const AttendanceReports = () => {
               late += 1;
             } else if (
               status ===
-                "excused" ||
+              "excused" ||
               status === "excuse"
             ) {
               excused += 1;
@@ -655,8 +780,8 @@ const AttendanceReports = () => {
           percentage:
             total > 0
               ? ((present + late) /
-                  total) *
-                100
+                total) *
+              100
               : 0,
         };
       }
@@ -903,7 +1028,7 @@ const AttendanceReports = () => {
           {/* ================================================= */}
           {/* SUMMARY CARDS                                    */}
           {/* ================================================= */}
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
 
             <SummaryCard
               title="Pupils"
@@ -964,6 +1089,74 @@ const AttendanceReports = () => {
               bg="bg-purple-50"
               text="text-purple-700"
             />
+
+            
+  <SummaryCard
+    title="Boys Attendance %"
+    value={`${genderAttendanceSummary.boysAttendancePercentage.toFixed(1)}%`}
+    icon="👦"
+    bg="bg-indigo-50"
+    text="text-indigo-700"
+  />
+
+  <SummaryCard
+    title="Girls Attendance %"
+    value={`${genderAttendanceSummary.girlsAttendancePercentage.toFixed(1)}%`}
+    icon="👧"
+    bg="bg-pink-50"
+    text="text-pink-700"
+  />
+
+
+            
+  <SummaryCard
+    title="Boys Present"
+    value={genderAttendanceSummary.boysPresent}
+    icon="👦"
+    bg="bg-emerald-50"
+    text="text-emerald-700"
+  />
+
+  <SummaryCard
+    title="Boys Late"
+    value={genderAttendanceSummary.boysLate}
+    icon="⏰"
+    bg="bg-amber-50"
+    text="text-amber-700"
+  />
+
+  <SummaryCard
+    title="Boys Absent"
+    value={genderAttendanceSummary.boysAbsent}
+    icon="✕"
+    bg="bg-rose-50"
+    text="text-rose-700"
+  />
+
+  <SummaryCard
+    title="Girls Present"
+    value={genderAttendanceSummary.girlsPresent}
+    icon="👧"
+    bg="bg-emerald-50"
+    text="text-emerald-700"
+  />
+
+  <SummaryCard
+    title="Girls Late"
+    value={genderAttendanceSummary.girlsLate}
+    icon="⏰"
+    bg="bg-amber-50"
+    text="text-amber-700"
+  />
+
+  <SummaryCard
+    title="Girls Absent"
+    value={genderAttendanceSummary.girlsAbsent}
+    icon="✕"
+    bg="bg-rose-50"
+    text="text-rose-700"
+  />
+
 
           </div>
 
@@ -1068,7 +1261,7 @@ const AttendanceReports = () => {
                 <tbody className="divide-y divide-slate-100">
 
                   {classPerformance.length ===
-                  0 ? (
+                    0 ? (
                     <EmptyRow
                       colSpan="8"
                       text="No class attendance data found."
@@ -1177,7 +1370,7 @@ const AttendanceReports = () => {
                 <tbody className="divide-y divide-slate-100">
 
                   {dailyAttendanceTrend.length ===
-                  0 ? (
+                    0 ? (
                     <EmptyRow
                       colSpan="6"
                       text="No attendance days found."
@@ -1305,7 +1498,7 @@ const AttendanceReports = () => {
                 <tbody className="divide-y divide-slate-100">
 
                   {displayedPupilReports.length ===
-                  0 ? (
+                    0 ? (
                     <EmptyRow
                       colSpan="9"
                       text="No pupils found."
@@ -1546,15 +1739,14 @@ const RankingCard = ({
                 <div className="flex items-center gap-2.5">
 
                   <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold ${
-                      index === 0
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold ${index === 0
                         ? "bg-yellow-100 text-yellow-700"
                         : index === 1
-                        ? "bg-slate-200 text-slate-600"
-                        : index === 2
-                        ? "bg-orange-100 text-orange-700"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
+                          ? "bg-slate-200 text-slate-600"
+                          : index === 2
+                            ? "bg-orange-100 text-orange-700"
+                            : "bg-slate-100 text-slate-500"
+                      }`}
                   >
                     {index + 1}
                   </div>
@@ -1630,13 +1822,12 @@ const PercentageBadge = ({
 }) => {
   return (
     <span
-      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
-        value >= 90
+      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${value >= 90
           ? "bg-emerald-100 text-emerald-700"
           : value >= 75
-          ? "bg-amber-100 text-amber-700"
-          : "bg-rose-100 text-rose-700"
-      }`}
+            ? "bg-amber-100 text-amber-700"
+            : "bg-rose-100 text-rose-700"
+        }`}
     >
       {value.toFixed(1)}%
     </span>
@@ -1706,9 +1897,9 @@ const PupilHistoryModal = ({
   const getStudentId = (log) =>
     String(
       log.studentID ||
-        log.pupilID ||
-        log.studentId ||
-        ""
+      log.pupilID ||
+      log.studentId ||
+      ""
     );
 
   // ----------------------------------------------------------
@@ -1920,12 +2111,11 @@ const PupilHistoryModal = ({
                   filter
                 )
               }
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                historyFilter ===
-                filter
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${historyFilter ===
+                  filter
                   ? "bg-indigo-600 text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
+                }`}
             >
               {filter}
             </button>
@@ -1967,7 +2157,7 @@ const PupilHistoryModal = ({
             <tbody className="divide-y divide-slate-100">
 
               {history.length ===
-              0 ? (
+                0 ? (
                 <tr>
                   <td
                     colSpan="4"
@@ -2083,10 +2273,9 @@ const StatusBadge = ({
 
   return (
     <span
-      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
-        styles[status] ||
+      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${styles[status] ||
         styles.Absent
-      }`}
+        }`}
     >
       {status}
     </span>

@@ -74,6 +74,7 @@ const LoginPage = () => {
             case "HenmatHenery": return "/HenmatHenery";
             case "HenmatSupervisor": return "/HenmatSupervisor";
             case "HenmatFinance": return "/HenmatFinance";
+            case "Hammond": return "/Hammond";
             default: return "/admin";
         }
     };

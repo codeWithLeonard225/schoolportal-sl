@@ -271,6 +271,7 @@ const StudentFilterPage = () => {
                   {student.registrationFormNo || student.studentID || '-'}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-700">{student.studentName || '-'}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">{student.gender || '-'}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">{student.class || '-'}</td>
               </tr>
             ))}

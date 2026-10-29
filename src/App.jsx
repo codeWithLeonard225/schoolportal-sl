@@ -39,6 +39,7 @@ import YahwehExams from "./Component/Admin/YahwehExams";
 import SheikTais from "./Component/Admin/SheikTais";
 import Climax from "./Component/Admin/Climax";
 import ClimaxCEO from "./Component/Admin/ClimaxCEO";
+import Hammond from "./Component/Admin/Hammond";
 import Henmat from "./Component/Admin/Henmat";
 import HenmatUmu from "./Component/Admin/HenmatUmu";
 import HenmatHenery from "./Component/Admin/HenmatHenery";
@@ -220,6 +221,14 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <Gia />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/Hammond"
+            element={
+              <ProtectedRoute role="admin">
+                <Hammond />
               </ProtectedRoute>
             }
           />

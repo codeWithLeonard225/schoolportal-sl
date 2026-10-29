@@ -453,6 +453,7 @@ const AdminForm = () => {
                             <option value="YahwehCEO">YahwehCEO</option>
                             <option value="YahwehExams">YahwehExams</option>
                             <option value="SheikTais">SheikTais</option>
+                            <option value="Hammond">Hammond</option>
                             <option value="Climax">Climax</option>
                             <option value="ClimaxCEO">ClimaxCEO</option>
                             <option value="Henmat">Henmat</option>
