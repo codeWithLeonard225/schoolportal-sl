@@ -1,0 +1,536 @@
+import React, { useState, useEffect, useMemo } from "react";
+import { db } from "../../../firebase";
+import { schooldb } from "../Database/SchoolsResults";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { useLocation } from "react-router-dom";
+
+// Centralized computation engine imports
+import {
+  getTermScores,
+  calculateAnnualMean,
+  calculateSubjectAnnualRanks,
+  calculateOverallMetrics
+} from "../Utilis/ResultCalculators";
+
+const YearlyResult = () => {
+  const [academicYear, setAcademicYear] = useState("");
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [pupils, setPupils] = useState([]);
+  const [allYearGrades, setAllYearGrades] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [calcMode, setCalcMode] = useState("auto"); // Options: "auto", "term1_2", "term2_3", "3"
+  
+  const location = useLocation();
+  const { schoolId, schoolName } = location.state || {};
+
+  // 🎯 Dynamic Passing Threshold Helper based on class prefix
+  const getPassingThreshold = (className) => {
+    if (!className) return 50;
+    const trimmed = className.trim();
+    if (trimmed.startsWith("Nur") || trimmed.toLowerCase().startsWith("nursery")) {
+      return 25; // Above 24 is pass (>= 25), below 25 is red
+    }
+    if (trimmed.startsWith("Class") || trimmed.startsWith("Prep")) {
+      return 50; // Above 49 is pass (>= 50), below 50 is red
+    }
+    if (trimmed.startsWith("JSS")) {
+      return 55; // Above 54 is pass (>= 55), below 55 is red
+    }
+    if (trimmed.startsWith("SSS")) {
+      return 60; // Above 59 is pass (>= 60), below 60 is red
+    }
+    return 50; // Default fallback
+  };
+
+  // Grade styling classes with dynamic threshold based on selectedClass
+  const getGradeColor = (val) => {
+    const grade = Number(val);
+    if (isNaN(grade) || val === "-" || val === "—") return "text-gray-400 font-bold";
+
+    const threshold = getPassingThreshold(selectedClass);
+
+    if (grade >= threshold) {
+      return "text-blue-600 font-extrabold";
+    } else {
+      return "text-red-600 font-extrabold";
+    }
+  };
+
+  // 1. Initial Metadata Fetch
+  useEffect(() => {
+    if (!schoolId) return;
+    const q = query(collection(schooldb, "PupilGrades"), where("schoolId", "==", schoolId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => doc.data());
+      const years = [...new Set(data.map((d) => d.academicYear))].sort().reverse();
+      const classes = [...new Set(data.map((d) => d.className))].sort();
+      setAcademicYears(years);
+      setAvailableClasses(classes);
+      if (years.length > 0 && !academicYear) setAcademicYear(years[0]);
+      if (classes.length > 0 && !selectedClass) setSelectedClass(classes[0]);
+    });
+    return () => unsubscribe();
+  }, [schoolId]);
+
+  // 2. Fetch Pupils and Grades
+  useEffect(() => {
+    if (!academicYear || !selectedClass || !schoolId) return;
+    setLoading(true);
+
+    const pQuery = query(collection(db, "PupilsReg"), 
+      where("schoolId", "==", schoolId), 
+      where("academicYear", "==", academicYear), 
+      where("class", "==", selectedClass)
+    );
+
+    const gQuery = query(collection(schooldb, "PupilGrades"), 
+      where("academicYear", "==", academicYear), 
+      where("schoolId", "==", schoolId), 
+      where("className", "==", selectedClass)
+    );
+
+    const unsubPupils = onSnapshot(pQuery, (snapshot) => {
+      setPupils(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => a.studentName.localeCompare(b.studentName)));
+    });
+
+    const unsubGrades = onSnapshot(gQuery, (snapshot) => {
+      setAllYearGrades(snapshot.docs.map(doc => doc.data()));
+      setLoading(false);
+    });
+
+    return () => { unsubPupils(); unsubGrades(); };
+  }, [academicYear, selectedClass, schoolId]);
+
+  // 3. Yearly Logic Engine (Using Centralized Utilities)
+  const yearlyData = useMemo(() => {
+    if (allYearGrades.length === 0 || pupils.length === 0) {
+      return {
+        subjects: [],
+        studentMap: {},
+        summaries: {}
+      };
+    }
+
+    const subjects = [
+      ...new Set(allYearGrades.map(d => d.subject))
+    ].sort();
+
+    const pupilIDs = pupils.map(p => p.studentID);
+
+    const studentMap = {};
+    const summaries = {};
+
+    // Subject annual position
+    const subjectAnnualRanks = calculateSubjectAnnualRanks(
+      allYearGrades,
+      pupilIDs,
+      subjects,
+      calcMode
+    );
+
+    /* Generate each student's subject results */
+    pupils.forEach(pupil => {
+      const pId = pupil.studentID;
+      studentMap[pId] = {};
+
+      subjects.forEach(sub => {
+        const t1 = getTermScores(allYearGrades, pId, sub, "Term 1");
+        const t2 = getTermScores(allYearGrades, pId, sub, "Term 2");
+        const t3 = getTermScores(allYearGrades, pId, sub, "Term 3");
+
+        const yearlyMean = calculateAnnualMean(
+          t1.mean,
+          t2.mean,
+          t3.mean,
+          calcMode
+        );
+
+        studentMap[pId][sub] = {
+          m1: t1.mean,
+          m2: t2.mean,
+          m3: t3.mean,
+          yearlyMean,
+          subRank: subjectAnnualRanks[sub]?.[pId] || "-"
+        };
+      });
+    });
+
+    /* Overall class calculation */
+    const metrics = calculateOverallMetrics(
+      allYearGrades,
+      pupilIDs,
+      subjects,
+      null,
+      calcMode
+    );
+
+    const allStats = metrics.allStudentsStats;
+
+    /* Generate footer summaries */
+    pupils.forEach(p => {
+      const stat = allStats.find(s => s.id === p.studentID);
+
+      if (stat) {
+        const total = stat.annual;
+        const percentage = (total / subjects.length).toFixed(1);
+
+        const sorted = [...allStats].sort((a, b) => b.annual - a.annual);
+        const rank = sorted.findIndex(s => s.id === p.studentID) + 1;
+
+        summaries[p.studentID] = {
+          total,
+          percentage,
+          rank
+        };
+      }
+    });
+
+    return {
+      subjects,
+      studentMap,
+      summaries
+    };
+  }, [allYearGrades, pupils, calcMode]);
+
+  // 4. Print Mode A: Standard Matrix (AVG & POS only)
+  const handleExportPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a3" });
+    const pupilsPerPage = 8;
+    const classPassingThreshold = getPassingThreshold(selectedClass);
+
+    for (let i = 0; i < pupils.length; i += pupilsPerPage) {
+      const chunk = pupils.slice(i, i + pupilsPerPage);
+      if (i > 0) doc.addPage();
+
+      doc.setFontSize(22).setFont(undefined, 'bold');
+      doc.text((schoolName || "").toUpperCase(), doc.internal.pageSize.getWidth() / 2, 45, { align: "center" });
+      
+      doc.setFontSize(14).setFont(undefined, 'normal');
+      doc.text(
+        `ANNUAL PROGRESS BROAD SHEET - ${selectedClass} (${academicYear}) | Mode: ${calcMode.toUpperCase()} | Page ${Math.floor(i / pupilsPerPage) + 1}`,
+        doc.internal.pageSize.getWidth() / 2, 75, { align: "center" }
+      );
+
+      const head1 = [
+        { content: "SUBJECTS", styles: { halign: 'left', fillColor: [40, 44, 52] } }, 
+        ...chunk.map(p => ({ 
+          content: p.studentName.toUpperCase(), 
+          colSpan: 2, 
+          styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 11, fontStyle: 'bold' } 
+        }))
+      ];
+      
+      const head2 = ["", ...chunk.flatMap(() => ["AVG", "POS"])];
+
+      const body = yearlyData.subjects.map(sub => [
+        sub,
+        ...chunk.flatMap(p => {
+          const r = yearlyData.studentMap[p.studentID]?.[sub] || {};
+          return [r.yearlyMean || 0, r.subRank || "-"];
+        })
+      ]);
+
+      const footerStyles = { fontStyle: 'bold', halign: 'center', fontSize: 12 };
+      const totalRow = ["TOTAL MARKS", ...chunk.flatMap(p => [{ content: yearlyData.summaries[p.studentID]?.total, colSpan: 2, styles: { ...footerStyles, fillColor: [240, 240, 240] } }])];
+      const percRow = ["PERCENTAGE", ...chunk.flatMap(p => [{ content: yearlyData.summaries[p.studentID]?.percentage + "%", colSpan: 2, styles: { ...footerStyles, fillColor: [240, 240, 240] } }])];
+      const rankRow = ["ANNUAL RANK", ...chunk.flatMap(p => [{ content: yearlyData.summaries[p.studentID]?.rank, colSpan: 2, styles: { ...footerStyles, textColor: [200, 0, 0], fillColor: [230, 230, 250], fontSize: 14 } }])];
+
+      autoTable(doc, {
+        startY: 100,
+        head: [head1, head2],
+        body: [...body, totalRow, percRow, rankRow],
+        theme: 'grid',
+        styles: { fontSize: 11, fontStyle: 'bold', cellPadding: 6, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150] },
+        headStyles: { fillColor: [63, 81, 181], textColor: [255, 255, 255], fontSize: 11, fontStyle: 'bold', cellPadding: 8 },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 140, fillColor: [245, 245, 245], fontSize: 12 } },
+        didParseCell: (data) => {
+          if (data.section === 'body') {
+            data.cell.styles.fontStyle = 'bold';
+            const scoreVal = parseFloat(data.cell.raw);
+            if (!isNaN(scoreVal)) {
+              if (scoreVal < classPassingThreshold) {
+                data.cell.styles.textColor = [220, 0, 0];
+              } else {
+                data.cell.styles.textColor = [37, 99, 235];
+              }
+            }
+          }
+        },
+        margin: { left: 20, right: 20, bottom: 40 },
+      });
+    }
+    doc.save(`${selectedClass}_Annual_Standard_BroadSheet_${academicYear}.pdf`);
+  };
+
+  // Print Mode B: Transposed Matrix (AVG & POS only)
+  const handlePrintTransposed = () => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a3" });
+    
+    const subjectsPerPage = 12; 
+    const totalSubjects = yearlyData.subjects.length;
+    const classPassingThreshold = getPassingThreshold(selectedClass);
+
+    for (let sIdx = 0; sIdx < totalSubjects; sIdx += subjectsPerPage) {
+      const subjectChunk = yearlyData.subjects.slice(sIdx, sIdx + subjectsPerPage);
+      const isLastChunk = (sIdx + subjectsPerPage) >= totalSubjects;
+
+      if (sIdx > 0) doc.addPage();
+
+      doc.setFontSize(22).setFont(undefined, 'bold');
+      doc.text((schoolName || "").toUpperCase(), doc.internal.pageSize.getWidth() / 2, 45, { align: "center" });
+      
+      doc.setFontSize(14).setFont(undefined, 'normal');
+      doc.text(
+        `ANNUAL PROGRESS TRANSPOSED SHEET - ${selectedClass} (${academicYear}) | Part ${Math.floor(sIdx / subjectsPerPage) + 1}`,
+        doc.internal.pageSize.getWidth() / 2, 70, { align: "center" }
+      );
+
+      const head1 = [
+        { content: "STUDENT NAMES", rowSpan: 2, styles: { valign: 'middle', halign: 'left', fillColor: [40, 44, 52] } },
+        ...subjectChunk.map(sub => ({ content: sub.toUpperCase(), colSpan: 2, styles: { halign: 'center', fillColor: [63, 81, 181], fontSize: 10, fontStyle: 'bold' } }))
+      ];
+
+      const head2 = [
+        ...subjectChunk.flatMap(() => ["AVG", "POS"])
+      ];
+
+      if (isLastChunk) {
+        head1.push({ content: "YEARLY OVERALLS", colSpan: 3, styles: { halign: 'center', fillColor: [30, 41, 59], fontSize: 10, fontStyle: 'bold' } });
+        head2.push("TOTAL", "PERC", "ANNUAL RANK");
+      }
+
+      const body = pupils.map(p => {
+        const studentRow = [p.studentName.toUpperCase()];
+        
+        subjectChunk.forEach(sub => {
+          const r = yearlyData.studentMap[p.studentID]?.[sub] || {};
+          studentRow.push(r.yearlyMean || 0, r.subRank || "-");
+        });
+
+        if (isLastChunk) {
+          const summary = yearlyData.summaries[p.studentID] || {};
+          studentRow.push(summary.total || "0", (summary.percentage || "0") + "%", summary.rank || "-");
+        }
+
+        return studentRow;
+      });
+
+      autoTable(doc, {
+        startY: 90,
+        head: [head1, head2],
+        body: body,
+        theme: 'grid',
+        styles: { fontSize: 10.5, fontStyle: 'bold', cellPadding: 6, valign: 'middle', lineWidth: 0.5, lineColor: [150, 150, 150], halign: 'center' },
+        headStyles: { textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold' },
+        columnStyles: { 
+          0: { fontStyle: 'bold', cellWidth: 160, halign: 'left', fillColor: [245, 245, 245], fontSize: 11 }
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body') {
+            data.cell.styles.fontStyle = 'bold';
+            const subjectsActiveSpan = subjectChunk.length * 2;
+            
+            if (data.column.index > 0 && data.column.index <= subjectsActiveSpan) {
+              const isPosSubCol = data.column.index % 2 === 0;
+              if (isPosSubCol) {
+                data.cell.styles.textColor = [190, 24, 74];
+                data.cell.styles.fontStyle = 'bold';
+              } else {
+                const scoreVal = parseFloat(data.cell.raw);
+                if (!isNaN(scoreVal)) {
+                  if (scoreVal < classPassingThreshold) {
+                    data.cell.styles.textColor = [220, 0, 0];
+                  } else {
+                    data.cell.styles.textColor = [37, 99, 235];
+                  }
+                }
+              }
+            }
+            
+            if (isLastChunk && data.column.index === subjectsActiveSpan + 3) {
+              data.cell.styles.textColor = [200, 0, 0];
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fontSize = 11;
+              data.cell.styles.fillColor = [240, 240, 253];
+            }
+          }
+        },
+        margin: { left: 20, right: 20, bottom: 40 },
+      });
+    }
+    doc.save(`${selectedClass}_Annual_Transposed_BroadSheet_${academicYear}.pdf`);
+  };
+
+  const handlePrintPreview = () => {
+    window.print();
+  };
+
+  return (
+    <div className="max-w-full mx-auto p-6 bg-white shadow-2xl rounded-3xl border border-gray-100">
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #printable-sheet, #printable-sheet * { visibility: visible; }
+          #printable-sheet { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+          }
+          .no-print { display: none !important; }
+          @page { size: A3 landscape; margin: 1cm; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd !important; padding: 6px !important; font-size: 11px !important; font-weight: bold !important; }
+          .sticky { position: static !important; }
+        }
+      `}</style>
+
+      {/* Header UI */}
+      <div className="no-print flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold text-gray-900">Annual Broad Sheet</h2>
+          <p className="text-gray-500 font-medium">{schoolName} Results Management</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={handlePrintPreview} 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow-lg font-bold text-sm transition-all"
+          >
+            Print Preview
+          </button>
+          <button 
+            onClick={handleExportPDF} 
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl shadow-lg font-bold text-sm transition-all"
+          >
+            Export Standard Matrix
+          </button>
+          <button 
+            onClick={handlePrintTransposed} 
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl shadow-lg font-bold text-sm transition-all"
+          >
+            Export Transposed Matrix
+          </button>
+        </div>
+      </div>
+
+      {/* Filters Form Blocks */}
+      <div className="no-print grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-200">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-bold text-gray-600 uppercase">Academic Year</label>
+          <select className="border-2 border-gray-200 rounded-xl px-4 py-3 bg-white font-medium" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}>
+            {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-bold text-gray-600 uppercase">Class Tier</label>
+          <select className="border-2 border-gray-200 rounded-xl px-4 py-3 bg-white font-medium" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
+            {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-bold text-red-700 uppercase flex items-center gap-1">
+            ⚙️ Yearly Mean Divisor Mode
+          </label>
+          <select 
+            className="border-2 border-red-200 rounded-xl px-4 py-3 bg-red-50 font-bold text-red-900 focus:outline-none focus:border-red-400" 
+            value={calcMode} 
+            onChange={(e) => setCalcMode(e.target.value)}
+          >
+            <option value="auto">🔄 Auto Detect (Divide by active terms)</option>
+            <option value="term1_2">🔢 Force Divide by 2 (Terms 1 & 2 only)</option>
+            <option value="term2_3">🔢 Force Divide by 2 (Terms 2 & 3 only)</option>
+            <option value="3">🔢 Force Divide by 3 (Full Academic Year)</option>
+          </select>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center p-20 text-emerald-700 font-bold animate-pulse">Compiling Annual Broad Sheet...</div>
+      ) : (
+        <div id="printable-sheet" className="overflow-x-auto border border-gray-200 rounded-2xl">
+          <div className="hidden print:block text-center mb-6">
+            <h1 className="text-2xl font-bold uppercase">{schoolName}</h1>
+            <h2 className="text-lg">ANNUAL PROGRESS BROAD SHEET - {selectedClass} ({academicYear})</h2>
+            <p className="text-xs italic">Calculation Mode: Forced / {calcMode.toUpperCase()}</p>
+          </div>
+
+          <table className="w-full text-center border-collapse">
+            <thead className="bg-gray-900 text-white text-[12px] uppercase print:bg-gray-200 print:text-black">
+              <tr>
+                <th className="p-4 border-r sticky left-0 bg-gray-900 z-30 print:bg-white" rowSpan="2">Subject</th>
+                {pupils.map(p => (
+                  <th key={p.studentID} colSpan="5" className="px-4 py-3 border-b border-r min-w-[180px] font-extrabold text-xs tracking-wide">
+                    {p.studentName}
+                  </th>
+                ))}
+              </tr>
+              <tr className="bg-gray-800 text-[10px] font-bold print:bg-gray-100">
+                {pupils.map(p => (
+                  <React.Fragment key={`subh-${p.studentID}`}>
+                    <th className="p-1 border-r">TM 1</th>
+                    <th className="p-1 border-r">TM 2</th>
+                    <th className="p-1 border-r">TM 3</th>
+                    <th className="p-1 border-r bg-emerald-900 print:bg-gray-300 font-black">AVG</th>
+                    <th className="p-1 border-r text-amber-400 print:text-black font-black">POS</th>
+                  </React.Fragment>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="text-[12px] font-bold text-gray-900">
+              {yearlyData.subjects.map((sub) => (
+                <tr key={sub} className="border-b hover:bg-gray-50">
+                  <td className="text-left px-4 py-3 font-black text-gray-900 border-r sticky left-0 bg-white shadow-md print:shadow-none">{sub}</td>
+                  {pupils.map(p => {
+                    const res = yearlyData.studentMap[p.studentID]?.[sub] || {};
+                    return (
+                      <React.Fragment key={`${p.studentID}-${sub}`}>
+                        <td className={`p-1 border-r ${getGradeColor(res.m1)}`}>{res.m1 || 0}</td>
+                        <td className={`p-1 border-r ${getGradeColor(res.m2)}`}>{res.m2 || 0}</td>
+                        <td className={`p-1 border-r ${getGradeColor(res.m3)}`}>{res.m3 || 0}</td>
+                        <td className={`p-1 border-r text-sm bg-emerald-50 print:text-black ${getGradeColor(res.yearlyMean)}`}>{res.yearlyMean || 0}</td>
+                        <td className="p-1 border-r text-xs font-black text-rose-700 print:text-black">{res.subRank || "-"}</td>
+                      </React.Fragment>
+                    );
+                  })}
+                </tr>
+              ))}
+              
+              <tr className="bg-gray-100 font-extrabold">
+                <td className="sticky left-0 bg-gray-100 px-4 py-3 border-r text-gray-900 font-black">TOTAL SUM</td>
+                {pupils.map(p => (
+                  <td key={`tot-${p.studentID}`} colSpan="5" className="border-r text-sm text-emerald-800 print:text-black font-extrabold">
+                    {yearlyData.summaries[p.studentID]?.total}
+                  </td>
+                ))}
+              </tr>
+              <tr className="bg-gray-100 font-extrabold">
+                <td className="sticky left-0 bg-gray-100 px-4 py-3 border-r text-gray-900 font-black">PERCENTAGE (%)</td>
+                {pupils.map(p => (
+                  <td key={`per-${p.studentID}`} colSpan="5" className="border-r text-sm text-emerald-800 print:text-black font-extrabold">
+                    {yearlyData.summaries[p.studentID]?.percentage}%
+                  </td>
+                ))}
+              </tr>
+              <tr className="bg-amber-50 font-black border-t-2 border-amber-200 print:bg-white">
+                <td className="sticky left-0 bg-amber-100 px-4 py-5 border-r text-amber-900 print:text-black font-black">ANNUAL RANK</td>
+                {pupils.map(p => (
+                  <td key={`rankf-${p.studentID}`} colSpan="5" className="border-r text-2xl font-black text-rose-700 italic print:text-black print:text-base">
+                    #{yearlyData.summaries[p.studentID]?.rank}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default YearlyResult;

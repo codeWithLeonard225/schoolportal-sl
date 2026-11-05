@@ -16,7 +16,7 @@ const CARDS_PER_BROWSER_PAGE = CARDS_PER_ROW * ROWS_PER_PAGE;
 
 const formatClassName = (className) => {
     if (!className) return "";
-    return className.trim().slice(0, 5);
+    return className.trim().slice(0, 3);
 };
 
 const PupilIDCard = () => {
@@ -91,7 +91,7 @@ const PupilIDCard = () => {
     };
 
     return (
-        <div style={{ padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", minHeight: "100vh", background: "#f3f4f6" }}>
+        <div style={{ padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", minHeight: "100vh", background: "#fdfbf7" }}>
             {/* STRICT PRINT CSS TO HIDE UNSELECTED CARDS AND INTERFACE */}
             <style>
                 {`
@@ -136,26 +136,26 @@ const PupilIDCard = () => {
 
             {/* Action Bar */}
             <div className="print:hidden" style={{ width: "100%", maxWidth: "800px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px" }}>
-                <h2 style={{ fontSize: "24px", fontWeight: "bold", margin: 0, color: "#1f2937" }}>Pupil & Staff ID Cards</h2>
+                <h2 style={{ fontSize: "24px", fontWeight: "bold", margin: 0, color: "#4a2c11" }}>Pupil & Staff ID Cards</h2>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                     
                     <button
                         onClick={toggleSelectAllVisible}
-                        style={{ padding: "6px 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", fontWeight: "600" }}
+                        style={{ padding: "6px 12px", background: "#653818", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", fontWeight: "600" }}
                     >
                         {isAllVisibleSelected ? <FaCheckSquare /> : <FaSquare />}
                         {isAllVisibleSelected ? "Deselect Page" : "Select Page"}
                     </button>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                        <label style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>Class:</label>
+                        <label style={{ fontSize: "14px", fontWeight: "600", color: "#4a2c11" }}>Class:</label>
                         <select 
                             value={selectedClass} 
                             onChange={(e) => {
                                 setSelectedClass(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            style={{ padding: "6px 12px", borderRadius: "4px", border: "1px solid #ccc", background: "#fff" }}
+                            style={{ padding: "6px 12px", borderRadius: "4px", border: "1px solid #c8b6a6", background: "#fff" }}
                         >
                             {classOptions.map((cls) => (
                                 <option key={cls} value={cls}>{cls}</option>
@@ -164,14 +164,14 @@ const PupilIDCard = () => {
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                        <label style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>Year:</label>
+                        <label style={{ fontSize: "14px", fontWeight: "600", color: "#4a2c11" }}>Year:</label>
                         <select 
                             value={selectedAcademicYear} 
                             onChange={(e) => {
                                 setSelectedAcademicYear(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            style={{ padding: "6px 12px", borderRadius: "4px", border: "1px solid #ccc", background: "#fff" }}
+                            style={{ padding: "6px 12px", borderRadius: "4px", border: "1px solid #c8b6a6", background: "#fff" }}
                         >
                             {academicYearOptions.map((year) => (
                                 <option key={year} value={year}>{year}</option>
@@ -184,7 +184,7 @@ const PupilIDCard = () => {
                         disabled={selectedPupilIds.length === 0}
                         style={{ 
                             padding: "8px 16px", 
-                            background: selectedPupilIds.length === 0 ? "#9ca3af" : "#800000", 
+                            background: selectedPupilIds.length === 0 ? "#9ca3af" : "#4a2c11", 
                             color: "#fff", 
                             border: "none", 
                             borderRadius: "6px", 
@@ -206,17 +206,17 @@ const PupilIDCard = () => {
                     <button
                         onClick={handlePrevious}
                         disabled={currentPage === 1}
-                        style={{ padding: "6px 12px", background: "#d1d5db", color: "#1f2937", border: "none", borderRadius: "6px", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1, display: "flex", alignItems: "center", gap: "5px" }}
+                        style={{ padding: "6px 12px", background: "#e6ded6", color: "#4a2c11", border: "none", borderRadius: "6px", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1, display: "flex", alignItems: "center", gap: "5px", fontWeight: "600" }}
                     >
                         <FaArrowLeft size={12} /> Previous
                     </button>
-                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>
+                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#4a2c11" }}>
                         Page {currentPage} of {totalPages}
                     </span>
                     <button
                         onClick={handleNext}
                         disabled={currentPage === totalPages}
-                        style={{ padding: "6px 12px", background: "#d1d5db", color: "#1f2937", border: "none", borderRadius: "6px", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1, display: "flex", alignItems: "center", gap: "5px" }}
+                        style={{ padding: "6px 12px", background: "#e6ded6", color: "#4a2c11", border: "none", borderRadius: "6px", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1, display: "flex", alignItems: "center", gap: "5px", fontWeight: "600" }}
                     >
                         Next <FaArrowRight size={12} />
                     </button>
@@ -245,14 +245,14 @@ const PupilIDCard = () => {
                                 style={{
                                     width: CARD_WIDTH,
                                     height: CARD_HEIGHT,
-                                    border: isSelected ? "2px solid #800000" : "1px dashed #9ca3af",
+                                    border: isSelected ? "2px solid #4a2c11" : "1px dashed #c8b6a6",
                                     borderRadius: "8px",
                                     overflow: "hidden",
                                     boxSizing: "border-box",
                                     display: "flex",
                                     flexDirection: "column",
                                     justifyContent: "space-between",
-                                    background: isSelected ? "linear-gradient(135deg, #fffde7 0%, #fff9c4 100%)" : "#f9fafb",
+                                    background: isSelected ? "#ffffff" : "#f9fafb",
                                     boxShadow: isSelected ? "0 2px 6px rgba(0,0,0,0.12)" : "none",
                                     pageBreakInside: "avoid",
                                     position: "relative",
@@ -287,7 +287,7 @@ const PupilIDCard = () => {
 
                                 {/* Header */}
                                 <div style={{ 
-                                  background: "linear-gradient(135deg, #00562d 0%, #007a41 100%)",
+                                    background: "linear-gradient(135deg, #4a2c11 0%, #653818 100%)",
                                     padding: "4px 8px", 
                                     display: "flex", 
                                     alignItems: "center", 
@@ -305,7 +305,7 @@ const PupilIDCard = () => {
                                         <div style={{ 
                                             fontWeight: "bold", 
                                             fontSize: "10.5px", 
-                                            color: "#ffd700", 
+                                            color: "#ffffff", 
                                             textTransform: "uppercase", 
                                             wordBreak: "break-word",
                                             display: "-webkit-box",
@@ -313,15 +313,13 @@ const PupilIDCard = () => {
                                             WebkitBoxOrient: "vertical",
                                             overflow: "hidden"
                                         }}>
-                                            {/* {schoolName || "STUDENT ID CARD"} */}
-                                            {"SHEIKH TAIS ACADEMY PRIMARY SCHOOL"}
+                                            {schoolName || "SHEIKH TAIS ACADEMY PRIMARY SCHOOL"}
                                         </div>
                                         {schoolMotto && (
-                                            <div style={{ fontSize: "10.5px", color: "#fff59d", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                            <div style={{ fontSize: "10.5px", color: "#f3e5ab", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                                 {schoolMotto}
                                             </div>
                                         )}
-                                    
                                     </div>
                                 </div>
 
@@ -330,14 +328,14 @@ const PupilIDCard = () => {
                                     <img 
                                         src={pupil.userPhotoUrl || "https://via.placeholder.com/80"} 
                                         alt={pupil.studentName} 
-                                        style={{ width: "100px", height: "100px", borderRadius: "5px", objectFit: "cover", border: "1px solid #800000", flexShrink: 0 }}
+                                        style={{ width: "100px", height: "100px", borderRadius: "5px", objectFit: "cover", border: "1.5px solid #4a2c11", flexShrink: 0 }}
                                     />
-                                    <div style={{ fontSize: "10px", lineHeight: "1.3", flex: 1, overflow: "hidden", color: "#4a0000" }}>
-                                        <div style={{ fontWeight: "bold", fontSize: "15px", color: "#800000", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    <div style={{ fontSize: "10px", lineHeight: "1.3", flex: 1, overflow: "hidden", color: "#2d1a0a" }}>
+                                        <div style={{ fontWeight: "bold", fontSize: "15px", color: "#4a2c11", overflow: "hidden", textOverflow: "ellipsis" }}>
                                             {pupil.studentName}
                                         </div>
-                                        <div style={{fontSize: "15px"}}><strong>ID:</strong> {pupil.studentID}</div>
-                                        <div style={{fontSize:"15px"}}><strong>Level:</strong> {formatClassName(pupil.class)}</div>
+                                        <div style={{ fontSize: "15px" }}><strong>ID:</strong> {pupil.registrationFormNo}</div>
+                                        <div style={{ fontSize: "15px" }}><strong>Level:</strong> {formatClassName(pupil.class)}</div>
                                     </div>
                                 </div>
 
@@ -353,6 +351,7 @@ const PupilIDCard = () => {
                                     alignItems: "center",
                                     justifyContent: "center",
                                     boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+                                    border: "1px solid #4a2c11",
                                     zIndex: 2
                                 }}>
                                     <QRCodeSVG 
@@ -367,15 +366,14 @@ const PupilIDCard = () => {
                                 <div style={{ 
                                     display: "flex", 
                                     alignItems: "center", 
-                                    background: "linear-gradient(135deg, #00562d 0%, #007a41 100%)",
+                                    background: "linear-gradient(135deg, #4a2c11 0%, #653818 100%)",
                                     padding: "4px 8px",
                                     minHeight: "36px",
                                     paddingRight: "60px"
                                 }}>
-                                    <div style={{ fontSize: "10px", color: "#ffd700", lineHeight: "1.1", overflow: "hidden" }}>
+                                    <div style={{ fontSize: "10px", color: "#ffffff", lineHeight: "1.1", overflow: "hidden" }}>
                                         {schoolAddress && <div style={{ fontStyle: "italic", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>"{schoolAddress}"</div>}
-                                        {/* {schoolMotto && <div style={{ fontStyle: "italic", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>"{schoolMotto}"</div>} */}
-                                        {schoolContact && <div style={{ whiteSpace: "nowrap", overflow: "hidden",fontWeight: "500", textOverflow: "ellipsis" }}>Tel: {schoolContact}</div>}
+                                        {schoolContact && <div style={{ whiteSpace: "nowrap", overflow: "hidden", fontWeight: "500", textOverflow: "ellipsis" }}>Tel: {schoolContact}</div>}
                                         {!schoolAddress && !schoolContact && <div>Official School Pass</div>}
                                     </div>
                                 </div>

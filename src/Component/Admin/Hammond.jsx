@@ -167,7 +167,7 @@ const NAV_ITEMS = [
     label: "Pupils Results",
     icon: <MdBarChart />,
     children: [
-      { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
+      // { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
       { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
       { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
       // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },

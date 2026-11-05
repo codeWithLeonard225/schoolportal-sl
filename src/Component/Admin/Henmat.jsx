@@ -66,13 +66,13 @@ import ClassDelete from "../Voters/ClassDelete";
 import AncillaryReceiptForm from "../FeeReceipt.jsx/AncillaryReceiptForm";
 import PreviousFees from "../FeeReceipt.jsx/PreviousFees";
 import WASCEForm from "../Voters/WASCEForm";
-import TeacherIDCards from "../Staff/TeacherIDCardsHaffizeen";
-import StaffIDCardBackYaweh from "../Staff/StaffIDCardBackYaweh";
+import TeacherIDCards from "../Staff/TeacherIDCardsHenmat";
+import StaffIDCardBackYaweh from "../Staff/StaffIDCardBackHenmat";
 import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerHaffizeenSecondary";
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffPayroll from "../Staff/StaffPayroll";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScanHenemat";
-import PupilIDCardBack from "../PupilsPage/PupilIDCardBackSheikhPrimary";
+import PupilIDCardBack from "../PupilsPage/PupilIDCardBackHenmat";
 import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerHenmat";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
 import PupilPhotoManager from "../Voters/PupilPhotoManager";
@@ -166,7 +166,7 @@ const NAV_ITEMS = [
     label: "Pupils Results",
     icon: <MdBarChart />,
     children: [
-      { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
+      // { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
       { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
       { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
       // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
@@ -217,8 +217,8 @@ const NAV_ITEMS = [
     label: "Qr code Attendance-Staff",
     icon: <MdBarChart />,
     children: [
-      // { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
-      // { key: "StaffIDCardBackYaweh", label: "Teacher IDCards Back", icon: <MdPerson /> },
+      { key: "TeacherIDCards", label: "Teacher IDCards", icon: <MdPerson /> },
+      { key: "StaffIDCardBackYaweh", label: "Teacher IDCards Back", icon: <MdPerson /> },
       { key: "StaffAttendanceScanner", label: "Staff Attendance Scanner", icon: <MdPerson /> },
       { key: "StaffPayroll", label: "Staff Payrole", icon: <MdPerson /> },
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },

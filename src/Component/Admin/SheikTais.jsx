@@ -72,6 +72,7 @@ import StaffAttendanceScanner from "../Staff/StaffAttendanceScannerHaffizeenSeco
 import StaffAttendanceRecords from "../Staff/StaffAttendanceRecords";
 import StaffPayroll from "../Staff/StaffPayroll";
 import PupilIDCardScan from "../PupilsPage/PupilIDCardScanShaikTaisPrimary";
+import PupilIDCardScanSenior from "../PupilsPage/PupilIDCardScanShaikTaisSenior";
 import PupilIDCardBack from "../PupilsPage/PupilIDCardBackSheikhPrimary";
 import PupilAttendanceScanner from "../PupilsPage/PupilAttendanceScannerHaffizeenSenior";
 import PupilAttendanceLogs from "../PupilsPage/PupilAttendanceLogs";
@@ -207,6 +208,7 @@ const NAV_ITEMS = [
     icon: <MdBarChart />,
     children: [
       { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
+      { key: "PupilIDCardScanSenior", label: "Pupil Card Senior", icon: <MdPerson /> },
       // { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
       { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
       { key: "PupilAttendanceLogs", label: "Pupil Attendance Logs", icon: <MdPerson /> },
@@ -374,6 +376,7 @@ function AdminPanel() {
       case "StaffAttendanceRecords": return <StaffAttendanceRecords />;
       case "StaffPayroll": return <StaffPayroll />;
       case "PupilIDCardScan": return <PupilIDCardScan />;
+      case "PupilIDCardScanSenior": return <PupilIDCardScanSenior />;
       case "PupilIDCardBack": return <PupilIDCardBack />;
       case "PupilAttendanceScanner": return <PupilAttendanceScanner />;
       case "PupilAttendanceLogs": return <PupilAttendanceLogs />;

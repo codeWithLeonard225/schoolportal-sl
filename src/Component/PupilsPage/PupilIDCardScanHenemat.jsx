@@ -362,7 +362,7 @@ const PupilIDCard = () => {
                                         </div>
                                         <div style={{ fontSize: "14px" }}><strong>ID:</strong> {pupil.studentID}</div>
                                         {/* Class sliced to 4 characters */}
-                                        <div style={{ fontSize: "14px" }}><strong>Class:</strong> {pupil.class ? pupil.class.slice(0, 5) : ""}</div>
+                                        <div style={{ fontSize: "14px" }}><strong>Level:</strong> {pupil.class ? pupil.class.slice(0, 3) : ""}</div>
                                         <div style={{ fontSize: "14px" }}><strong>DOB:</strong> {pupil.dob}</div>
                                         <div style={{ fontSize: "14px" }}><strong>Address:</strong> {pupil.addressLine1}</div>
                                     

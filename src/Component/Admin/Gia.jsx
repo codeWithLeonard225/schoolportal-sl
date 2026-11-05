@@ -32,10 +32,10 @@ import TeacherRegistration from "../Voters/TeacherRegistration";
 import TeacherPupilsPage from "../TeacherAssignment/TeacherPupilsPage";
 import GradeSheetPage from "../TeacherAssignment/GradeSheetPage";
 import BulkDeleteClassGrades from "../TeacherAssignment/BulkDeleteClassGrades";
-import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPage";
+import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPageGia";
 import ClassFullTermMatrixPage from "../TeacherAssignment/ClassFullTermMatrixPage";
-import ReportCardTermly from "../PupilsPage/ReportCardTermly";
-import GeneralReportCard from "../PupilsPage/GeneralReportCard";
+import ReportCardTermly from "../PupilsPage/ReportCardTermlyGia";
+import GeneralReportCard from "../PupilsPage/GeneralReportCardGia";
 import SchoolRegistration from "../CeoPanel/SchoolRegistration"
 import AdminForm from "../CeoPanel/AdminForm"
 import RegDashboard from "../Dashboard/RegDashboard"
@@ -57,9 +57,9 @@ import TimetableEntry from "../TeacherAssignment/TimetableEntry";
 import TimeTableTeacherAtt from "../TeacherAssignment/TimeTableTeacherAtt";
 import TimeTableDailyAttendanceReport from "../TeacherAssignment/TimeTableDailyAttendanceReport";
 import TimeTableTeacherReport from "../TeacherAssignment/TimeTableTeacherReport";
-import TermResult from "../TeacherAssignment/TermResult";
-import YearlyResult from "../TeacherAssignment/YearlyResult";
-import YearlyGeneralReportCard from "../TeacherAssignment/YearlyGeneralReportCard";
+import TermResult from "../TeacherAssignment/TermResultGia";
+import YearlyResult from "../TeacherAssignment/YearlyResultGia";
+import YearlyGeneralReportCard from "../TeacherAssignment/YearlyGeneralReportCardGia";
 import TeacherClassReport from "../TeacherAssignment/TeacherClassReport";
 import ClassPromotion from "../Voters/ClassPromotion";
 import BulkReg from "../Voters/BulkRegistration";
