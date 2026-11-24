@@ -87,6 +87,8 @@ import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
 import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
 import StaffAttendanceReport from "../Staff/StaffAttendanceReport";
 import AttendanceReport from "../Dashboard/AttendanceReports";
+import AdminDocumentViewer from "../TeacherAssignment/AdminDocumentViewer";
+import AdminTheoryQuestionsViewer from "../TeacherAssignment/AdminTheoryQuestionsViewer";
 
 
 
@@ -130,30 +132,30 @@ const NAV_ITEMS = [
     label: "Registeration",
     icon: <MdEdit />,
     children: [
-      { key: "Form", label: " Pupils", icon: <MdPerson /> },
-      { key: "class", label: "Class", icon: <MdPerson /> },
+      // { key: "Form", label: " Pupils", icon: <MdPerson /> },
+      // { key: "class", label: "Class", icon: <MdPerson /> },
       { key: "classList", label: "Class List", icon: <MdPerson /> },
     //   { key: "AdminForm", label: " AdminForm", icon: <MdPerson /> },
     //   { key: "SchoolRegistration", label: " SchoolRegistration", icon: <MdPerson /> },
-      { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
-      { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
-      { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },
+      // { key: "ClassPromotion", label: " ClassPromotion", icon: <MdPerson /> },
+      // { key: "BulkReg", label: " BulkReg", icon: <MdPerson /> },
+      // { key: "ClassDelete", label: " ClassDelete", icon: <MdPerson /> },/
 
 
     ],
   },
-  {
-    key: "fees",
-    label: "Fees",
-    icon: <MdEdit />,
-    children: [
-      { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
-      { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
-      { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
-      { key: "AncillaryReceiptForm", label: " Other Chargers Receipt", icon: <MdPerson /> },
+  // {
+  //   key: "fees",
+  //   label: "Fees",
+  //   icon: <MdEdit />,
+  //   children: [
+  //     { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
+  //     { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
+  //     { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
+  //     { key: "AncillaryReceiptForm", label: " Other Chargers Receipt", icon: <MdPerson /> },
 
-    ],
-  },
+  //   ],
+  // },
   {
     key: "Staff",
     label: "staff",
@@ -202,17 +204,17 @@ const NAV_ITEMS = [
 
     ],
   },
-  {
-    key: "editPhotos",
-    label: "Edit id card photos",
-    icon: <MdBarChart />,
-    children: [
-      { key: "TeacherPhotoManager", label: "Teacher Zoom & Crop", icon: <MdPerson /> },
-      { key: "TeacherPhotoEditor", label: "Remove Bg", icon: <MdPerson /> },
-      { key: "PupilPhotoManager", label: "Pupil Zoom & Crop", icon: <MdPerson /> },
-      { key: "PupilPhotoEditor", label: "Remove Bg pupil", icon: <MdPerson /> },
-    ],
-  },
+  // {
+  //   key: "editPhotos",
+  //   label: "Edit id card photos",
+  //   icon: <MdBarChart />,
+  //   children: [
+  //     { key: "TeacherPhotoManager", label: "Teacher Zoom & Crop", icon: <MdPerson /> },
+  //     { key: "TeacherPhotoEditor", label: "Remove Bg", icon: <MdPerson /> },
+  //     { key: "PupilPhotoManager", label: "Pupil Zoom & Crop", icon: <MdPerson /> },
+  //     { key: "PupilPhotoEditor", label: "Remove Bg pupil", icon: <MdPerson /> },
+  //   ],
+  // },
   {
     key: "qrcode-Pupil",
     label: "Qr code Attendance-Pupil",
@@ -237,12 +239,16 @@ const NAV_ITEMS = [
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
     ],
   },
-  
-  // {
-  //   key: "staffAttendance",
-  //   label: "Staff Attendance",
-  //   icon: <MdWarning />, // 📖
-  // },
+   {
+    key: "Upload-Questions",
+    label: "Upload Questions",
+    icon: <MdBarChart />,
+    children: [
+      { key: "AdminDocumentViewer", label: "Bulk Question", icon: <MdPerson /> },
+      { key: "AdminTheoryQuestionsViewer", label: "Theory", icon: <MdPerson /> },
+   
+    ],
+  },
   {
     key: "timetable",
     label: "TimeTable",
@@ -399,6 +405,8 @@ function AdminPanel() {
       case "LoginAuditPage": return <LoginAuditPage />;
           case "TestResultSheet": return <TestResultSheet />;
       case "TestResultSheetAdvance": return <TestResultSheetAdvance />;
+         case "AdminDocumentViewer": return <AdminDocumentViewer />;
+      case "AdminTheoryQuestionsViewer": return <AdminTheoryQuestionsViewer />;
 
 
 

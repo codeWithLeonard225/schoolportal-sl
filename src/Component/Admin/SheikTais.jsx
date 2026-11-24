@@ -87,6 +87,8 @@ import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
 import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
 import StaffAttendanceReport from "../Staff/StaffAttendanceReport";
 import AttendanceReport from "../Dashboard/AttendanceReports";
+import AdminDocumentViewer from "../TeacherAssignment/AdminDocumentViewer";
+import AdminTheoryQuestionsViewer from "../TeacherAssignment/AdminTheoryQuestionsViewer";
 
 
 
@@ -237,12 +239,16 @@ const NAV_ITEMS = [
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
     ],
   },
-  
-  // {
-  //   key: "staffAttendance",
-  //   label: "Staff Attendance",
-  //   icon: <MdWarning />, // 📖
-  // },
+  {
+    key: "Upload-Questions",
+    label: "Upload Questions",
+    icon: <MdBarChart />,
+    children: [
+      { key: "AdminDocumentViewer", label: "Bulk Question", icon: <MdPerson /> },
+      { key: "AdminTheoryQuestionsViewer", label: "Theory", icon: <MdPerson /> },
+   
+    ],
+  },
   {
     key: "timetable",
     label: "TimeTable",
@@ -399,6 +405,8 @@ function AdminPanel() {
       case "LoginAuditPage": return <LoginAuditPage />;
           case "TestResultSheet": return <TestResultSheet />;
       case "TestResultSheetAdvance": return <TestResultSheetAdvance />;
+         case "AdminDocumentViewer": return <AdminDocumentViewer />;
+      case "AdminTheoryQuestionsViewer": return <AdminTheoryQuestionsViewer />;
 
 
 
