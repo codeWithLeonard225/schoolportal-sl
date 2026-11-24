@@ -37,6 +37,7 @@ import Yahweh from "./Component/Admin/Yahweh";
 import YahwehCEO from "./Component/Admin/YahwehCEO";
 import YahwehExams from "./Component/Admin/YahwehExams";
 import SheikTais from "./Component/Admin/SheikTais";
+import SheikTaisExams from "./Component/Admin/SheikTaisExams";
 import Climax from "./Component/Admin/Climax";
 import ClimaxCEO from "./Component/Admin/ClimaxCEO";
 import Hammond from "./Component/Admin/Hammond";
@@ -269,6 +270,14 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <SheikTais />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/SheikTaisExams"
+            element={
+              <ProtectedRoute role="admin">
+                <SheikTaisExams />
               </ProtectedRoute>
             }
           />

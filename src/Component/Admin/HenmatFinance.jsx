@@ -83,6 +83,8 @@ import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
 import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
 import StaffAttendanceReport from "../Staff/StaffAttendanceReport";
 import AttendanceReport from "../Dashboard/AttendanceReports";
+import TestResultSheet from "../PupilsPage/TestResultSheet";
+import TestResultSheetAdvance from "../PupilsPage/TestResultSheetAdvance";
 
 
 
@@ -104,11 +106,11 @@ const NAV_ITEMS = [
     ],
   },
 
-    //  {
-    //   key: "GradeADashboard",
-    //   label: "Grade A Pupils",
-    //   icon: <MdWarning />, // 📖
-    // },
+   {
+      key: "classList",
+      label: "Class List",
+      icon: <MdWarning />, // 📖
+    },
      {
       key: "ResultDashboard",
       label: "Results Dashboard",
@@ -138,46 +140,42 @@ const NAV_ITEMS = [
     icon: <MdEdit />,
     children: [
       { key: "fees", label: " PupilsFees", icon: <MdPerson /> },
-      { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
+      // { key: "PreviousFees", label: " PreviousFees", icon: <MdPerson /> },
       { key: "feesCost", label: " feesUpdate", icon: <MdPerson /> },
       { key: "AncillaryReceiptForm", label: " Other Chargers Receipt", icon: <MdPerson /> },
 
     ],
   },
-  {
-    key: "Staff",
-    label: "staff",
-    icon: <MdBarChart />,
-    children: [
-      { key: "TeacherRegistration", label: "Teacher Regis", icon: <MdPerson /> },
-      { key: "subjects", label: "Subjects", icon: <MdPerson /> },
-      { key: "TeacherAssignment", label: "Teacher Assignment", icon: <MdPerson /> },
-      { key: "TeacherAssignmentReport", label: "Teacher Assignment Report ", icon: <MdPerson /> },
-      { key: "TeacherClassReport", label: " TeacherClassReport", icon: <MdPerson /> },
-      { key: "PastQuestions", label: "Upload Past Questions ", icon: <MdPerson /> },
-      { key: "SchoolLibraryUpload", label: "SchoolLibrary Upload ", icon: <MdPerson /> },
-
-
-
-    ],
-  },
   // {
-  //   key: "results",
-  //   label: "Pupils Results",
+  //   key: "Staff",
+  //   label: "staff",
   //   icon: <MdBarChart />,
   //   children: [
-  //     { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
-  //     { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
-  //     { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
-  //     // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
-  //     { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },
-  //     { key: "GeneralReportCard", label: "ReportCard Yearly", icon: <MdPerson /> },
-  //     { key: "TermResult", label: "TermResult GradeSheet", icon: <MdPerson /> },
-  //     { key: "YearlyResult", label: "Yearly GradeSheet", icon: <MdPerson /> },
-  //     { key: "YearlyGeneralReportCard", label: "YearlyGeneralReportCard", icon: <MdPerson /> },
+  //     { key: "TeacherRegistration", label: "Teacher Regis", icon: <MdPerson /> },
+  //     { key: "subjects", label: "Subjects", icon: <MdPerson /> },
+  //     { key: "TeacherAssignment", label: "Teacher Assignment", icon: <MdPerson /> },
+  //     { key: "TeacherAssignmentReport", label: "Teacher Assignment Report ", icon: <MdPerson /> },
+  //     { key: "TeacherClassReport", label: " TeacherClassReport", icon: <MdPerson /> },
+  //     { key: "PastQuestions", label: "Upload Past Questions ", icon: <MdPerson /> },
+  //     { key: "SchoolLibraryUpload", label: "SchoolLibrary Upload ", icon: <MdPerson /> },
+
+
 
   //   ],
   // },
+  {
+    key: "results",
+    label: "Pupils Results",
+    icon: <MdBarChart />,
+    children: [
+      { key: "TestResultSheet", label: "Test Result Sheet", icon: <MdPerson /> },
+      { key: "TestResultSheetAdvance", label: "TestResultSheetAdvance", icon: <MdPerson /> },
+      { key: "TermResult", label: "TermResult GradeSheet", icon: <MdPerson /> },
+      { key: "YearlyResult", label: "Yearly GradeSheet", icon: <MdPerson /> },
+      { key: "YearlyGeneralReportCard", label: "YearlyGeneralReportCard", icon: <MdPerson /> },
+
+    ],
+  },
   {
     key: "NationalResults",
     label: "National Results",
@@ -382,6 +380,8 @@ function AdminPanel() {
       case "TeacherPhotoEditor": return <TeacherPhotoEditor />;
         case "PupilPhotoManager": return <PupilPhotoManager />;
       case "PupilPhotoEditor": return <PupilPhotoEditor />;
+         case "TestResultSheet": return <TestResultSheet />;
+      case "TestResultSheetAdvance": return <TestResultSheetAdvance />;
 
 
 

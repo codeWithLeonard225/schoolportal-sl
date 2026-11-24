@@ -66,6 +66,7 @@ const LoginPage = () => {
             case "YahwehCEO": return "/YahwehCEO";
             case "YahwehExams": return "/YahwehExams";
             case "SheikTais": return "/SheikTais";
+            case "SheikTaisExams": return "/SheikTaisExams";
             case "Climax": return "/Climax";
             case "ClimaxCEO": return "/ClimaxCEO";
             case "Henmat": return "/Henmat";

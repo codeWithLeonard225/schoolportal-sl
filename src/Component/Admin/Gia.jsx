@@ -400,6 +400,7 @@ function AdminPanel() {
       case "AdminTheoryQuestionsViewer": return <AdminTheoryQuestionsViewer />;
       case "TestResultSheet": return <TestResultSheet />;
       case "TestResultSheetAdvance": return <TestResultSheetAdvance />;
+     
 
 
 
