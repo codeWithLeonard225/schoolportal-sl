@@ -21,6 +21,7 @@ import {
 } from "react-icons/md";
 import Registration from "../Voters/Registration";
 import ClassRegistration from "./ClassRegistration";
+import LoginAuditPage from "./LoginAuditPage";
 import FeeReceipt from "../FeeReceipt.jsx/FeeReceipt";
 import FeesCostPage from "../FeeReceipt.jsx/FeesCostPage";
 import FeesDashboard from "../Dashboard/FeesDsahboard";
@@ -35,6 +36,8 @@ import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPage";
 import ClassFullTermMatrixPage from "../TeacherAssignment/ClassFullTermMatrixPage";
 import ReportCardTermly from "../PupilsPage/ReportCardTermly";
 import GeneralReportCard from "../PupilsPage/GeneralReportCard";
+import TestResultSheet from "../PupilsPage/TestResultSheet";
+import TestResultSheetAdvance from "../PupilsPage/TestResultSheetAdvance";
 import SchoolRegistration from "../CeoPanel/SchoolRegistration"
 import AdminForm from "../CeoPanel/AdminForm"
 import RegDashboard from "../Dashboard/RegDashboard"
@@ -105,6 +108,12 @@ const NAV_ITEMS = [
     ],
   },
 
+     {
+      key: "LoginAuditPage",
+      label: "LoginAuditPage",
+      icon: <MdWarning />, // 📖
+    },
+
     //  {
     //   key: "GradeADashboard",
     //   label: "Grade A Pupils",
@@ -167,10 +176,12 @@ const NAV_ITEMS = [
     label: "Pupils Results",
     icon: <MdBarChart />,
     children: [
-      { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
+      // { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
       { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
-      { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
+      // { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
       // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
+     { key: "TestResultSheetAdvance", label: "TestResultSheetAdvance", icon: <MdPerson /> },
+         { key: "TestResultSheet", label: "Test Result Sheet", icon: <MdPerson /> },
       { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },
       { key: "GeneralReportCard", label: "ReportCard Yearly", icon: <MdPerson /> },
       { key: "TermResult", label: "TermResult GradeSheet", icon: <MdPerson /> },
@@ -207,7 +218,7 @@ const NAV_ITEMS = [
     label: "Qr code Attendance-Pupil",
     icon: <MdBarChart />,
     children: [
-      { key: "PupilIDCardScan", label: "Pupil Card Scan", icon: <MdPerson /> },
+      { key: "PupilIDCardScan", label: "Pupil Card Junior", icon: <MdPerson /> },
       { key: "PupilIDCardScanSenior", label: "Pupil Card Senior", icon: <MdPerson /> },
       // { key: "PupilIDCardBack", label: "Pupil Card Back", icon: <MdPerson /> },
       { key: "PupilAttendanceScanner", label: "Attendance Scanner", icon: <MdPerson /> },
@@ -385,6 +396,10 @@ function AdminPanel() {
       case "TeacherPhotoEditor": return <TeacherPhotoEditor />;
         case "PupilPhotoManager": return <PupilPhotoManager />;
       case "PupilPhotoEditor": return <PupilPhotoEditor />;
+      case "LoginAuditPage": return <LoginAuditPage />;
+          case "TestResultSheet": return <TestResultSheet />;
+      case "TestResultSheetAdvance": return <TestResultSheetAdvance />;
+
 
 
 

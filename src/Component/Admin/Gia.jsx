@@ -34,6 +34,7 @@ import GradeSheetPage from "../TeacherAssignment/GradeSheetPage";
 import BulkDeleteClassGrades from "../TeacherAssignment/BulkDeleteClassGrades";
 import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPageGia";
 import ClassFullTermMatrixPage from "../TeacherAssignment/ClassFullTermMatrixPage";
+import TermResult from "../TeacherAssignment/TermResult";
 import ReportCardTermly from "../PupilsPage/ReportCardTermlyGia";
 import GeneralReportCard from "../PupilsPage/GeneralReportCardGia";
 import SchoolRegistration from "../CeoPanel/SchoolRegistration"
@@ -57,7 +58,6 @@ import TimetableEntry from "../TeacherAssignment/TimetableEntry";
 import TimeTableTeacherAtt from "../TeacherAssignment/TimeTableTeacherAtt";
 import TimeTableDailyAttendanceReport from "../TeacherAssignment/TimeTableDailyAttendanceReport";
 import TimeTableTeacherReport from "../TeacherAssignment/TimeTableTeacherReport";
-import TermResult from "../TeacherAssignment/TermResultGia";
 import YearlyResult from "../TeacherAssignment/YearlyResultGia";
 import YearlyGeneralReportCard from "../TeacherAssignment/YearlyGeneralReportCardGia";
 import TeacherClassReport from "../TeacherAssignment/TeacherClassReport";
@@ -86,6 +86,8 @@ import StaffAttendanceReport from "../Staff/StaffAttendanceReport";
 import AttendanceReport from "../Dashboard/AttendanceReports";
 import AdminDocumentViewer from "../TeacherAssignment/AdminDocumentViewer";
 import AdminTheoryQuestionsViewer from "../TeacherAssignment/AdminTheoryQuestionsViewer";
+import TestResultSheet from "../PupilsPage/TestResultSheet";
+import TestResultSheetAdvance from "../PupilsPage/TestResultSheetAdvance";
 
 
 
@@ -172,8 +174,10 @@ const NAV_ITEMS = [
     children: [
       // { key: "BulkDeleteClassGrades", label: "BulkDeleteClassGrades", icon: <MdPerson /> },
       { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
-      { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
+      // { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
       // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
+      { key: "TestResultSheet", label: "Test Result Sheet", icon: <MdPerson /> },
+      { key: "TestResultSheetAdvance", label: "TestResultSheetAdvance", icon: <MdPerson /> },
       { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },
       { key: "GeneralReportCard", label: "ReportCard Yearly", icon: <MdPerson /> },
       { key: "TermResult", label: "TermResult GradeSheet", icon: <MdPerson /> },
@@ -394,6 +398,8 @@ function AdminPanel() {
       case "PupilPhotoEditor": return <PupilPhotoEditor />;
       case "AdminDocumentViewer": return <AdminDocumentViewer />;
       case "AdminTheoryQuestionsViewer": return <AdminTheoryQuestionsViewer />;
+      case "TestResultSheet": return <TestResultSheet />;
+      case "TestResultSheetAdvance": return <TestResultSheetAdvance />;
 
 
 

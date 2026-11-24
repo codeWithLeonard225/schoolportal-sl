@@ -38,6 +38,38 @@ const AdminTheoryQuestionsViewer = () => {
 
     const termsList = ["Term 1 T1", "Term 1 Exam", "Term 2 T1", "Term 2 Exam", "Term 3 T1", "Term 3 Exam"];
 
+    // Helper: Convert Firestore timestamp or ISO string into "Friday 12 May 2026" & "11:30 pm"
+    const formatSubmittedDateTime = (rawTimestamp) => {
+        if (!rawTimestamp) return { dateStr: "N/A", timeStr: "" };
+
+        let dateObj;
+        if (typeof rawTimestamp?.toDate === "function") {
+            dateObj = rawTimestamp.toDate();
+        } else if (rawTimestamp?.seconds) {
+            dateObj = new Date(rawTimestamp.seconds * 1000);
+        } else {
+            dateObj = new Date(rawTimestamp);
+        }
+
+        if (isNaN(dateObj.getTime())) return { dateStr: "N/A", timeStr: "" };
+
+        const weekday = dateObj.toLocaleDateString("en-GB", { weekday: "long" });
+        const day = dateObj.getDate();
+        const month = dateObj.toLocaleDateString("en-GB", { month: "long" });
+        const year = dateObj.getFullYear();
+
+        const timeStr = dateObj.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        }).toLowerCase();
+
+        return {
+            dateStr: `${weekday} ${day} ${month} ${year}`,
+            timeStr
+        };
+    };
+
     // 1. Realtime listener for all Theory Question docs in the active school
     useEffect(() => {
         if (!schoolId) {
@@ -79,6 +111,9 @@ const AdminTheoryQuestionsViewer = () => {
         documents.forEach((docItem) => {
             const questionsArr = docItem.questions || [];
             questionsArr.forEach((q, idx) => {
+                // Uses per-question timestamp if available, otherwise pulls the document's Firestore timestamp
+                const { dateStr, timeStr } = formatSubmittedDateTime(q.submittedAt || docItem.timestamp);
+
                 list.push({
                     docId: docItem.id,
                     questionIndex: idx,
@@ -88,7 +123,9 @@ const AdminTheoryQuestionsViewer = () => {
                     academicYear: docItem.academicYear,
                     teacher: docItem.teacher || "N/A",
                     topic: q.topic || "General",
-                    question: q.question || ""
+                    question: q.question || "",
+                    submittedDate: dateStr,
+                    submittedTime: timeStr
                 });
             });
         });
@@ -195,10 +232,8 @@ const AdminTheoryQuestionsViewer = () => {
                 const updatedQuestions = currentQuestions.filter((_, idx) => idx !== item.questionIndex);
 
                 if (updatedQuestions.length === 0) {
-                    // If no questions remain in the document, remove the whole document record
                     await deleteDoc(docRef);
                 } else {
-                    // Otherwise update the array
                     await updateDoc(docRef, {
                         questions: updatedQuestions,
                         updatedAt: serverTimestamp()
@@ -313,7 +348,7 @@ const AdminTheoryQuestionsViewer = () => {
 
             {/* Questions Table */}
             <div className="overflow-x-auto border border-gray-200 rounded-2xl shadow-sm">
-                <table className="w-full text-left text-xs min-w-[750px]">
+                <table className="w-full text-left text-xs min-w-[880px]">
                     <thead className="bg-red-700 text-white uppercase text-[10px] tracking-wider">
                         <tr>
                             <th className="p-4 w-12">#</th>
@@ -322,13 +357,14 @@ const AdminTheoryQuestionsViewer = () => {
                             <th className="p-4 w-28">Class / Subj</th>
                             <th className="p-4 w-28">Term</th>
                             <th className="p-4 w-28">Teacher</th>
+                            <th className="p-4 w-40">Submitted</th>
                             <th className="p-4 text-center w-28">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {loading ? (
                             <tr>
-                                <td colSpan="7" className="p-10 text-center text-red-600 font-bold">
+                                <td colSpan="8" className="p-10 text-center text-red-600 font-bold">
                                     Loading theory questions...
                                 </td>
                             </tr>
@@ -381,6 +417,14 @@ const AdminTheoryQuestionsViewer = () => {
                                     {/* Teacher Column */}
                                     <td className="p-4 text-gray-600 font-medium">{item.teacher}</td>
 
+                                    {/* Date & Time Submitted Column */}
+                                    <td className="p-4">
+                                        <div className="font-bold text-gray-800 text-[11px]">{item.submittedDate}</div>
+                                        {item.submittedTime && (
+                                            <div className="text-[10px] text-gray-500 font-medium">{item.submittedTime}</div>
+                                        )}
+                                    </td>
+
                                     {/* Actions Column */}
                                     <td className="p-4">
                                         <div className="flex justify-center items-center gap-2">
@@ -424,7 +468,7 @@ const AdminTheoryQuestionsViewer = () => {
 
                         {!loading && filteredQuestions.length === 0 && (
                             <tr>
-                                <td colSpan="7" className="p-10 text-center text-gray-400 font-medium italic">
+                                <td colSpan="8" className="p-10 text-center text-gray-400 font-medium italic">
                                     No theory questions found matching the selected criteria.
                                 </td>
                             </tr>

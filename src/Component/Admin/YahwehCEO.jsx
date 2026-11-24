@@ -83,6 +83,8 @@ import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
 import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
 import StaffAttendanceReport from "../Staff/StaffAttendanceReport";
 import AttendanceReport from "../Dashboard/AttendanceReports";
+import TestResultSheet from "../PupilsPage/TestResultSheet";
+import TestResultSheetAdvance from "../PupilsPage/TestResultSheetAdvance";
 
 
 
@@ -167,10 +169,12 @@ const NAV_ITEMS = [
     label: "Pupils Results",
     icon: <MdBarChart />,
     children: [
-      { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
+      // { key: "GradeSheetPage", label: "Submitted Grades", icon: <MdPerson /> },
       { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
-      { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
+      // { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
       // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
+        { key: "TestResultSheetAdvance", label: "TestResultSheetAdvance", icon: <MdPerson /> },
+            { key: "TestResultSheet", label: "Test Result Sheet", icon: <MdPerson /> },
       { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },
       { key: "GeneralReportCard", label: "ReportCard Yearly", icon: <MdPerson /> },
       { key: "TermResult", label: "TermResult GradeSheet", icon: <MdPerson /> },
@@ -383,6 +387,9 @@ function AdminPanel() {
       case "TeacherPhotoEditor": return <TeacherPhotoEditor />;
         case "PupilPhotoManager": return <PupilPhotoManager />;
       case "PupilPhotoEditor": return <PupilPhotoEditor />;
+          case "TestResultSheet": return <TestResultSheet />;
+      case "TestResultSheetAdvance": return <TestResultSheetAdvance />;
+
 
 
 

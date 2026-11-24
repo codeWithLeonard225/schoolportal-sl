@@ -33,8 +33,9 @@ import TeacherPupilsPage from "../TeacherAssignment/TeacherPupilsPage";
 import GradeSheetPage from "../TeacherAssignment/GradeSheetPage";
 import SubGradeMatrixPage from "../TeacherAssignment/SubGradeMatrixPage";
 import ClassFullTermMatrixPage from "../TeacherAssignment/ClassFullTermMatrixPage";
-import ReportCardTermly from "../PupilsPage/ReportCardTermly";
-import GeneralReportCard from "../PupilsPage/GeneralReportCard";
+import HammondTestResultSheet from "../PupilsPage/HammondTestResultSheet";
+import ReportCardTermly from "../PupilsPage/HammondReportCardTermly";
+import GeneralReportCard from "../PupilsPage/HammondGeneralReportCard";
 import SchoolRegistration from "../CeoPanel/SchoolRegistration"
 import AdminForm from "../CeoPanel/AdminForm"
 import RegDashboard from "../Dashboard/RegDashboard"
@@ -84,6 +85,8 @@ import TeacherPhotoManager from "../Voters/TeacherPhotoManager";
 import AttendanceDashboard from "../Dashboard/AttendanceDashboard";
 import StaffAttendanceReport from "../Staff/StaffAttendanceReport";
 import AttendanceReport from "../Dashboard/AttendanceReports";
+import AdminDocumentViewer from "../TeacherAssignment/AdminDocumentViewer";
+import AdminTheoryQuestionsViewer from "../TeacherAssignment/AdminTheoryQuestionsViewer";
 
 
 
@@ -171,6 +174,7 @@ const NAV_ITEMS = [
       { key: "TeacherPupilsPageAdmin", label: "TeacherPupilsGrade", icon: <MdPerson /> },
       { key: "SubGradeMatrixPage", label: "Sub Grade Sheet", icon: <MdPerson /> },
       // { key: "ClassFullTermMatrixPage", label: "Term Grade Sheet", icon: <MdPerson /> },
+      { key: "HammondTestResultSheet", label: "Test Result Sheet", icon: <MdPerson /> },
       { key: "ReportCardTermly", label: "ReportCard Termly", icon: <MdPerson /> },
       { key: "GeneralReportCard", label: "ReportCard Yearly", icon: <MdPerson /> },
       { key: "TermResult", label: "TermResult GradeSheet", icon: <MdPerson /> },
@@ -226,12 +230,16 @@ const NAV_ITEMS = [
       { key: "StaffAttendanceRecords", label: "Staff Attendance Records", icon: <MdPerson /> },
     ],
   },
-  
-  // {
-  //   key: "staffAttendance",
-  //   label: "Staff Attendance",
-  //   icon: <MdWarning />, // 📖
-  // },
+  {
+    key: "Upload-Questions",
+    label: "Upload Questions",
+    icon: <MdBarChart />,
+    children: [
+      { key: "AdminDocumentViewer", label: "Bulk Question", icon: <MdPerson /> },
+      { key: "AdminTheoryQuestionsViewer", label: "Theory", icon: <MdPerson /> },
+   
+    ],
+  },
   {
     key: "timetable",
     label: "TimeTable",
@@ -338,6 +346,7 @@ function AdminPanel() {
       case "TeacherPupilsPage": return <TeacherPupilsPage />;
       case "SubGradeMatrixPage": return <SubGradeMatrixPage />;
       case "ClassFullTermMatrixPage": return <ClassFullTermMatrixPage />;
+      case "HammondTestResultSheet": return <HammondTestResultSheet />;
       case "TermResult": return <TermResult />;
       case "YearlyResult": return <YearlyResult />;
       case "GradeSheetPage": return <GradeSheetPage />;
@@ -385,6 +394,8 @@ function AdminPanel() {
       case "TeacherPhotoEditor": return <TeacherPhotoEditor />;
         case "PupilPhotoManager": return <PupilPhotoManager />;
       case "PupilPhotoEditor": return <PupilPhotoEditor />;
+         case "AdminDocumentViewer": return <AdminDocumentViewer />;
+      case "AdminTheoryQuestionsViewer": return <AdminTheoryQuestionsViewer />;
 
 
 

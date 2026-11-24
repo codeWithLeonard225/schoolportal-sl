@@ -14,272 +14,69 @@ const BulkRegistration = () => {
     const schoolId = user?.schoolId || "N/A";
     const registeredBy = user?.data?.adminID || user?.data?.teacherID || "";
 
-    // ✅ List updated: All students set to "New" feesCategory
-
-
-// ✅ Updated students list: All set to (Continue)
 const [students, setStudents] = useState([
   {
-    name: "Hassanatu Jaka Bayoh",
-    registrationFormNo: "2493",
+    name: "Bangura Adira",
+    gender: "Female",
+    feesCategory: "Continue",
+  },
+ 
+  {
+    name: "Forson Mary",
     gender: "Female",
     feesCategory: "Continue",
   },
   {
-    name: "Kadiatu A. Bangura",
-    registrationFormNo: "2047",
+    name: "Hughes Davida",
     gender: "Female",
     feesCategory: "Continue",
   },
   {
-    name: "Mariama Comfort Conteh",
-    registrationFormNo: "2387",
+    name: "Jalloh Khadijah",
     gender: "Female",
     feesCategory: "Continue",
   },
   {
-    name: "Aminata Obai Sankoh",
-    registrationFormNo: "1800",
+    name: "Johnson Festus",
+    gender: "Male",
+    feesCategory: "Continue",
+  },
+  {
+    name: "Moriba Isha",
     gender: "Female",
     feesCategory: "Continue",
   },
   {
-    name: "Fatmata Musa Sesay",
-    registrationFormNo: "1542",
+    name: "Ndanema Josephine",
+    gender: "Female",
+    feesCategory: "Continue",
+  },
+ 
+  {
+    name: "Sesay Hawanatu",
     gender: "Female",
     feesCategory: "Continue",
   },
   {
-    name: "Mariama Sajor Barrie",
-    registrationFormNo: "2037",
+    name: "Swarray Patricia A R",
     gender: "Female",
     feesCategory: "Continue",
   },
   {
-    name: "Mariama Kargbo",
-    registrationFormNo: "2065",
+    name: "Triumphcia Gerber",
     gender: "Female",
     feesCategory: "Continue",
   },
+ 
   {
-    name: "Haja Fatmata Bah",
-    registrationFormNo: "1926",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Kadija Mohamed Bah",
-    registrationFormNo: "969",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Haja Fatmata Musa",
-    registrationFormNo: "1088",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Alison M. Kamara",
-    registrationFormNo: "522",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Zainab Jalloh",
-    registrationFormNo: "2057",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Madinatu Rahman Thoronka",
-    registrationFormNo: "2029",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Mariama Giba Jakitay",
-    registrationFormNo: "558",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Balia .I. Kabba",
-    registrationFormNo: "2098",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Umu Talie Jalloh",
-    registrationFormNo: "2049",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Aminata Juma Konneh",
-    registrationFormNo: "609",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Isata Sow",
-    registrationFormNo: "2027",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Hawa George",
-    registrationFormNo: "1365",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Fatmata Binta Turay",
-    registrationFormNo: "2053",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Fatmata Bah",
-    registrationFormNo: "2620",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Mariama .M.L. Bangura",
-    registrationFormNo: "1801",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Isata Abubakarr Bangura",
-    registrationFormNo: "2386",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Halimatu .H. Kanu",
-    registrationFormNo: "2003",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Umu Jalloh",
-    registrationFormNo: "606",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Hawanatu .M. Turay",
-    registrationFormNo: "2092",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Saffiatu Charm Jalloh",
-    registrationFormNo: "2042",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Kadijah Ishmael Bundu",
-    registrationFormNo: "927",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Hawanatu .S. Sesay",
-    registrationFormNo: "2032",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Hawanatu Unisa Konteh",
-    registrationFormNo: "610",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Fatmata Fullah",
-    registrationFormNo: "2040",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Isha Fofanah",
-    registrationFormNo: "2054",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Haja Fanta Sidibay",
-    registrationFormNo: "461",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Hulaimatu Jalloh",
-    registrationFormNo: "2056",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Assiatu Sesay",
-    registrationFormNo: "2030",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Esatu Bella Jalloh",
-    registrationFormNo: "2055",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Mariam Precious .J. Stevens",
-    registrationFormNo: "2093",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Bilkisu Kamara",
-    registrationFormNo: "2026",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Saudatu Haroun Kamara",
-    registrationFormNo: "2109",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Isatu Barrie",
-    registrationFormNo: "591",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Kadijah Bah",
-    registrationFormNo: "2076",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Kadijatu Yillah",
-    registrationFormNo: "2000",
-    gender: "Female",
-    feesCategory: "Continue",
-  },
-  {
-    name: "Mariama Jalloh",
-    registrationFormNo: "1918",
+    name: "Tucker Lisa",
     gender: "Female",
     feesCategory: "Continue",
   },
 ]);
+
     const [commonData, setCommonData] = useState({
-        class: "JSS 3A", 
+        class: "SSS I WHITE", 
         academicYear: "2026/2027", 
         pupilType: "Private", 
         registrationDate: new Date().toISOString().slice(0, 10),
@@ -295,7 +92,7 @@ const [students, setStudents] = useState([
 
     const handleBulkSubmit = async () => {
         if (schoolId === "N/A") return toast.error("User Auth Error: School ID not detected.");
-        if (!window.confirm(`Register all ${students.length} students as NEW to ${commonData.class}?`)) return;
+        if (!window.confirm(`Register all ${students.length} students to ${commonData.class}?`)) return;
         
         setIsSubmitting(true);
         toast.info(`Uploading batch for ${commonData.class}...`);
@@ -306,9 +103,8 @@ const [students, setStudents] = useState([
                 const studentData = {
                     studentID: newId,
                     studentName: student.name.toUpperCase().trim(),
-                    registrationFormNo: student.registrationFormNo,
                     gender: student.gender,
-                    feesCategory: "New", 
+                    feesCategory: student.feesCategory, 
                     class: commonData.class,
                     academicYear: commonData.academicYear,
                     pupilType: commonData.pupilType,
@@ -326,7 +122,7 @@ const [students, setStudents] = useState([
                 await setDoc(doc(pupilLoginFetch, "PupilsReg", docRef.id), studentData);
             }
             
-            toast.success(`🎉 SUCCESS: ${students.length} new students registered!`);
+            toast.success(`🎉 SUCCESS: ${students.length} students registered!`);
             navigate(-1);
         } catch (error) {
             console.error(error);
@@ -342,7 +138,7 @@ const [students, setStudents] = useState([
                 <div className="bg-indigo-900 p-6 text-white flex justify-between">
                     <div>
                         <h2 className="text-2xl font-bold">Bulk Upload: {commonData.class}</h2>
-                        <p className="text-sm opacity-80 font-semibold text-yellow-400">CATEGORY: ALL NEW STUDENTS</p>
+                        <p className="text-sm opacity-80 font-semibold text-yellow-400">TOTAL STUDENTS: {students.length}</p>
                     </div>
                     <button onClick={() => navigate(-1)} className="text-sm underline">Back</button>
                 </div>
@@ -365,7 +161,6 @@ const [students, setStudents] = useState([
                                 <div className="flex flex-col">
                                     <span className="text-sm font-bold text-gray-700">{index + 1}. {student.name}</span>
                                     <span className="text-[10px] text-green-600 uppercase font-black tracking-wider">★ {student.feesCategory}</span>
-                                    <span className="text-[10px] text-green-600 uppercase font-black tracking-wider">★ {student.registrationFormNo}</span>
                                 </div>
                                 <button 
                                     onClick={() => toggleGender(index)}
@@ -386,7 +181,7 @@ const [students, setStudents] = useState([
                         disabled={isSubmitting}
                         className="w-full mt-6 bg-indigo-800 text-white py-4 rounded-xl font-black text-lg hover:bg-indigo-900 disabled:bg-gray-400 shadow-xl active:scale-[0.98] transition-all"
                     >
-                        {isSubmitting ? "Syncing 13 New Records..." : `Register 13 New Students`}
+                        {isSubmitting ? `Syncing ${students.length} Records...` : `Register ${students.length} Students`}
                     </button>
                 </div>
             </div>

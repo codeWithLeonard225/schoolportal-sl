@@ -5,13 +5,13 @@ import { getAnalytics } from "firebase/analytics";
 
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBiM6FPhCh7m0C0RVkFxD0DVCNJl04RI3E",
-  authDomain: "myschoolhubadmission.firebaseapp.com",
-  projectId: "myschoolhubadmission",
-  storageBucket: "myschoolhubadmission.firebasestorage.app",
-  messagingSenderId: "23728177178",
-  appId: "1:23728177178:web:331178c4bbe3e0652811a3",
-  measurementId: "G-4P3MSXWV7B"
+apiKey: import.meta.env.VITE_ADM_API_KEY,
+  authDomain: import.meta.env.VITE_ADM_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_ADM_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_ADM_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_ADM_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_ADM_APP_ID,
+  measurementId: import.meta.env.VITE_ADM_MEASUREMENT_ID,
 };
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

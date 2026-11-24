@@ -7,13 +7,13 @@ import { getAnalytics } from "firebase/analytics";
 
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAcss-5kmMOsMrMj-I-qx7Yx50P0XrBayI",
-  authDomain: "myschoolhublibarypastquestion.firebaseapp.com",
-  projectId: "myschoolhublibarypastquestion",
-  storageBucket: "myschoolhublibarypastquestion.firebasestorage.app",
-  messagingSenderId: "29315692621",
-  appId: "1:29315692621:web:4edd11bb0b684e54c6c404",
-  measurementId: "G-Q5P8H81JW4"
+apiKey: import.meta.env.VITE_LPQ_API_KEY,
+  authDomain: import.meta.env.VITE_LPQ_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_LPQ_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_LPQ_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_LPQ_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_LPQ_APP_ID,
+  measurementId: import.meta.env.VITE_LPQ_MEASUREMENT_ID,
 };
 
 // Initialize Firebase with a unique name: "schoolResultsApp"

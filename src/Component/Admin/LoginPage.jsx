@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../firebase";
-import { pupilLoginFetch} from "../Database/PupilLogin";
+import { pupilLoginFetch } from "../Database/PupilLogin";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Security/AuthContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { logLoginAttempt } from "../Admin/loginTracker";
 
 const LoginPage = () => {
     const [userID, setUserID] = useState("");
@@ -20,7 +21,6 @@ const LoginPage = () => {
     useEffect(() => {
         const savedUser = JSON.parse(localStorage.getItem("schoolUser"));
         if (savedUser) {
-            // Skip login and go directly to dashboard
             setUser(savedUser);
             navigate(savedUser.navigationRoute, { state: savedUser });
         }
@@ -31,7 +31,6 @@ const LoginPage = () => {
         { name: "PupilsReg", idField: "studentID", nameField: "studentName", role: "pupil" },
         { name: "Teachers", idField: "teacherID", nameField: "teacherName", role: "teacher" },
         { name: "Admins", idField: "adminID", nameField: "adminName", role: "admin" },
-        // ⭐ FIX 1: Added role: "ceo" to ensure userRole is not null in the session
         { name: "CEOs", idField: "ceoID", nameField: "ceoName", role: "ceo", route: "/developer" },
         { name: "Classes", idField: "classId", nameField: "className", role: "class", route: "/PupilUpdate" },
     ];
@@ -44,7 +43,7 @@ const LoginPage = () => {
             case "Fees": return "/registra";
             case "Special": return "/special";
             case "PupilAttendance": return "/PupilAttendance";
-            case "StaffAttendanceSimple": return "/StaffAttDashboard"
+            case "StaffAttendanceSimple": return "/StaffAttDashboard";
             case "SupervisorOne": return "/SupervisorOneDashboard";
             case "SupervisorTwo": return "/SupervisorTwoDashboard";
             case "SupervisorThree": return "/SupervisorThreeDashboard";
@@ -123,7 +122,7 @@ const LoginPage = () => {
 
                     if (matchedDoc) {
                         foundUser = matchedDoc.data();
-                        userRole = role; // Sets the role (now 'ceo' for CEO login)
+                        userRole = role;
                         schoolId = foundUser.schoolId;
 
                         // 🎯 Determine route based on collection name
@@ -139,14 +138,13 @@ const LoginPage = () => {
                             navigationRoute = "/subjectTeacher";
                         }
 
-                        break; // Stop searching once user is found
+                        break;
                     }
                 }
             }
 
-            // 🔍 2️⃣ If found user
+            // 🔍 2️⃣ Check if user was found
             if (foundUser) {
-                // Fetch school info (Only required if schoolId is present)
                 if (schoolId) {
                     const schoolQuery = query(collection(pupilLoginFetch, "Schools"), where("schoolID", "==", schoolId));
                     const schoolSnap = await getDocs(schoolQuery);
@@ -164,9 +162,17 @@ const LoginPage = () => {
                     }
                 }
 
+                // ✅ Log Successful Login Attempt
+                await logLoginAttempt({
+                    userID: trimmedUserID,
+                    userName: trimmedUserName,
+                    role: userRole,
+                    schoolId: schoolId || "unknown",
+                    status: "success",
+                });
+
                 // ✅ Combine user + school info
                 const userSession = {
-                    // role will now be "ceo" for CEO login
                     role: userRole,
                     data: foundUser,
                     schoolId,
@@ -183,6 +189,14 @@ const LoginPage = () => {
                 // ✅ Navigate to dashboard
                 navigate(navigationRoute, { state: userSession });
             } else {
+                // ❌ Log Failed Login Attempt
+                await logLoginAttempt({
+                    userID: trimmedUserID,
+                    userName: trimmedUserName,
+                    role: "unauthenticated",
+                    schoolId: "unknown",
+                    status: "failed",
+                });
                 setError("Invalid credentials. Please check your ID and Name.");
             }
         } catch (err) {
@@ -234,8 +248,9 @@ const LoginPage = () => {
 
                     <button
                         type="submit"
-                        className={`w-full p-2 rounded-lg font-semibold transition ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-indigo-700 text-white hover:bg-indigo-800"
-                            }`}
+                        className={`w-full p-2 rounded-lg font-semibold transition ${
+                            loading ? "bg-gray-400 cursor-not-allowed" : "bg-indigo-700 text-white hover:bg-indigo-800"
+                        }`}
                         disabled={loading}
                     >
                         {loading ? "Logging In..." : "Login"}
